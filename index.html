@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ギフトノート</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&family=Shippori+Mincho:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #fdf8f3;
+  --card: #ffffff;
+  --accent: #e8a598;
+  --text: #4a3f3a;
+  --sub: #9e8e88;
+  --border: #ede3dd;
+  --shadow: rgba(180,140,120,0.12);
+  --tag-bg: #fdeee9;
+  --accent-light: #fdf0ed;
+}
+[data-season="summer"] {
+  --bg: #f0f8ff;
+  --accent: #7ec8d9;
+  --border: #d4eaf0;
+  --shadow: rgba(100,160,180,0.12);
+  --tag-bg: #e4f4f8;
+  --accent-light: #edf7fa;
+}
+[data-season="autumn"] {
+  --bg: #fdf6f0;
+  --accent: #d4956a;
+  --border: #e8ddd4;
+  --shadow: rgba(180,140,100,0.12);
+  --tag-bg: #fbeee4;
+  --accent-light: #faf1ea;
+}
+[data-season="winter"] {
+  --bg: #f4f6fa;
+  --accent: #8ea4bf;
+  --border: #dde3eb;
+  --shadow: rgba(120,140,170,0.12);
+  --tag-bg: #e8edf4;
+  --accent-light: #edf0f6;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Zen Maru Gothic', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  padding-bottom: 80px;
+  -webkit-tap-highlight-color: transparent;
+}
+h1, h2, h3, .app-title {
+  font-family: 'Shippori Mincho', serif;
+}
+
+/* Header */
+.header {
+  text-align: center;
+  padding: 20px 16px 12px;
+  position: relative;
+}
+.app-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: 2px;
+}
+.app-subtitle {
+  font-size: 11px;
+  color: var(--sub);
+  margin-top: 2px;
+}
+.season-btn {
+  position: absolute;
+  right: 16px;
+  top: 20px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 4px 10px;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 1px 4px var(--shadow);
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  overflow-x: auto;
+  padding: 0 12px 8px;
+  gap: 6px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  flex-shrink: 0;
+  padding: 8px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  font-family: 'Zen Maru Gothic', sans-serif;
+}
+.tab.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+/* Cards */
+.card-list { padding: 0 16px; }
+.card {
+  background: var(--card);
+  border-radius: 18px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 12px var(--shadow);
+  animation: fadeUp 0.3s ease;
+  border: 1px solid var(--border);
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.card-title {
+  font-family: 'Shippori Mincho', serif;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.card-person {
+  font-size: 13px;
+  color: var(--accent);
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+.card-count {
+  font-size: 11px;
+  background: var(--tag-bg);
+  color: var(--accent);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+.card-date {
+  font-size: 12px;
+  color: var(--sub);
+  margin-bottom: 4px;
+}
+.card-memo {
+  font-size: 13px;
+  color: var(--text);
+  margin-top: 6px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+.card-url {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--accent);
+  text-decoration: none;
+  word-break: break-all;
+}
+.card-url:hover { text-decoration: underline; }
+.card-img {
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  border-radius: 12px;
+  margin-top: 8px;
+}
+.card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.card-btn {
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  cursor: pointer;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  transition: background 0.2s;
+}
+.card-btn:hover { background: var(--accent-light); }
+.card-btn.delete { color: #c97070; border-color: #e8c0c0; }
+
+/* Badge */
+.badge {
+  font-size: 11px;
+  background: var(--accent);
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  white-space: nowrap;
+}
+
+/* Group */
+.group-card {
+  background: var(--card);
+  border-radius: 18px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 12px var(--shadow);
+  animation: fadeUp 0.3s ease;
+  border: 1px solid var(--border);
+}
+.group-person-name {
+  font-family: 'Shippori Mincho', serif;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+.group-item {
+  padding: 10px 0;
+  border-bottom: 1px dashed var(--border);
+}
+.group-item:last-child { border-bottom: none; }
+.group-toggle {
+  font-size: 13px;
+  color: var(--sub);
+  cursor: pointer;
+  padding: 8px 0 0;
+  text-align: center;
+  user-select: none;
+}
+.group-toggle:hover { color: var(--accent); }
+.group-past { display: none; }
+.group-past.open { display: block; }
+
+/* FAB */
+.fab {
+  position: fixed;
+  bottom: 24px;
+  right: calc(50% - 210px);
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 28px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 16px var(--shadow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
+  z-index: 100;
+}
+.fab:active { transform: scale(0.92); }
+@media (max-width: 480px) {
+  .fab { right: 20px; }
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  z-index: 200;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--card);
+  border-radius: 24px 24px 0 0;
+  width: 100%;
+  max-width: 480px;
+  max-height: 85dvh;
+  overflow-y: auto;
+  padding: 24px 20px 32px;
+  animation: slideUp 0.3s ease;
+}
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.modal h2 {
+  font-size: 18px;
+  margin-bottom: 16px;
+  text-align: center;
+}
+.form-group {
+  margin-bottom: 14px;
+}
+.form-group label {
+  display: block;
+  font-size: 13px;
+  color: var(--sub);
+  margin-bottom: 4px;
+}
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 14px;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  color: var(--text);
+  background: var(--bg);
+  outline: none;
+  transition: border 0.2s;
+}
+.form-group input:focus,
+.form-group textarea:focus {
+  border-color: var(--accent);
+}
+.form-group textarea { resize: vertical; min-height: 60px; }
+.form-btns {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+.btn {
+  flex: 1;
+  padding: 12px;
+  border-radius: 14px;
+  border: none;
+  font-size: 15px;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.btn:active { opacity: 0.8; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-secondary { background: var(--border); color: var(--text); }
+
+/* Photo */
+.photo-preview {
+  width: 100%;
+  max-height: 160px;
+  object-fit: cover;
+  border-radius: 12px;
+  margin-top: 6px;
+}
+.photo-options {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+.photo-opt {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  cursor: pointer;
+  font-family: 'Zen Maru Gothic', sans-serif;
+}
+.photo-opt.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+/* Season modal */
+.season-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  z-index: 300;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+.season-modal.open { display: flex; }
+.season-picker {
+  background: var(--card);
+  border-radius: 20px;
+  padding: 24px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  min-width: 260px;
+}
+.season-option {
+  padding: 14px;
+  border-radius: 14px;
+  border: 2px solid var(--border);
+  text-align: center;
+  cursor: pointer;
+  font-size: 15px;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  transition: all 0.2s;
+}
+.season-option:hover { border-color: var(--accent); }
+.season-option.active { border-color: var(--accent); background: var(--accent-light); }
+
+/* Share view */
+.share-view .tabs,
+.share-view .fab,
+.share-view .season-btn,
+.share-view .card-actions { display: none; }
+.share-header {
+  text-align: center;
+  padding: 12px;
+  font-size: 13px;
+  color: var(--sub);
+  background: var(--accent-light);
+  border-radius: 12px;
+  margin: 0 16px 12px;
+}
+
+/* Empty */
+.empty-msg {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--sub);
+  font-size: 14px;
+  line-height: 1.8;
+}
+</style>
+</head>
+<body data-season="spring">
+
+<div class="header">
+  <div class="app-title">ギフトノート</div>
+  <div class="app-subtitle">淡い記憶を、大切な記録に</div>
+  <button class="season-btn" id="seasonBtn">🌸</button>
+</div>
+
+<div class="tabs" id="tabs">
+  <div class="tab active" data-tab="wish">✨ ほしいもの</div>
+  <div class="tab" data-tab="received">🎀 もらった</div>
+  <div class="tab" data-tab="gave">🎁 あげた</div>
+  <div class="tab" data-tab="place">📍 行きたい場所</div>
+  <div class="tab" data-tab="birthday">🎂 誕生日</div>
+</div>
+
+<div class="card-list" id="cardList"></div>
+
+<button class="fab" id="fabBtn">＋</button>
+
+<!-- Add/Edit Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modal">
+    <h2 id="modalTitle">新しく追加</h2>
+    <div class="form-group">
+      <label>タイトル *</label>
+      <input type="text" id="fTitle" placeholder="例：ワイヤレスイヤホン">
+    </div>
+    <div class="form-group" id="fPersonGroup" style="display:none">
+      <label>相手の名前</label>
+      <input type="text" id="fPerson" placeholder="例：田中さん">
+    </div>
+    <div class="form-group" id="fCountGroup" style="display:none">
+      <label>何回目？</label>
+      <input type="number" id="fCount" min="1" placeholder="例：3">
+    </div>
+    <div class="form-group">
+      <label>日付</label>
+      <input type="date" id="fDate">
+    </div>
+    <div class="form-group" id="fUrlGroup">
+      <label>URL</label>
+      <input type="url" id="fUrl" placeholder="https://...">
+    </div>
+    <div class="form-group">
+      <label>メモ</label>
+      <textarea id="fMemo" placeholder="自由にメモ"></textarea>
+    </div>
+    <div class="form-group">
+      <label>写真</label>
+      <input type="file" id="fImg" accept="image/*">
+      <div id="photoPreviewArea"></div>
+    </div>
+    <div class="form-btns">
+      <button class="btn btn-secondary" id="cancelBtn">キャンセル</button>
+      <button class="btn btn-primary" id="saveBtn">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Season Modal -->
+<div class="season-modal" id="seasonModal">
+  <div class="season-picker">
+    <div class="season-option" data-season="spring">🌸 春</div>
+    <div class="season-option" data-season="summer">🌊 夏</div>
+    <div class="season-option" data-season="autumn">🍂 秋</div>
+    <div class="season-option" data-season="winter">❄️ 冬</div>
+  </div>
+</div>
+
+<script>
+// ===== Data =====
+const STORAGE_KEY = 'gn_data';
+const SEASON_KEY = 'gn_season';
+const TABS = ['wish','received','gave','place','birthday'];
+const TAB_LABELS = { wish:'✨ ほしいもの', received:'🎀 もらった', gave:'🎁 あげた', place:'📍 行きたい場所', birthday:'🎂 誕生日' };
+const SEASON_ICONS = { spring:'🌸', summer:'🌊', autumn:'🍂', winter:'❄️' };
+
+let data = { wish:[], received:[], gave:[], place:[], birthday:[] };
+let currentTab = 'wish';
+let editingId = null;
+let editPhotoAction = 'keep'; // keep, remove, replace
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      TABS.forEach(t => { if (Array.isArray(parsed[t])) data[t] = parsed[t]; });
+    }
+  } catch(e) { console.error('Data load error', e); }
+}
+
+function saveData() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+// ===== Season =====
+function getAutoSeason() {
+  const m = new Date().getMonth() + 1;
+  if (m >= 3 && m <= 5) return 'spring';
+  if (m >= 6 && m <= 8) return 'summer';
+  if (m >= 9 && m <= 11) return 'autumn';
+  return 'winter';
+}
+
+function setSeason(s) {
+  document.body.dataset.season = s;
+  document.getElementById('seasonBtn').textContent = SEASON_ICONS[s];
+  localStorage.setItem(SEASON_KEY, s);
+  document.querySelectorAll('.season-option').forEach(el => {
+    el.classList.toggle('active', el.dataset.season === s);
+  });
+}
+
+// ===== Share =====
+function checkShareMode() {
+  const params = new URLSearchParams(location.search);
+  const shareData = params.get('share');
+  if (!shareData) return false;
+  try {
+    const items = JSON.parse(atob(shareData));
+    if (!Array.isArray(items)) return false;
+    document.body.classList.add('share-view');
+    const cardList = document.getElementById('cardList');
+    cardList.innerHTML = '<div class="share-header">🎁 ほしいものリスト（読み取り専用）</div>';
+    items.forEach(item => {
+      cardList.innerHTML += renderCardHTML(item, 'wish', true);
+    });
+    return true;
+  } catch(e) { return false; }
+}
+
+function shareWishList() {
+  const items = data.wish.map(({title, url, memo, date}) => ({title, url, memo, date}));
+  if (items.length === 0) { alert('ほしいものがまだありません'); return; }
+  const encoded = btoa(JSON.stringify(items));
+  const shareUrl = location.origin + location.pathname + '?share=' + encoded;
+  if (navigator.share) {
+    navigator.share({ title: 'ほしいものリスト', url: shareUrl }).catch(()=>{});
+  } else {
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      alert('共有URLをコピーしました！');
+    }).catch(() => {
+      prompt('このURLを共有してください:', shareUrl);
+    });
+  }
+}
+
+// ===== Birthday Badge =====
+function daysUntilBirthday(dateStr) {
+  if (!dateStr) return null;
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const parts = dateStr.split('-');
+  let bd = new Date(today.getFullYear(), parseInt(parts[1])-1, parseInt(parts[2]));
+  bd.setHours(0,0,0,0);
+  if (bd < today) bd.setFullYear(bd.getFullYear() + 1);
+  const diff = Math.ceil((bd - today) / (1000*60*60*24));
+  return diff;
+}
+
+// ===== Render =====
+function renderCardHTML(item, tab, readOnly) {
+  let html = '<div class="card">';
+  // Title + badge
+  html += '<div class="card-title">';
+  html += escapeHtml(item.title || '無題');
+  if (tab === 'birthday' && item.date) {
+    const days = daysUntilBirthday(item.date);
+    if (days !== null) {
+      const label = days === 0 ? '🎉 今日！' : 'あと' + days + '日';
+      html += ' <span class="badge">' + label + '</span>';
+    }
+  }
+  if (item.count) {
+    html += ' <span class="card-count">' + item.count + '回目</span>';
+  }
+  html += '</div>';
+  if (item.person) html += '<div class="card-person">👤 ' + escapeHtml(item.person) + '</div>';
+  if (item.date) html += '<div class="card-date">📅 ' + item.date + '</div>';
+  if (item.img) html += '<img class="card-img" src="' + item.img + '" alt="">';
+  if (item.memo) html += '<div class="card-memo">' + escapeHtml(item.memo) + '</div>';
+  if (item.url) html += '<a class="card-url" href="' + escapeHtml(item.url) + '" target="_blank" rel="noopener">🔗 ' + escapeHtml(truncateUrl(item.url)) + '</a>';
+  if (!readOnly) {
+    html += '<div class="card-actions">';
+    html += '<button class="card-btn" onclick="editItem(\'' + tab + '\',\'' + item.createdAt + '\')">✏️ 編集</button>';
+    html += '<button class="card-btn delete" onclick="deleteItem(\'' + tab + '\',\'' + item.createdAt + '\')">🗑 削除</button>';
+    if (tab === 'wish') {
+      html += '<button class="card-btn" onclick="shareWishList()">🔗 共有</button>';
+    }
+    html += '</div>';
+  }
+  html += '</div>';
+  return html;
+}
+
+function renderGrouped(tab) {
+  const items = [...data[tab]].sort((a,b) => (b.date||'').localeCompare(a.date||''));
+  const groups = {};
+  const ungrouped = [];
+  items.forEach(item => {
+    if (item.person && item.person.trim()) {
+      if (!groups[item.person]) groups[item.person] = [];
+      groups[item.person].push(item);
+    } else {
+      ungrouped.push(item);
+    }
+  });
+  let html = '';
+  Object.keys(groups).forEach(person => {
+    const list = groups[person];
+    const latest = list[0];
+    const past = list.slice(1);
+    const groupId = 'grp_' + btoa(encodeURIComponent(person)).replace(/[^a-zA-Z0-9]/g,'');
+    html += '<div class="group-card">';
+    html += '<div class="group-person-name">👤 ' + escapeHtml(person) + '</div>';
+    html += '<div class="group-item">' + renderCardInner(latest, tab) + '</div>';
+    if (past.length > 0) {
+      html += '<div class="group-toggle" onclick="toggleGroup(\'' + groupId + '\',this)">▼ 過去の記録 ' + past.length + '件</div>';
+      html += '<div class="group-past" id="' + groupId + '">';
+      past.forEach(item => {
+        html += '<div class="group-item">' + renderCardInner(item, tab) + '</div>';
+      });
+      html += '</div>';
+    }
+    html += '</div>';
+  });
+  ungrouped.forEach(item => {
+    html += renderCardHTML(item, tab, false);
+  });
+  return html;
+}
+
+function renderCardInner(item, tab) {
+  let html = '<div class="card-title">';
+  html += escapeHtml(item.title || '無題');
+  if (item.count) html += ' <span class="card-count">' + item.count + '回目</span>';
+  html += '</div>';
+  if (item.date) html += '<div class="card-date">📅 ' + item.date + '</div>';
+  if (item.img) html += '<img class="card-img" src="' + item.img + '" alt="">';
+  if (item.memo) html += '<div class="card-memo">' + escapeHtml(item.memo) + '</div>';
+  if (item.url) html += '<a class="card-url" href="' + escapeHtml(item.url) + '" target="_blank" rel="noopener">🔗 ' + escapeHtml(truncateUrl(item.url)) + '</a>';
+  html += '<div class="card-actions">';
+  html += '<button class="card-btn" onclick="editItem(\'' + tab + '\',\'' + item.createdAt + '\')">✏️ 編集</button>';
+  html += '<button class="card-btn delete" onclick="deleteItem(\'' + tab + '\',\'' + item.createdAt + '\')">🗑 削除</button>';
+  html += '</div>';
+  return html;
+}
+
+function render() {
+  const cardList = document.getElementById('cardList');
+  const items = data[currentTab];
+  if (!items || items.length === 0) {
+    const msgs = {
+      wish: '✨ ほしいものを追加してみましょう',
+      received: '🎀 もらった贈り物を記録しましょう',
+      gave: '🎁 あげた贈り物を記録しましょう',
+      place: '📍 行きたい場所を追加しましょう',
+      birthday: '🎂 大切な人の誕生日を登録しましょう'
+    };
+    cardList.innerHTML = '<div class="empty-msg">' + msgs[currentTab] + '<br>下の ＋ ボタンから追加できます</div>';
+    return;
+  }
+  if (currentTab === 'received' || currentTab === 'gave') {
+    cardList.innerHTML = renderGrouped(currentTab);
+  } else {
+    const sorted = [...items].sort((a,b) => {
+      if (currentTab === 'birthday') {
+        const da = daysUntilBirthday(a.date);
+        const db = daysUntilBirthday(b.date);
+        if (da !== null && db !== null) return da - db;
+        if (da !== null) return -1;
+        if (db !== null) return 1;
+        return 0;
+      }
+      return (b.date||'').localeCompare(a.date||'');
+    });
+    cardList.innerHTML = sorted.map(item => renderCardHTML(item, currentTab, false)).join('');
+  }
+}
+
+// ===== Tab =====
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(el => {
+    el.classList.toggle('active', el.dataset.tab === tab);
+  });
+  render();
+}
+
+// ===== Modal =====
+function openModal(editId) {
+  editingId = editId || null;
+  editPhotoAction = 'keep';
+  const overlay = document.getElementById('modalOverlay');
+  const title = document.getElementById('modalTitle');
+  const showPerson = ['received','gave','birthday'].includes(currentTab);
+  const showCount = ['received','gave'].includes(currentTab);
+  const showUrl = currentTab !== 'birthday';
+  document.getElementById('fPersonGroup').style.display = showPerson ? '' : 'none';
+  document.getElementById('fCountGroup').style.display = showCount ? '' : 'none';
+  document.getElementById('fUrlGroup').style.display = showUrl ? '' : 'none';
+  const previewArea = document.getElementById('photoPreviewArea');
+  previewArea.innerHTML = '';
+  document.getElementById('fImg').value = '';
+
+  if (editingId) {
+    title.textContent = '編集';
+    const item = data[currentTab].find(i => i.createdAt === editingId);
+    if (item) {
+      document.getElementById('fTitle').value = item.title || '';
+      document.getElementById('fPerson').value = item.person || '';
+      document.getElementById('fCount').value = item.count || '';
+      document.getElementById('fDate').value = item.date || '';
+      document.getElementById('fUrl').value = item.url || '';
+      document.getElementById('fMemo').value = item.memo || '';
+      if (item.img) {
+        previewArea.innerHTML = '<img class="photo-preview" src="' + item.img + '">'
+          + '<div class="photo-options">'
+          + '<button class="photo-opt active" onclick="setPhotoAction(\'keep\',this)">そのまま</button>'
+          + '<button class="photo-opt" onclick="setPhotoAction(\'remove\',this)">削除</button>'
+          + '<button class="photo-opt" onclick="setPhotoAction(\'replace\',this)">差し替え</button>'
+          + '</div>';
+      }
+    }
+  } else {
+    title.textContent = '新しく追加';
+    document.getElementById('fTitle').value = '';
+    document.getElementById('fPerson').value = '';
+    document.getElementById('fCount').value = '';
+    document.getElementById('fDate').value = '';
+    document.getElementById('fUrl').value = '';
+    document.getElementById('fMemo').value = '';
+  }
+  overlay.classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  editingId = null;
+}
+
+function setPhotoAction(action, btn) {
+  editPhotoAction = action;
+  document.querySelectorAll('.photo-opt').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (action === 'replace') {
+    document.getElementById('fImg').click();
+  }
+}
+
+function saveItem() {
+  const title = document.getElementById('fTitle').value.trim();
+  if (!title) { alert('タイトルを入力してください'); return; }
+  const now = new Date().toISOString();
+  const fileInput = document.getElementById('fImg');
+
+  function doSave(imgData) {
+    const item = {
+      title: title,
+      person: document.getElementById('fPerson').value.trim(),
+      count: parseInt(document.getElementById('fCount').value) || null,
+      date: document.getElementById('fDate').value || null,
+      url: document.getElementById('fUrl').value.trim() || null,
+      memo: document.getElementById('fMemo').value.trim() || null,
+      img: imgData,
+      createdAt: editingId || now,
+      updatedAt: now
+    };
+    if (editingId) {
+      const idx = data[currentTab].findIndex(i => i.createdAt === editingId);
+      if (idx >= 0) data[currentTab][idx] = item;
+    } else {
+      data[currentTab].push(item);
+    }
+    saveData();
+    closeModal();
+    render();
+  }
+
+  // Handle photo
+  if (editingId) {
+    const existing = data[currentTab].find(i => i.createdAt === editingId);
+    if (editPhotoAction === 'keep') {
+      doSave(existing ? existing.img : null);
+      return;
+    } else if (editPhotoAction === 'remove') {
+      doSave(null);
+      return;
+    }
+    // replace - fall through to file read
+  }
+
+  if (fileInput.files && fileInput.files[0]) {
+    const reader = new FileReader();
+    reader.onload = function(e) { doSave(e.target.result); };
+    reader.readAsDataURL(fileInput.files[0]);
+  } else {
+    doSave(editingId && editPhotoAction === 'keep' ? (data[currentTab].find(i => i.createdAt === editingId) || {}).img : null);
+  }
+}
+
+// ===== Edit / Delete =====
+function editItem(tab, createdAt) {
+  currentTab = tab;
+  openModal(createdAt);
+}
+
+function deleteItem(tab, createdAt) {
+  if (!confirm('この記録を削除しますか？')) return;
+  data[tab] = data[tab].filter(i => i.createdAt !== createdAt);
+  saveData();
+  render();
+}
+
+// ===== Group toggle =====
+function toggleGroup(id, el) {
+  const target = document.getElementById(id);
+  if (!target) return;
+  const isOpen = target.classList.toggle('open');
+  el.textContent = isOpen
+    ? '▲ 閉じる'
+    : '▼ 過去の記録 ' + target.children.length + '件';
+}
+
+// ===== Helpers =====
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+function truncateUrl(url) {
+  return url.length > 40 ? url.substring(0, 40) + '…' : url;
+}
+
+// ===== Init =====
+(function init() {
+  // Share mode
+  if (checkShareMode()) return;
+
+  // Load data
+  loadData();
+
+  // Season
+  const savedSeason = localStorage.getItem(SEASON_KEY);
+  setSeason(savedSeason || getAutoSeason());
+
+  // Tab clicks
+  document.querySelectorAll('.tab').forEach(el => {
+    el.addEventListener('click', () => switchTab(el.dataset.tab));
+  });
+
+  // FAB
+  document.getElementById('fabBtn').addEventListener('click', () => openModal());
+
+  // Modal
+  document.getElementById('cancelBtn').addEventListener('click', closeModal);
+  document.getElementById('saveBtn').addEventListener('click', saveItem);
+  document.getElementById('modalOverlay').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeModal();
+  });
+
+  // Season
+  document.getElementById('seasonBtn').addEventListener('click', () => {
+    document.getElementById('seasonModal').classList.add('open');
+  });
+  document.querySelectorAll('.season-option').forEach(el => {
+    el.addEventListener('click', () => {
+      setSeason(el.dataset.season);
+      document.getElementById('seasonModal').classList.remove('open');
+    });
+  });
+  document.getElementById('seasonModal').addEventListener('click', e => {
+    if (e.target === e.currentTarget) e.currentTarget.classList.remove('open');
+  });
+
+  // Render
+  render();
+})();
+</script>
+</body>
+</html>

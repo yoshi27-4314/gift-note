@@ -817,9 +817,6 @@ function renderLabelBar() {
   if (currentTab==='people'||currentTab==='groups') { bar.innerHTML=''; return; }
   const labels = getLabels(currentTab);
   let html = `<div class="label-chip ${currentLabel===null?'active':''}" style="color:var(--accent);${currentLabel===null?'border-color:var(--accent);':''}" onclick="filterLabel(null)"><span class="ldot" style="background:var(--accent);"></span> すべて</div>`;
-  if (currentTab==='wish') {
-    html += `<div class="label-chip ${currentLabel==='all_records'?'active':''}" style="color:#6b88a8;${currentLabel==='all_records'?'border-color:#6b88a8;':''}" onclick="filterLabel('all_records')"><span class="ldot" style="background:#6b88a8;"></span> 📋全記録</div>`;
-  }
   labels.forEach((l,i) => {
     html += `<div class="label-chip ${currentLabel===i?'active':''}" style="color:${l.color};${currentLabel===i?'border-color:'+l.color+';':''}" onclick="filterLabel(${i})"><span class="ldot" style="background:${l.color};"></span> ${esc(l.name)}</div>`;
   });
@@ -1570,8 +1567,8 @@ function render() {
   const rankToggle = document.getElementById('rankingToggle');
   rankToggle.style.display = ['wish','received','gave','place'].includes(currentTab) ? '' : 'none';
 
-  // All records view
-  if (currentTab === 'wish' && currentLabel === 'all_records') {
+  // All records view (wish tab, label = null = "all")
+  if (currentTab === 'wish' && currentLabel === null) {
     const allItems = [];
     const tabIcons = {wish:'✨', received:'🎀', gave:'🎁', place:'📍'};
     ['wish','received','gave'].forEach(tab => {
@@ -1602,7 +1599,7 @@ function render() {
   }
 
   const items = (data[currentTab]||[]).filter(i => matchesSearch(i, currentTab));
-  if (currentTab !== 'people' && currentLabel !== null && currentLabel !== 'all_records') {
+  if (currentTab !== 'people' && currentLabel !== null) {
     const filtered = items.filter(i => i.labelIdx === currentLabel);
     renderItems(filtered, cardList);
   } else if (currentTab === 'groups') {

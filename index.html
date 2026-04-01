@@ -1620,7 +1620,6 @@ function loadFontSize() {
 
 function openSettings() {
   const modal = document.getElementById('settingsModal');
-  const cfg = getAiConfig();
   const currentSize = localStorage.getItem(FONTSIZE_KEY) || 'normal';
   modal.innerHTML = `<h2>⚙️ 設定</h2>
     <div class="form-group"><label>文字サイズ</label>

@@ -559,6 +559,28 @@ function formatAnnDate(dateStr, dateType) {
   return m+'月'+d+'日';
 }
 
+function daysSince(dateStr, dateType) {
+  if (!dateStr || dateType !== 'full') return null;
+  const parts = dateStr.split('-');
+  if (parts.length < 3) return null;
+  const past = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+  past.setHours(0,0,0,0);
+  const today = new Date(); today.setHours(0,0,0,0);
+  if (past > today) return null;
+  return Math.floor((today - past) / (1000*60*60*24));
+}
+
+function formatElapsed(days) {
+  if (days === null) return '';
+  const years = Math.floor(days / 365);
+  const months = Math.floor((days % 365) / 30);
+  let str = '';
+  if (years > 0) str += years + '年';
+  if (months > 0) str += months + 'ヶ月';
+  if (!str) str = days + '日';
+  return str + '目';
+}
+
 // ===== Search =====
 function matchesSearch(item, tab) {
   if (!searchQuery) return true;
@@ -726,11 +748,14 @@ function renderPersonCard(p) {
     p.anniversaries.forEach(a => {
       const days = daysUntil(a.date, a.dateType);
       const badge = days!==null ? (days===0?'🎉 今日！':'あと'+days+'日') : '';
+      const elapsed = daysSince(a.date, a.dateType);
+      const elapsedStr = elapsed!==null ? formatElapsed(elapsed) : '';
       html += `<div class="person-ann">
         <div class="person-ann-icon">${a.name.match(/[\p{Emoji}]/u)?a.name.match(/[\p{Emoji}]/u)[0]:'📅'}</div>
         <span class="person-ann-label">${esc(a.name.replace(/[\p{Emoji}]/gu,'').trim())}</span>
         <span class="person-ann-date">${formatAnnDate(a.date,a.dateType)}</span>
         ${a.dateType==='month'?'<span class="person-ann-approx">月のみ</span>':''}
+        ${elapsedStr?`<span style="font-size:10px;color:var(--accent);background:var(--accent-light);padding:1px 6px;border-radius:6px;">${elapsedStr}</span>`:''}
         ${a.reminders&&a.reminders.length?`<span class="person-ann-reminder">🔔 ${a.reminders.join(',')}日前</span>`:''}
         ${badge?`<span class="person-ann-badge">${badge}</span>`:''}
       </div>`;

@@ -979,17 +979,18 @@ function savePlaceItem() {
   }
 }
 
-// ===== Jump to item from all records =====
-function jumpToItem(tab, id) {
-  currentTab = tab;
-  openItemId = id;
-  document.querySelectorAll('.tab').forEach(el => el.classList.toggle('active', el.dataset.tab===tab));
-  currentLabel = null;
+// ===== All record detail toggle =====
+let openAllRecordId = null;
+
+function toggleAllRecordDetail(tab, id) {
+  openAllRecordId = openAllRecordId === id ? null : id;
   render();
-  setTimeout(() => {
-    const detail = document.getElementById('itemDetail');
-    if (detail) detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, 100);
+  if (openAllRecordId) {
+    setTimeout(() => {
+      const detail = document.getElementById('allRecordDetail');
+      if (detail) detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  }
 }
 
 // ===== Regift (give to someone) =====
@@ -1581,10 +1582,12 @@ function render() {
     if (!allItems.length) {
       cardList.innerHTML = '<div class="empty-msg">📋 まだ記録がありません</div>';
     } else {
+      const isOpen = openAllRecordId;
       cardList.innerHTML = allItems.map(item => {
         const preview = item._icon + ' ' + (item.person?item.person+' ':'') + (item.occasion||'');
-        return `<div class="list-item" onclick="jumpToItem('${item._tab}','${item.id}')">
-          <div style="width:6px;height:40px;border-radius:3px;background:${item._tab==='gave'?'#d48a7a':item._tab==='received'?'#7a9ad4':item._tab==='place'?'#7ec8d9':'var(--accent)'};flex-shrink:0;"></div>
+        const active = isOpen === item.id;
+        return `<div class="list-item" onclick="toggleAllRecordDetail('${item._tab}','${item.id}')" style="${active?'background:var(--accent-light);':''}">
+          <div style="width:6px;height:40px;border-radius:3px;background:${item._tab==='gave'?'#d48a7a':item._tab==='received'?'#7a9ad4':'var(--accent)'};flex-shrink:0;"></div>
           <div class="list-body">
             <div class="list-name">${item.pinned?'📌 ':''}${esc(item.title||'無題')}</div>
             <div class="list-preview">${esc(preview)}</div>
@@ -1592,6 +1595,10 @@ function render() {
           <div class="list-meta"><div class="list-date">${item.date||''}</div></div>
         </div>`;
       }).join('');
+      if (isOpen) {
+        const openItem = allItems.find(x=>x.id===isOpen);
+        if (openItem) cardList.innerHTML += `<div id="allRecordDetail">${renderItemCard(openItem, openItem._tab)}</div>`;
+      }
     }
     return;
   }
@@ -1710,7 +1717,7 @@ function renderItems(items, cardList) {
 
 // ===== Tab =====
 function switchTab(tab) {
-  currentTab = tab; currentLabel = null; searchQuery = ''; rankMode = false; openPersonId = null; openItemId = null; openGroupId = null;
+  currentTab = tab; currentLabel = null; searchQuery = ''; rankMode = false; openPersonId = null; openItemId = null; openGroupId = null; openAllRecordId = null;
   document.getElementById('searchInput').value = '';
   document.querySelectorAll('.tab').forEach(el => el.classList.toggle('active', el.dataset.tab===tab));
   render();

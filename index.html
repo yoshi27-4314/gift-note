@@ -565,8 +565,7 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 
 <div class="label-bar" id="labelBar"></div>
 <div class="ranking-toggle" id="rankingToggle" style="display:none;">
-  <div class="ranking-btn" id="rankOffBtn" onclick="setRankMode(false)">通常</div>
-  <div class="ranking-btn" id="rankOnBtn" onclick="setRankMode(true)">⭐ ランキング</div>
+  <div class="ranking-btn" id="rankOnBtn" onclick="setRankMode(!rankMode)">⭐ ランキング</div>
 </div>
 <div class="card-list" id="cardList"></div>
 
@@ -1102,7 +1101,6 @@ function setRating(tab, id, rating) {
 function setRankMode(on) {
   rankMode = on;
   document.getElementById('rankOnBtn').classList.toggle('active', on);
-  document.getElementById('rankOffBtn').classList.toggle('active', !on);
   render();
 }
 

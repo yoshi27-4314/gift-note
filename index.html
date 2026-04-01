@@ -513,6 +513,7 @@ const STORAGE_KEY = 'gn_data';
 const SEASON_KEY = 'gn_season';
 const TABS = ['wish','received','gave','place','birthday'];
 const TAB_LABELS = { wish:'✨ ほしいもの', received:'🎀 もらった', gave:'🎁 あげた', place:'📍 行きたい場所', birthday:'🎂 誕生日' };
+const MODAL_TITLES = { wish:'ほしいもの', received:'もらったもの', gave:'あげたもの', place:'行きたいところ', birthday:'誕生日' };
 const SEASON_ICONS = { spring:'🌸', summer:'🌊', autumn:'🍂', winter:'❄️' };
 
 let data = { wish:[], received:[], gave:[], place:[], birthday:[] };
@@ -745,7 +746,7 @@ function openModal(editId) {
   document.getElementById('fImg').value = '';
 
   if (editingId) {
-    title.textContent = '編集';
+    title.textContent = MODAL_TITLES[currentTab] + ' を編集';
     const item = data[currentTab].find(i => i.createdAt === editingId);
     if (item) {
       document.getElementById('fTitle').value = item.title || '';
@@ -764,7 +765,7 @@ function openModal(editId) {
       }
     }
   } else {
-    title.textContent = '新しく追加';
+    title.textContent = MODAL_TITLES[currentTab] + ' を追加';
     document.getElementById('fTitle').value = '';
     document.getElementById('fPerson').value = '';
     document.getElementById('fCount').value = '';

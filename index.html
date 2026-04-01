@@ -1671,7 +1671,7 @@ function removeLabel(idx) {
 }
 
 // ===== AI Suggest =====
-const GEMINI_API_KEY = 'REMOVED_KEY';
+const GEMINI_KEY_STORAGE = 'awai_gemini_key';
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
 const FONTSIZE_KEY = 'awai_fontsize';
@@ -1691,12 +1691,22 @@ function openSettings() {
         <div class="fsz-btn" data-sz="large" style="flex:1;padding:12px;text-align:center;border-radius:12px;border:2px solid ${currentSize==='large'?'var(--accent)':'var(--border)'};cursor:pointer;font-size:17px;" onclick="setFontSize('large')">大きめ</div>
         <div class="fsz-btn" data-sz="xlarge" style="flex:1;padding:12px;text-align:center;border-radius:12px;border:2px solid ${currentSize==='xlarge'?'var(--accent)':'var(--border)'};cursor:pointer;font-size:20px;" onclick="setFontSize('xlarge')">特大</div>
       </div></div>
-    <div class="form-group"><label>コンシェルジュ</label>
-      <div style="font-size:13px;color:var(--sub);padding:8px 0;">✅ Gemini AI 接続済み</div></div>
+    <div class="form-group"><label>コンシェルジュ（Gemini API Key）</label>
+      <input id="setGeminiKey" type="password" placeholder="AIzaSy..." value="${localStorage.getItem(GEMINI_KEY_STORAGE)||''}">
+      <div class="form-hint">Google AI Studioで無料発行 → 個人Gmailで作成推奨</div></div>
     <div class="form-btns">
       <button class="btn btn-secondary" onclick="document.getElementById('settingsModalOverlay').classList.remove('open')">閉じる</button>
+      <button class="btn btn-primary" onclick="saveSettings()">保存</button>
     </div>`;
   document.getElementById('settingsModalOverlay').classList.add('open');
+}
+
+function saveSettings() {
+  const key = document.getElementById('setGeminiKey').value.trim();
+  if (key) localStorage.setItem(GEMINI_KEY_STORAGE, key);
+  else localStorage.removeItem(GEMINI_KEY_STORAGE);
+  document.getElementById('settingsModalOverlay').classList.remove('open');
+  alert('保存しました');
 }
 
 function setFontSize(size) {
@@ -1724,7 +1734,9 @@ function mdToHtml(text) {
 }
 
 async function callGemini(prompt) {
-  const res = await fetch(GEMINI_URL + '?key=' + GEMINI_API_KEY, {
+  const apiKey = localStorage.getItem(GEMINI_KEY_STORAGE);
+  if (!apiKey) throw new Error('APIキーが未設定です。⚙️設定からGemini APIキーを入力してください');
+  const res = await fetch(GEMINI_URL + '?key=' + apiKey, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

@@ -16,7 +16,7 @@
   --card: #ffffff;
   --accent: #e8a598;
   --text: #4a3f3a;
-  --sub: #9e8e88;
+  --sub: #7a6e68;
   --border: #ede3dd;
   --shadow: rgba(180,140,120,0.12);
   --tag-bg: #fdeee9;
@@ -244,7 +244,7 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 .card-ldot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 .card-label-name { font-size: 11px; padding: 2px 8px; border-radius: 10px; color: #fff; }
 .card-person { font-size: 13px; color: var(--accent); font-weight: 500; margin-top: 2px; }
-.card-sub { font-size: 12px; color: var(--sub); margin-top: 2px; }
+.card-sub { font-size: 13px; color: var(--text); margin-top: 2px; opacity: 0.8; }
 .card-memo { font-size: 13px; margin-top: 6px; line-height: 1.6; white-space: pre-wrap; }
 .card-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
 .card-tag { font-size: 11px; background: var(--tag-bg); color: var(--accent); padding: 2px 8px; border-radius: 10px; }
@@ -288,7 +288,7 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
   padding: 0 16px 10px; border-top: 1px dashed var(--border);
   margin-top: 2px; padding-top: 10px;
 }
-.person-section-title { font-size: 11px; color: var(--sub); margin-bottom: 6px; }
+.person-section-title { font-size: 13px; color: var(--text); margin-bottom: 6px; font-weight: 500; }
 .person-anniversaries {}
 .person-ann {
   display: flex; align-items: center; gap: 6px; padding: 3px 0; font-size: 13px;
@@ -297,14 +297,14 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
   width: 22px; height: 22px; border-radius: 6px; background: var(--accent-light);
   display: flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0;
 }
-.person-ann-label { color: var(--sub); font-size: 12px; min-width: 50px; }
+.person-ann-label { color: var(--text); font-size: 13px; min-width: 50px; font-weight: 500; }
 .person-ann-date { font-weight: 500; }
-.person-ann-approx { font-size: 10px; color: var(--sub); background: var(--bg); border: 1px solid var(--border); padding: 0 4px; border-radius: 6px; }
-.person-ann-badge { font-size: 10px; background: var(--accent); color: #fff; padding: 2px 6px; border-radius: 8px; margin-left: auto; white-space: nowrap; }
-.person-ann-reminder { font-size: 9px; color: var(--sub); background: var(--bg); border: 1px solid var(--border); padding: 0 4px; border-radius: 6px; }
+.person-ann-approx { font-size: 11px; color: var(--text); background: var(--bg); border: 1px solid var(--border); padding: 1px 6px; border-radius: 6px; }
+.person-ann-badge { font-size: 12px; background: var(--accent); color: #fff; padding: 3px 8px; border-radius: 8px; margin-left: auto; white-space: nowrap; font-weight: 600; }
+.person-ann-reminder { font-size: 11px; color: var(--text); background: var(--bg); border: 1px solid var(--border); padding: 1px 6px; border-radius: 6px; }
 .profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .profile-item { background: var(--bg); border-radius: 8px; padding: 6px 8px; font-size: 12px; }
-.profile-item-label { font-size: 10px; color: var(--sub); }
+.profile-item-label { font-size: 12px; color: var(--text); opacity: 0.7; }
 .profile-item-value { font-weight: 500; }
 .interest-tags { display: flex; flex-wrap: wrap; gap: 4px; }
 .interest-tag { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: var(--accent-light); border: 1px solid var(--border); }
@@ -312,11 +312,11 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 .food-like { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: #e8f5e9; border: 1px solid #c8e6c9; color: #4a7a4f; }
 .food-dislike { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: #fce4ec; border: 1px solid #f8bbd0; color: #a05060; }
 .personality-tag { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: #f3e8ff; border: 1px solid #e0d0f0; color: #6a4a8a; }
-.family-member { display: flex; align-items: center; gap: 6px; font-size: 12px; padding: 2px 0; }
-.family-icon { width: 20px; height: 20px; border-radius: 50%; background: var(--accent-light); display: flex; align-items: center; justify-content: center; font-size: 10px; flex-shrink: 0; }
-.family-note { font-size: 11px; color: var(--sub); }
+.family-member { display: flex; align-items: center; gap: 8px; font-size: 14px; padding: 3px 0; }
+.family-icon { width: 22px; height: 22px; border-radius: 50%; background: var(--accent-light); display: flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0; }
+.family-note { font-size: 12px; color: var(--sub); }
 .person-actions { padding: 0 16px 12px; display: flex; gap: 8px; }
-.history-item { display: flex; align-items: center; gap: 6px; padding: 3px 0; font-size: 12px; }
+.history-item { display: flex; align-items: center; gap: 6px; padding: 4px 0; font-size: 13px; }
 .history-dir { font-size: 10px; padding: 2px 5px; border-radius: 6px; white-space: nowrap; }
 .history-dir.gave { background: #fdeee9; color: #d48a7a; }
 .history-dir.received { background: #e9f0fd; color: #7a9ad4; }
@@ -364,7 +364,7 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 }
 .form-group input:focus, .form-group textarea:focus { border-color: var(--accent); }
 .form-group textarea { resize: vertical; min-height: 50px; }
-.form-hint { font-size: 11px; color: var(--sub); margin-top: 3px; }
+.form-hint { font-size: 12px; color: var(--sub); margin-top: 3px; }
 .form-row { display: flex; gap: 8px; }
 .form-row > * { flex: 1; }
 .form-btns { display: flex; gap: 10px; margin-top: 18px; }
@@ -829,7 +829,7 @@ function renderPersonCard(p) {
         <span class="person-ann-label">${esc(a.name.replace(/[\p{Emoji}]/gu,'').trim())}</span>
         <span class="person-ann-date">${formatAnnDate(a.date,a.dateType)}</span>
         ${a.dateType==='month'?'<span class="person-ann-approx">月のみ</span>':''}
-        ${elapsedStr?`<span style="font-size:10px;color:var(--accent);background:var(--accent-light);padding:1px 6px;border-radius:6px;">${elapsedStr}</span>`:''}
+        ${elapsedStr?`<span style="font-size:12px;color:var(--text);font-weight:600;background:var(--accent-light);padding:2px 8px;border-radius:6px;">${elapsedStr}</span>`:''}
         ${a.reminders&&a.reminders.length?`<span class="person-ann-reminder">🔔 ${a.reminders.join(',')}日前</span>`:''}
         ${badge?`<span class="person-ann-badge">${badge}</span>`:''}
       </div>`;

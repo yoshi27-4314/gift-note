@@ -744,7 +744,7 @@ function matchesSearch(item, tab) {
     item.drinking, item.smoking, item.industry, item.address, item.position, item.companyLink,
     ...(item.tags||[]), ...(item.interests||[]),
     ...(item.foodLike||[]), ...(item.foodDislike||[]), ...(item.brands||[]),
-    ...(item.personality||[]), ...(item.family||[]).map(f=>f.name+' '+f.note)
+    ...(item.personality||[]), ...(item.oshi||[]), ...(item.family||[]).map(f=>f.name+' '+f.note)
   ].filter(Boolean);
   // For groups, also search member names
   if (item.memberIds) {
@@ -837,6 +837,150 @@ function renderStars(rating, itemId, tab) {
   }
   html += '</div>';
   return html;
+}
+
+// ===== Place Modal =====
+function openPlaceModal(id) {
+  editingId = id||null;
+  const modal = document.getElementById('modal');
+  const isEdit = !!editingId;
+  const item = isEdit ? data.place.find(i=>i.id===editingId) : null;
+  const labels = getLabels('place');
+
+  let html = `<h2>行きたいところ を${isEdit?'編集':'追加'}</h2>`;
+  html += `<div class="form-group"><label>店名・場所名 *</label><input id="fTitle" placeholder="例：鳥貴族 名駅店、伏見稲荷大社" value="${esc(item?.title||'')}"></div>`;
+
+  // Labels
+  if (labels.length) {
+    html += `<div class="form-group"><label>ラベル</label><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;">`;
+    labels.forEach((l,i) => {
+      const active = item?.labelIdx===i;
+      html += `<div class="label-chip ${active?'active':''}" style="color:${l.color};${active?'border-color:'+l.color+';background:'+l.color+'18;':''}" onclick="toggleFormLabel(this,${i})"><span class="ldot" style="background:${l.color};"></span> ${esc(l.name)}</div>`;
+    });
+    html += `</div><input type="hidden" id="fLabelIdx" value="${item?.labelIdx??''}"></div>`;
+  }
+
+  // Genre tags with suggestions
+  html += `<div class="form-group"><label>ジャンル・目的</label>
+    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;">`;
+  const genreSuggestions = ['和食','イタリアン','カフェ','ラーメン','焼肉','寿司','バー','中華','フレンチ','居酒屋','カレー','パン屋','スイーツ','神社','お寺','温泉','公園','美術館','絶景','ホテル','旅行先'];
+  const currentTags = item?.tags || [];
+  genreSuggestions.forEach(g => {
+    const active = currentTags.includes(g.toLowerCase()) || currentTags.includes(g);
+    html += `<div class="date-type-chip ${active?'active':''}" onclick="togglePlaceTag(this,'${g}')" style="font-size:12px;">${g}</div>`;
+  });
+  html += `</div>
+    <input id="fTags" placeholder="その他のタグ（カンマ区切り）" value="${currentTags.filter(t=>!genreSuggestions.map(g=>g.toLowerCase()).includes(t)&&!genreSuggestions.includes(t)).join(', ')}">
+    <input type="hidden" id="fPlaceSelectedTags" value="${currentTags.filter(t=>genreSuggestions.map(g=>g.toLowerCase()).includes(t)||genreSuggestions.includes(t)).join(',')}">
+  </div>`;
+
+  // Star rating
+  const curRating = item?.rating||0;
+  html += `<div class="form-group"><label>期待度</label><div class="stars" id="fStars">`;
+  for (let i=1; i<=5; i++) html += `<span class="star ${i<=curRating?'on':''}" onclick="setFormStar(${i})">★</span>`;
+  html += `</div><input type="hidden" id="fRating" value="${curRating}"></div>`;
+
+  // Address + Map
+  html += `<div class="form-group"><label>📍 住所</label>
+    <input id="fAddress" placeholder="例：東京都渋谷区..." value="${esc(item?.address||'')}">
+    <div style="margin-top:6px;">
+      <button class="card-btn" onclick="openMapSearch()" style="font-size:13px;">🗺 Googleマップで検索</button>
+    </div>
+  </div>`;
+
+  // Google Maps link
+  html += `<div class="form-group"><label>🗺 Googleマップ リンク</label>
+    <input id="fMapUrl" placeholder="https://maps.google.com/..." value="${esc(item?.mapUrl||item?.url||'')}">
+    <div class="form-hint">マップアプリからリンクを貼り付け</div>
+  </div>`;
+
+  // Who to go with
+  html += `<div class="form-group"><label>誰と行きたい？</label>
+    <input id="fPerson" placeholder="例：さとうさん" value="${esc(item?.person||'')}" list="peopleListPlace">
+    <datalist id="peopleListPlace">${data.people.map(p=>`<option value="${esc(p.nickname||'')}">`).join('')}</datalist>
+  </div>`;
+
+  // Memo
+  html += `<div class="form-group"><label>メモ</label><textarea id="fMemo" placeholder="営業時間、予算感、おすすめメニューなど">${esc(item?.memo||'')}</textarea></div>`;
+
+  // Photo
+  html += `<div class="form-group"><label>写真</label><input type="file" id="fImg" accept="image/*"><div id="photoPreview"></div></div>`;
+
+  html += `<div class="form-btns"><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button><button class="btn btn-primary" onclick="savePlaceItem()">保存</button></div>`;
+  modal.innerHTML = html;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function togglePlaceTag(el, tag) {
+  el.classList.toggle('active');
+  const input = document.getElementById('fPlaceSelectedTags');
+  let tags = input.value ? input.value.split(',').filter(Boolean) : [];
+  if (el.classList.contains('active')) {
+    if (!tags.includes(tag.toLowerCase())) tags.push(tag.toLowerCase());
+  } else {
+    tags = tags.filter(t => t !== tag.toLowerCase());
+  }
+  input.value = tags.join(',');
+}
+
+function openMapSearch() {
+  const address = document.getElementById('fAddress')?.value.trim();
+  const title = document.getElementById('fTitle')?.value.trim();
+  const query = encodeURIComponent(address || title || '');
+  if (query) window.open('https://www.google.com/maps/search/' + query, '_blank');
+  else alert('店名か住所を入力してから検索してください');
+}
+
+function savePlaceItem() {
+  const title = document.getElementById('fTitle').value.trim();
+  if (!title) { alert('店名・場所名を入力してください'); return; }
+  const fileInput = document.getElementById('fImg');
+
+  // Combine selected tags + typed tags
+  const selectedTags = document.getElementById('fPlaceSelectedTags')?.value.split(',').filter(Boolean) || [];
+  const typedTags = parseTags(document.getElementById('fTags')?.value||'');
+  const allTags = [...new Set([...selectedTags, ...typedTags])];
+
+  const labelIdxEl = document.getElementById('fLabelIdx');
+  const labelIdx = labelIdxEl&&labelIdxEl.value!=='' ? parseInt(labelIdxEl.value) : null;
+
+  function doSave(imgData) {
+    const item = {
+      id: editingId || genId(),
+      title,
+      person: document.getElementById('fPerson')?.value.trim()||null,
+      labelIdx,
+      address: document.getElementById('fAddress')?.value.trim()||null,
+      mapUrl: document.getElementById('fMapUrl')?.value.trim()||null,
+      url: document.getElementById('fMapUrl')?.value.trim()||null,
+      tags: allTags.length ? allTags : null,
+      rating: parseInt(document.getElementById('fRating')?.value)||0,
+      memo: document.getElementById('fMemo')?.value.trim()||null,
+      img: imgData,
+      pinned: editingId ? (data.place.find(i=>i.id===editingId)?.pinned||false) : false,
+      createdAt: editingId ? (data.place.find(i=>i.id===editingId)?.createdAt||new Date().toISOString()) : new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    if (editingId) {
+      const idx = data.place.findIndex(i=>i.id===editingId);
+      if (idx>=0) data.place[idx] = item;
+    } else {
+      data.place.push(item);
+    }
+    saveData(); closeModal(); render();
+  }
+
+  if (editingId) {
+    const existing = data.place.find(i=>i.id===editingId);
+    if (!fileInput?.files?.length) { doSave(existing?.img||null); return; }
+  }
+  if (fileInput&&fileInput.files&&fileInput.files[0]) {
+    const reader = new FileReader();
+    reader.onload = e => doSave(e.target.result);
+    reader.readAsDataURL(fileInput.files[0]);
+  } else {
+    doSave(null);
+  }
 }
 
 // ===== Jump to item from all records =====
@@ -949,7 +1093,9 @@ function renderItemCard(item, tab, rank) {
   if (item.img) html += `<img class="card-img" src="${item.img}" alt="">`;
   if (item.memo) html += `<div class="card-memo">${esc(item.memo)}</div>`;
   if (item.tags&&item.tags.length) html += `<div class="card-tags">${item.tags.map(t=>`<span class="card-tag">#${esc(t)}</span>`).join('')}</div>`;
-  if (item.url) html += `<a class="card-url" href="${esc(item.url)}" target="_blank" rel="noopener">🔗 ${esc(truncUrl(item.url))}</a>`;
+  if (item.address) html += `<div style="font-size:13px;color:var(--sub);margin-top:6px;">📍 ${esc(item.address)}</div>`;
+  if (item.mapUrl) html += `<a class="card-url" href="${esc(item.mapUrl)}" target="_blank" rel="noopener" style="margin-top:6px;">🗺 Googleマップで開く</a>`;
+  else if (item.url) html += `<a class="card-url" href="${esc(item.url)}" target="_blank" rel="noopener">🔗 ${esc(truncUrl(item.url))}</a>`;
   html += `<div class="card-actions">
     <button class="card-btn" onclick="event.stopPropagation();togglePin('${tab}','${item.id}')">${item.pinned?'📌 固定中':'📌 固定'}</button>
     ${tab==='received'?`<button class="card-btn" onclick="event.stopPropagation();regiftItem('${item.id}')" style="background:var(--pickup);border-color:var(--pickup-border);">🎁 別の人にあげる</button>`:''}
@@ -1026,6 +1172,11 @@ function renderPersonCard(p) {
   if (p.brands&&p.brands.length) {
     html += `<div class="person-section"><div class="person-section-title">🎨 ブランド・色</div>
     <div class="interest-tags">${p.brands.map(t=>`<span class="interest-tag">${esc(t)}</span>`).join('')}</div></div>`;
+  }
+  // Oshi
+  if (p.oshi&&p.oshi.length) {
+    html += `<div class="person-section"><div class="person-section-title">🌟 推し活</div>
+    <div class="interest-tags">${p.oshi.map(t=>`<span class="interest-tag" style="background:#fff0f5;border-color:#f0c0d0;color:#c06080;">${esc(t)}</span>`).join('')}</div></div>`;
   }
   // Food
   if ((p.foodLike&&p.foodLike.length)||(p.foodDislike&&p.foodDislike.length)) {
@@ -1719,6 +1870,9 @@ function openPeopleModal(id) {
   // Brands
   html += `<div class="form-group"><label>🎨 好きなブランド・色</label><input id="pBrands" placeholder="例：ZARA, 無印, ベージュ系" value="${(p?.brands||[]).join(', ')}"></div>`;
 
+  // Oshi-katsu
+  html += `<div class="form-group"><label>🌟 推し活</label><input id="pOshi" placeholder="例：Snow Man, 鬼滅の刃, 阪神タイガース" value="${(p?.oshi||[]).join(', ')}"><div class="form-hint">推しのアーティスト・キャラ・チーム等</div></div>`;
+
   // Food
   html += `<div class="form-group"><label>🍽 食の好み</label>
     <input id="pFoodLike" placeholder="☺ 好きなもの（カンマ区切り）" value="${(p?.foodLike||[]).join(', ')}" style="margin-bottom:6px;">
@@ -1918,6 +2072,7 @@ function savePerson() {
     drinking: document.getElementById('pDrinking').value.trim()||null,
     interests: parseTags(document.getElementById('pInterests').value),
     brands: parseTags(document.getElementById('pBrands').value),
+    oshi: parseTags(document.getElementById('pOshi')?.value||''),
     foodLike: parseTags(document.getElementById('pFoodLike').value),
     foodDislike: parseTags(document.getElementById('pFoodDislike').value),
     family,
@@ -1998,7 +2153,7 @@ function saveItem() {
 function editItem(tab, id) {
   currentTab = tab;
   document.querySelectorAll('.tab').forEach(el => el.classList.toggle('active', el.dataset.tab===tab));
-  if (tab==='people') openPeopleModal(id); else openItemModal(id);
+  if (tab==='people') openPeopleModal(id); else if (tab==='place') openPlaceModal(id); else openItemModal(id);
 }
 function deleteItem(tab, id) {
   if (!confirm('この記録を削除しますか？')) return;
@@ -2218,6 +2373,7 @@ function openAiSuggest(personId) {
   if (person.relation) profile.push(`関係: ${person.relation}`);
   if (person.interests?.length) profile.push(`好きなもの・趣味: ${person.interests.join(', ')}`);
   if (person.brands?.length) profile.push(`好きなブランド・色: ${person.brands.join(', ')}`);
+  if (person.oshi?.length) profile.push(`推し活: ${person.oshi.join(', ')}`);
   if (person.foodLike?.length) profile.push(`食の好み（好き）: ${person.foodLike.join(', ')}`);
   if (person.foodDislike?.length) profile.push(`食の好み（苦手）: ${person.foodDislike.join(', ')}`);
   if (person.drinking) profile.push(`お酒: ${person.drinking}`);
@@ -2441,6 +2597,7 @@ if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().t
   document.getElementById('fabBtn').addEventListener('click', () => {
     if (currentTab==='people') openPeopleModal();
     else if (currentTab==='groups') openGroupModal();
+    else if (currentTab==='place') openPlaceModal();
     else openItemModal();
   });
 

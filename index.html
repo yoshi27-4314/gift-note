@@ -1667,7 +1667,11 @@ async function callGemini(prompt) {
       generationConfig: { maxOutputTokens: 1500, temperature: 0.8 }
     })
   });
-  if (!res.ok) throw new Error(`API Error ${res.status}: ${await res.text()}`);
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error('Gemini API error:', res.status, errText);
+    throw new Error(`Gemini API エラー (${res.status})`);
+  }
   const json = await res.json();
   return json.candidates?.[0]?.content?.parts?.[0]?.text || 'No response';
 }
@@ -1798,7 +1802,12 @@ ${budget ? '\n## 予算\n約'+budget+'円' : ''}
 }
 
 // ===== Init =====
+// Clear old service worker caches
+if ('caches' in window) { caches.keys().then(ks => ks.forEach(k => caches.delete(k))); }
+if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister())); }
+
 (function init() {
+  try {
   loadData();
   loadFontSize();
   const savedSeason = localStorage.getItem(SEASON_KEY);
@@ -1848,6 +1857,7 @@ ${budget ? '\n## 予算\n約'+budget+'円' : ''}
   });
 
   render();
+  } catch(e) { console.error('Init error:', e); alert('初期化エラー: ' + e.message); }
 })();
 </script>
 </body>

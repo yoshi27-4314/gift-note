@@ -1023,7 +1023,7 @@ function openItemModal(id) {
     html += `<div class="form-group"><label>金額（任意）</label><input id="fAmount" type="number" placeholder="例：5000" value="${item?.amount||''}"></div>`;
   }
   html += `<div class="form-group"><label>日付</label><input type="date" id="fDate" value="${item?.date||''}"></div>`;
-  html += `<div class="form-group"><label>タグ</label><input id="fTags" placeholder="例：音楽, ガジェット" value="${(item?.tags||[]).join(', ')}"><div class="form-hint">カンマ区切り。大切な人の好みとマッチングします</div></div>`;
+  html += `<div class="form-group"><label>タグ</label><input id="fTags" placeholder="例：お酒, ゴルフ, 洋服" value="${(item?.tags||[]).join(', ')}"><div class="form-hint">カンマ区切り。大切な人の好みとマッチングします</div></div>`;
   if (showUrl) {
     html += `<div class="form-group"><label>URL</label><input type="url" id="fUrl" placeholder="https://..." value="${esc(item?.url||'')}"></div>`;
   }
@@ -1342,7 +1342,7 @@ function openLabelModal() {
   });
   html += `<div style="border-top:1px dashed var(--border);padding-top:14px;margin-top:8px;">
     <div style="font-size:13px;font-weight:600;margin-bottom:10px;">ラベルを追加</div>
-    <div class="form-group"><label>ラベル名</label><input id="newLabelName" placeholder="例：ガジェット"></div>
+    <div class="form-group"><label>ラベル名</label><input id="newLabelName" placeholder="例：洋服、お酒、旅行、お礼"></div>
     <div class="form-group"><label>色</label><div class="label-color-palette" id="labelColorPalette">
       ${LABEL_COLORS.map((c,i)=>`<div class="label-color-swatch ${i===0?'selected':''}" style="background:${c};" onclick="selectLabelColor(this,'${c}')"></div>`).join('')}
     </div><input type="hidden" id="newLabelColor" value="${LABEL_COLORS[0]}"></div>

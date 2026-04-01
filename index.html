@@ -555,7 +555,7 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 <div class="pickup-zone" id="pickupZone"></div>
 
 <div class="tabs" id="tabs">
-  <div class="tab active" data-tab="wish">✨ ほしいもの</div>
+  <div class="tab active" data-tab="wish">✨ アイテムリスト</div>
   <div class="tab" data-tab="received">🎀 もらった</div>
   <div class="tab" data-tab="gave">🎁 あげた</div>
   <div class="tab" data-tab="place">📍 行きたい場所</div>
@@ -607,7 +607,7 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 const STORAGE_KEY = 'awai_data';
 const SEASON_KEY = 'awai_season';
 const TABS = ['wish','received','gave','place','people','groups'];
-const MODAL_TITLES = { wish:'ほしいもの', received:'もらったもの', gave:'あげたもの', place:'行きたいところ', people:'大切な人', groups:'グループ' };
+const MODAL_TITLES = { wish:'アイテム', received:'もらったもの', gave:'あげたもの', place:'行きたいところ', people:'大切な人', groups:'グループ' };
 const SEASON_ICONS = { spring:'🌸', summer:'🌊', autumn:'🍂', winter:'❄️' };
 const LABEL_COLORS = ['#e8a598','#7a9ad4','#8abf7a','#c49a6c','#b07acc','#d4956a','#7ec8d9','#d48a7a','#8ea4bf','#6bab8a'];
 
@@ -984,13 +984,16 @@ function renderPersonCard(p) {
   const nameMatch = (itemPerson) => itemPerson && p.nickname && (itemPerson.includes(p.nickname) || (p.fullName && itemPerson.includes(p.fullName)));
   data.gave.forEach(item => { if (nameMatch(item.person)) allHistory.push({...item, cat:'gave'}); });
   data.received.forEach(item => { if (nameMatch(item.person)) allHistory.push({...item, cat:'received'}); });
-  data.wish.forEach(item => { if (nameMatch(item.person) || (item.memo && p.nickname && item.memo.includes(p.nickname))) allHistory.push({...item, cat:'wish'}); });
+  data.wish.forEach(item => {
+    const matched = nameMatch(item.person) || nameMatch(item.giftTarget) || (item.memo && p.nickname && item.memo.includes(p.nickname));
+    if (matched) allHistory.push({...item, cat: item.purpose==='gift'?'wantgive':'wish'});
+  });
   data.place.forEach(item => { if (nameMatch(item.person) || (item.memo && p.nickname && item.memo.includes(p.nickname))) allHistory.push({...item, cat:'place'}); });
 
   if (allHistory.length) {
-    const catLabels = {gave:'🎁 あげた', received:'🎀 もらった', wish:'✨ あげたい', place:'📍 行きたい'};
-    const catColors = {gave:'#fdeee9', received:'#e9f0fd', wish:'#fdf0ed', place:'#edf7fa'};
-    const catTextColors = {gave:'#d48a7a', received:'#7a9ad4', wish:'#e8a598', place:'#7ec8d9'};
+    const catLabels = {gave:'🎁 あげた', received:'🎀 もらった', wish:'💭 気になる', wantgive:'🎁 あげたい', place:'📍 行きたい'};
+    const catColors = {gave:'#fdeee9', received:'#e9f0fd', wish:'#f5f0ed', wantgive:'#fdf0ed', place:'#edf7fa'};
+    const catTextColors = {gave:'#d48a7a', received:'#7a9ad4', wish:'#9e8e88', wantgive:'#e8a598', place:'#7ec8d9'};
     html += '<div class="person-section"><div class="person-section-title">📋 この人との記録</div>';
     allHistory.sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,10).forEach(h => {
       html += `<div class="history-item"><span class="history-dir" style="background:${catColors[h.cat]};color:${catTextColors[h.cat]};">${catLabels[h.cat]}</span><span>${esc(h.title)}</span><span class="history-date">${h.date||''}</span></div>`;
@@ -1356,7 +1359,10 @@ function renderItemListItem(item, tab) {
   const label = item.labelIdx!==undefined&&item.labelIdx!==null ? (getLabels(tab)[item.labelIdx]||null) : null;
   const isOpen = openItemId === item.id;
   const stars = item.rating ? '★'.repeat(item.rating) : '';
-  const preview = item.person ? '👤 '+item.person : (item.memo ? item.memo.substring(0,20) : (item.tags?.slice(0,2).map(t=>'#'+t).join(' ')||''));
+  const purposeIcons = {self:'🛒', gift:'🎁', curious:'💭'};
+  const purposeIcon = item.purpose ? (purposeIcons[item.purpose]||'') : '';
+  const giftTo = item.purpose==='gift' && item.giftTarget ? ' → '+item.giftTarget : '';
+  const preview = item.purpose ? (purposeIcon + giftTo + (item.person&&!giftTo?' 👤 '+item.person:'')) : (item.person ? '👤 '+item.person : (item.memo ? item.memo.substring(0,20) : (item.tags?.slice(0,2).map(t=>'#'+t).join(' ')||'')));
 
   return `<div class="list-item" onclick="toggleItemDetail('${item.id}')" style="${isOpen?'background:var(--accent-light);':''}">
     ${label?`<div style="width:6px;height:40px;border-radius:3px;background:${label.color};flex-shrink:0;"></div>`:'<div style="width:6px;"></div>'}
@@ -1384,7 +1390,7 @@ function toggleItemDetail(id) {
 
 function renderItems(items, cardList) {
   if (!items.length) {
-    const msgs = { wish:'✨ ほしいものを追加してみましょう', received:'🎀 もらった贈り物を記録しましょう',
+    const msgs = { wish:'✨ 気になるアイテムを追加してみましょう', received:'🎀 もらった贈り物を記録しましょう',
       gave:'🎁 あげた贈り物を記録しましょう', place:'📍 行きたい場所を追加しましょう' };
     cardList.innerHTML = `<div class="empty-msg">${msgs[currentTab]||''}<br>下の ＋ ボタンから追加できます</div>`;
     return;
@@ -1439,6 +1445,23 @@ function openItemModal(id) {
 
   let html = `<h2>${MODAL_TITLES[currentTab]} を${isEdit?'編集':'追加'}</h2>`;
   html += `<div class="form-group"><label>タイトル *</label><input id="fTitle" placeholder="例：ワイヤレスイヤホン" value="${esc(item?.title||'')}"></div>`;
+  // Item purpose (wish tab only)
+  if (currentTab === 'wish') {
+    const purpose = item?.purpose || 'curious';
+    html += `<div class="form-group"><label>目的</label>
+      <div style="display:flex;gap:6px;margin-top:4px;">
+        <div class="date-type-chip ${purpose==='self'?'active':''}" onclick="setItemPurpose('self',this)" style="flex:1;text-align:center;">🛒 自分用</div>
+        <div class="date-type-chip ${purpose==='gift'?'active':''}" onclick="setItemPurpose('gift',this)" style="flex:1;text-align:center;">🎁 あげたい</div>
+        <div class="date-type-chip ${purpose==='curious'?'active':''}" onclick="setItemPurpose('curious',this)" style="flex:1;text-align:center;">💭 気になる</div>
+      </div>
+      <input type="hidden" id="fPurpose" value="${purpose}">
+    </div>`;
+    html += `<div class="form-group" id="fGiftTargetGroup" style="display:${purpose==='gift'?'':'none'};">
+      <label>誰にあげたい？</label>
+      <input id="fGiftTarget" placeholder="例：さとうさん" value="${esc(item?.giftTarget||item?.person||'')}" list="peopleListWish">
+      <datalist id="peopleListWish">${data.people.map(p=>`<option value="${esc(p.nickname||'')}">`).join('')}</datalist>
+    </div>`;
+  }
   if (showPerson) {
     html += `<div class="form-group"><label>相手の名前</label><input id="fPerson" placeholder="例：さとうさん" value="${esc(item?.person||'')}" list="peopleList">
     <datalist id="peopleList">${data.people.map(p=>`<option value="${esc(p.nickname||'')}">`).join('')}</datalist>
@@ -1478,6 +1501,14 @@ function openItemModal(id) {
   html += `<div class="form-btns"><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button><button class="btn btn-primary" onclick="saveItem()">保存</button></div>`;
   modal.innerHTML = html;
   document.getElementById('modalOverlay').classList.add('open');
+}
+
+function setItemPurpose(purpose, el) {
+  document.getElementById('fPurpose').value = purpose;
+  el.parentElement.querySelectorAll('.date-type-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  const targetGroup = document.getElementById('fGiftTargetGroup');
+  if (targetGroup) targetGroup.style.display = purpose==='gift' ? '' : 'none';
 }
 
 function setFormStar(n) {
@@ -1814,7 +1845,9 @@ function saveItem() {
     const item = {
       id: editingId || genId(),
       title,
-      person: document.getElementById('fPerson')?.value.trim()||null,
+      purpose: document.getElementById('fPurpose')?.value||null,
+      giftTarget: document.getElementById('fGiftTarget')?.value.trim()||null,
+      person: document.getElementById('fPerson')?.value.trim()||(document.getElementById('fGiftTarget')?.value.trim())||null,
       labelIdx,
       occasion: document.getElementById('fOccasion')?.value.trim()||null,
       amount: document.getElementById('fAmount')?.value||null,

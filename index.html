@@ -1165,14 +1165,22 @@ function renderPersonCard(p) {
       const badge = days!==null ? (days===0?'🎉 今日！':'あと'+days+'日') : '';
       const elapsed = daysSince(a.date, a.dateType);
       const elapsedStr = elapsed!==null ? formatElapsed(elapsed) : '';
-      html += `<div class="person-ann">
-        <div class="person-ann-icon">${a.name.match(/[\p{Emoji}]/u)?a.name.match(/[\p{Emoji}]/u)[0]:'📅'}</div>
-        <span class="person-ann-label">${esc(a.name.replace(/[\p{Emoji}]/gu,'').trim())}</span>
-        <span class="person-ann-date">${formatAnnDate(a.date,a.dateType)}</span>
-        ${a.dateType==='month'?'<span class="person-ann-approx">月のみ</span>':''}
-        ${elapsedStr?`<span style="font-size:12px;color:var(--text);font-weight:600;background:var(--accent-light);padding:2px 8px;border-radius:6px;">${elapsedStr}</span>`:''}
-        ${a.reminders&&a.reminders.length?`<span class="person-ann-reminder">🔔 ${a.reminders.join(',')}日前</span>`:''}
-        ${badge?`<span class="person-ann-badge">${badge}</span>`:''}
+      const emoji = a.name.match(/[\p{Emoji}]/u)?a.name.match(/[\p{Emoji}]/u)[0]:'📅';
+      const label = a.name.replace(/[\p{Emoji}]/gu,'').trim();
+
+      html += `<div style="background:var(--bg);border-radius:12px;padding:10px 12px;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="font-size:18px;">${emoji}</span>
+            <span style="font-size:15px;font-weight:600;">${esc(label)}</span>
+          </div>
+          ${badge?`<span class="person-ann-badge" style="font-size:13px;padding:4px 10px;">${badge}</span>`:''}
+        </div>
+        <div style="font-size:14px;color:var(--text);margin-bottom:2px;">
+          ${formatAnnDate(a.date,a.dateType)}${a.dateType==='month'?' <span style="font-size:12px;color:var(--sub);">（月のみ）</span>':''}
+        </div>
+        ${elapsedStr?`<div style="font-size:14px;font-weight:600;color:var(--accent);margin-top:4px;">${elapsedStr}</div>`:''}
+        ${a.reminders&&a.reminders.length?`<div style="font-size:12px;color:var(--sub);margin-top:4px;">🔔 ${a.reminders.join(', ')}日前にリマインド</div>`:''}
       </div>`;
     });
     html += '</div>';

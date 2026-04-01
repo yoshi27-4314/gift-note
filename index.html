@@ -1574,7 +1574,7 @@ function render() {
   if (currentTab === 'wish' && currentLabel === 'all_records') {
     const allItems = [];
     const tabIcons = {wish:'✨', received:'🎀', gave:'🎁', place:'📍'};
-    ['wish','received','gave','place'].forEach(tab => {
+    ['wish','received','gave'].forEach(tab => {
       (data[tab]||[]).forEach(item => {
         if (matchesSearch(item, tab)) allItems.push({...item, _tab:tab, _icon:tabIcons[tab]});
       });

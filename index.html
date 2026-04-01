@@ -294,6 +294,10 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
   width: 100%; padding: 10px 12px; border: 1px solid var(--border);
   border-radius: 12px; font-size: 14px; font-family: 'Zen Maru Gothic', sans-serif;
   color: var(--text); background: var(--bg); outline: none; transition: border 0.2s;
+  font-weight: 500;
+}
+.form-group input::placeholder, .form-group textarea::placeholder {
+  color: #c8bdb8; font-weight: 400;
 }
 .form-group input:focus, .form-group textarea:focus { border-color: var(--accent); }
 .form-group textarea { resize: vertical; min-height: 50px; }
@@ -748,7 +752,7 @@ function renderPersonCard(p) {
   }
   html += `<div class="person-actions">
     <button class="card-btn" onclick="editItem('people','${p.id}')">✏️ 編集</button>
-    <button class="card-btn" onclick="openAiSuggest('${p.id}')" style="background:var(--pickup);border-color:var(--pickup-border);">💡 AI提案</button>
+    <button class="card-btn" onclick="openAiSuggest('${p.id}')" style="background:var(--pickup);border-color:var(--pickup-border);">💡 コンシェルジュ</button>
     <button class="card-btn delete" onclick="deleteItem('people','${p.id}')">🗑 削除</button>
   </div></div>`;
   return html;
@@ -792,7 +796,7 @@ function renderGroupCard(g) {
   }
   html += `<div class="card-actions">
     <button class="card-btn" onclick="editGroup('${g.id}')">✏️ 編集</button>
-    <button class="card-btn" onclick="openGroupAiSuggest('${g.id}')" style="background:var(--pickup);border-color:var(--pickup-border);">💡 まとめてAI提案</button>
+    <button class="card-btn" onclick="openGroupAiSuggest('${g.id}')" style="background:var(--pickup);border-color:var(--pickup-border);">💡 まとめてコンシェルジュ</button>
     <button class="card-btn delete" onclick="deleteItem('groups','${g.id}')">🗑 削除</button>
   </div></div>`;
   return html;
@@ -882,7 +886,7 @@ function openGroupAiSuggest(groupId) {
   if (!members.length) { alert('メンバーがいません'); return; }
 
   const modal = document.getElementById('aiModal');
-  let html = `<h2>💡 ${esc(group.name)} への贈り物提案</h2>`;
+  let html = `<h2>💡 ${esc(group.name)} へのギフト コンシェルジュ</h2>`;
   html += `<div style="background:var(--bg);border-radius:12px;padding:10px;font-size:12px;margin-bottom:12px;">`;
   html += `<div style="font-size:11px;color:var(--sub);margin-bottom:4px;">メンバー ${members.length}人</div>`;
   members.forEach(m => {
@@ -1410,7 +1414,7 @@ function openSettings() {
         <div id="fontNormal" style="flex:1;padding:12px;text-align:center;border-radius:12px;border:2px solid ${currentSize==='normal'?'var(--accent)':'var(--border)'};cursor:pointer;font-size:14px;" onclick="setFontSize('normal')">標準</div>
         <div id="fontLarge" style="flex:1;padding:12px;text-align:center;border-radius:12px;border:2px solid ${currentSize==='large'?'var(--accent)':'var(--border)'};cursor:pointer;font-size:17px;" onclick="setFontSize('large')">大きめ</div>
       </div></div>
-    <div class="form-group"><label>AI提案</label>
+    <div class="form-group"><label>コンシェルジュ</label>
       <div style="font-size:13px;color:var(--sub);padding:8px 0;">✅ Gemini AI 接続済み</div></div>
     <div class="form-btns">
       <button class="btn btn-secondary" onclick="document.getElementById('settingsModalOverlay').classList.remove('open')">閉じる</button>
@@ -1479,7 +1483,7 @@ function openAiSuggest(personId) {
     if (days!==null) profile.push(`記念日: ${a.name} ${formatAnnDate(a.date,a.dateType)} (あと${days}日)`);
   });
 
-  modal.innerHTML = `<h2>💡 ${esc(person.nickname)} への贈り物提案</h2>
+  modal.innerHTML = `<h2>💡 ${esc(person.nickname)} へのギフト コンシェルジュ</h2>
     <div style="background:var(--bg);border-radius:12px;padding:10px;font-size:12px;margin-bottom:12px;max-height:150px;overflow-y:auto;">
       <div style="font-size:11px;color:var(--sub);margin-bottom:4px;">プロフィール情報</div>
       ${profile.map(l=>`<div>${esc(l)}</div>`).join('')}

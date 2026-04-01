@@ -7,6 +7,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="theme-color" content="#e8a598">
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&family=Shippori+Mincho:wght@400;600&display=swap" rel="stylesheet">
@@ -1695,6 +1696,13 @@ function openSettings() {
         <div class="fsz-btn" data-sz="large" style="flex:1;padding:12px;text-align:center;border-radius:12px;border:2px solid ${currentSize==='large'?'var(--accent)':'var(--border)'};cursor:pointer;font-size:17px;" onclick="setFontSize('large')">大きめ</div>
         <div class="fsz-btn" data-sz="xlarge" style="flex:1;padding:12px;text-align:center;border-radius:12px;border:2px solid ${currentSize==='xlarge'?'var(--accent)':'var(--border)'};cursor:pointer;font-size:20px;" onclick="setFontSize('xlarge')">特大</div>
       </div></div>
+    <div class="form-group"><label>📲 友達に教える</label>
+      <div id="qrArea" style="text-align:center;padding:12px 0;"></div>
+      <div style="text-align:center;margin-bottom:8px;">
+        <button class="card-btn" onclick="shareApp()" style="font-size:14px;padding:8px 20px;">🔗 URLをシェア</button>
+      </div>
+      <div class="form-hint" style="text-align:center;">紹介した人数: <strong id="referralCount">0</strong>人</div>
+    </div>
     <div class="form-group"><label>コンシェルジュ（Gemini API Key）</label>
       <input id="setGeminiKey" type="password" placeholder="AIzaSy..." value="${localStorage.getItem(GEMINI_KEY_STORAGE)||''}">
       <div class="form-hint">Google AI Studioで無料発行 → 個人Gmailで作成推奨</div></div>
@@ -1703,6 +1711,61 @@ function openSettings() {
       <button class="btn btn-primary" onclick="saveSettings()">保存</button>
     </div>`;
   document.getElementById('settingsModalOverlay').classList.add('open');
+  setTimeout(showQR, 100);
+}
+
+// ===== Referral =====
+const REFERRAL_ID_KEY = 'awai_referral_id';
+const REFERRAL_COUNT_KEY = 'awai_referral_count';
+
+function getMyReferralId() {
+  let id = localStorage.getItem(REFERRAL_ID_KEY);
+  if (!id) { id = 'awai_' + genId(); localStorage.setItem(REFERRAL_ID_KEY, id); }
+  return id;
+}
+
+function getAppUrl() {
+  const base = 'https://yoshi27-4314.github.io/gift-note/';
+  return base + '?ref=' + getMyReferralId();
+}
+
+function showQR() {
+  const area = document.getElementById('qrArea');
+  if (!area) return;
+  const url = getAppUrl();
+  try {
+    const qr = qrcode(0, 'M');
+    qr.addData(url);
+    qr.make();
+    area.innerHTML = qr.createSvgTag(4, 0);
+    area.querySelector('svg').style.maxWidth = '180px';
+    area.querySelector('svg').style.margin = '0 auto';
+    area.querySelector('svg').style.display = 'block';
+  } catch(e) { area.innerHTML = '<div style="font-size:12px;color:var(--sub);">QRコード生成エラー</div>'; }
+  // Update referral count
+  const countEl = document.getElementById('referralCount');
+  if (countEl) countEl.textContent = localStorage.getItem(REFERRAL_COUNT_KEY) || '0';
+}
+
+function shareApp() {
+  const url = getAppUrl();
+  if (navigator.share) {
+    navigator.share({ title: 'AWAI — 大切な人と記憶がここに', text: '大切な人への贈り物管理アプリ', url }).catch(()=>{});
+  } else {
+    navigator.clipboard.writeText(url).then(() => alert('URLをコピーしました！')).catch(() => prompt('このURLをシェアしてください:', url));
+  }
+}
+
+function checkReferral() {
+  const params = new URLSearchParams(location.search);
+  const ref = params.get('ref');
+  if (ref && ref !== getMyReferralId()) {
+    const key = 'awai_referred_by';
+    if (!localStorage.getItem(key)) {
+      localStorage.setItem(key, ref);
+      // In future: notify referrer via backend
+    }
+  }
 }
 
 function saveSettings() {
@@ -1891,6 +1954,7 @@ if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().t
   try {
   loadData();
   loadFontSize();
+  checkReferral();
   const savedSeason = localStorage.getItem(SEASON_KEY);
   setSeason(savedSeason || getAutoSeason());
 

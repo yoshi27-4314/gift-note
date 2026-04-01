@@ -435,6 +435,58 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 .label-color-swatch.selected { border-color: var(--text); }
 .biz-avatar { background: #eef2f7 !important; }
 
+/* PIN Lock */
+.pin-overlay {
+  position: fixed; inset: 0; background: var(--bg);
+  z-index: 9999; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+.pin-overlay.hidden { display: none; }
+.pin-title { font-family: 'Shippori Mincho', serif; font-size: 24px; margin-bottom: 8px; }
+.pin-sub { font-size: 13px; color: var(--sub); margin-bottom: 24px; }
+.pin-dots { display: flex; gap: 12px; margin-bottom: 24px; }
+.pin-dot {
+  width: 16px; height: 16px; border-radius: 50%;
+  border: 2px solid var(--accent); background: transparent; transition: background 0.15s;
+}
+.pin-dot.filled { background: var(--accent); }
+.pin-pad { display: grid; grid-template-columns: repeat(3, 72px); gap: 12px; }
+.pin-key {
+  width: 72px; height: 72px; border-radius: 50%;
+  background: var(--card); border: 1px solid var(--border);
+  font-size: 24px; font-family: 'Zen Maru Gothic', sans-serif;
+  color: var(--text); cursor: pointer; display: flex;
+  align-items: center; justify-content: center;
+  box-shadow: 0 1px 4px var(--shadow); transition: background 0.1s;
+}
+.pin-key:active { background: var(--accent-light); }
+.pin-key.empty { visibility: hidden; }
+.pin-error { color: #c97070; font-size: 13px; margin-top: 12px; min-height: 20px; }
+
+/* LINE-style list */
+.list-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px; border-bottom: 1px solid var(--border);
+  cursor: pointer; transition: background 0.15s;
+}
+.list-item:active { background: var(--accent-light); }
+.list-avatar {
+  width: 50px; height: 50px; border-radius: 50%;
+  background: var(--accent-light); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; overflow: hidden;
+}
+.list-body { flex: 1; min-width: 0; }
+.list-name { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.list-preview { font-size: 12px; color: var(--sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.list-meta { text-align: right; flex-shrink: 0; }
+.list-date { font-size: 11px; color: var(--sub); }
+.list-badge-wrap { margin-top: 4px; }
+.list-ann-badge {
+  font-size: 10px; background: var(--accent); color: #fff;
+  padding: 1px 6px; border-radius: 8px; white-space: nowrap;
+}
+
 /* Star rating */
 .stars { display: inline-flex; gap: 2px; }
 .star { font-size: 18px; cursor: pointer; color: var(--border); transition: color 0.15s; user-select: none; }
@@ -460,6 +512,33 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 </style>
 </head>
 <body data-season="spring">
+
+<!-- PIN Lock Screen -->
+<div class="pin-overlay" id="pinOverlay">
+  <div class="pin-title">AWAI</div>
+  <div class="pin-sub" id="pinMessage">パスコードを入力</div>
+  <div class="pin-dots">
+    <div class="pin-dot" id="pd0"></div>
+    <div class="pin-dot" id="pd1"></div>
+    <div class="pin-dot" id="pd2"></div>
+    <div class="pin-dot" id="pd3"></div>
+  </div>
+  <div class="pin-pad">
+    <div class="pin-key" onclick="pinInput(1)">1</div>
+    <div class="pin-key" onclick="pinInput(2)">2</div>
+    <div class="pin-key" onclick="pinInput(3)">3</div>
+    <div class="pin-key" onclick="pinInput(4)">4</div>
+    <div class="pin-key" onclick="pinInput(5)">5</div>
+    <div class="pin-key" onclick="pinInput(6)">6</div>
+    <div class="pin-key" onclick="pinInput(7)">7</div>
+    <div class="pin-key" onclick="pinInput(8)">8</div>
+    <div class="pin-key" onclick="pinInput(9)">9</div>
+    <div class="pin-key empty"></div>
+    <div class="pin-key" onclick="pinInput(0)">0</div>
+    <div class="pin-key" onclick="pinDelete()">←</div>
+  </div>
+  <div class="pin-error" id="pinError"></div>
+</div>
 
 <div class="header">
   <div class="app-title">AWAI</div>
@@ -540,6 +619,7 @@ let editingId = null;
 let editPhotoAction = 'keep';
 let searchQuery = '';
 let rankMode = false;
+let openPersonId = null;
 
 // ===== Data =====
 function loadData() {
@@ -914,6 +994,50 @@ function renderPersonCard(p) {
   return html;
 }
 
+// ===== Person list item (LINE-style) =====
+function renderPersonListItem(p) {
+  const isCorp = p.type==='corporate';
+  const updatedAt = p.updatedAt || p.createdAt || '';
+  const dateStr = updatedAt ? updatedAt.split('T')[0] : '';
+
+  // Preview text: nearest anniversary or relation
+  let preview = p.relation || '';
+  let annBadge = '';
+  (p.anniversaries||[]).forEach(a => {
+    const days = daysUntil(a.date, a.dateType);
+    if (days !== null && days <= 30) {
+      annBadge = days === 0 ? '🎉今日！' : 'あと' + days + '日';
+    }
+  });
+  if (!preview && p.interests?.length) preview = p.interests.slice(0,3).join(', ');
+  if (!preview) preview = isCorp ? (p.industry||'法人') : '大切な人';
+
+  const isOpen = openPersonId === p.id;
+
+  return `<div class="list-item ${isOpen?'':''}}" onclick="togglePersonDetail('${p.id}')" style="${isOpen?'background:var(--accent-light);':''}">
+    <div class="list-avatar">${p.avatar?`<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;">`:(isCorp?'🏢':'👤')}</div>
+    <div class="list-body">
+      <div class="list-name">${esc(p.nickname||'名前なし')}</div>
+      <div class="list-preview">${esc(preview)}</div>
+    </div>
+    <div class="list-meta">
+      <div class="list-date">${dateStr}</div>
+      ${annBadge?`<div class="list-badge-wrap"><span class="list-ann-badge">${annBadge}</span></div>`:''}
+    </div>
+  </div>`;
+}
+
+function togglePersonDetail(id) {
+  openPersonId = openPersonId === id ? null : id;
+  render();
+  if (openPersonId) {
+    setTimeout(() => {
+      const detail = document.getElementById('personDetail');
+      if (detail) detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  }
+}
+
 // ===== Group render =====
 function renderGroupCard(g) {
   const members = (g.memberIds||[]).map(id => data.people.find(p=>p.id===id)).filter(Boolean);
@@ -1145,9 +1269,46 @@ function render() {
       cardList.innerHTML = '<div class="empty-msg">👤 大切な人を追加しましょう<br>下の ＋ ボタンから追加できます</div>';
       return;
     }
-    cardList.innerHTML = items.map(p => renderPersonCard(p)).join('');
+    cardList.innerHTML = items.map(p => renderPersonListItem(p)).join('');
+    // If a person detail is open, show it
+    if (openPersonId) {
+      const person = data.people.find(x=>x.id===openPersonId);
+      if (person) cardList.innerHTML += `<div id="personDetail">${renderPersonCard(person)}</div>`;
+    }
   } else {
     renderItems(items, cardList);
+  }
+}
+
+let openItemId = null;
+
+function renderItemListItem(item, tab) {
+  const label = item.labelIdx!==undefined&&item.labelIdx!==null ? (getLabels(tab)[item.labelIdx]||null) : null;
+  const isOpen = openItemId === item.id;
+  const stars = item.rating ? '★'.repeat(item.rating) : '';
+  const preview = item.person ? '👤 '+item.person : (item.memo ? item.memo.substring(0,20) : (item.tags?.slice(0,2).map(t=>'#'+t).join(' ')||''));
+
+  return `<div class="list-item" onclick="toggleItemDetail('${item.id}')" style="${isOpen?'background:var(--accent-light);':''}">
+    ${label?`<div style="width:6px;height:40px;border-radius:3px;background:${label.color};flex-shrink:0;"></div>`:'<div style="width:6px;"></div>'}
+    <div class="list-body">
+      <div class="list-name">${esc(item.title||'無題')}${stars?` <span style="color:#f0b040;font-size:12px;">${stars}</span>`:''}</div>
+      <div class="list-preview">${esc(preview)}</div>
+    </div>
+    <div class="list-meta">
+      <div class="list-date">${item.date||''}</div>
+      ${item.amount?`<div style="font-size:11px;color:var(--accent);font-weight:600;">¥${Number(item.amount).toLocaleString()}</div>`:''}
+    </div>
+  </div>`;
+}
+
+function toggleItemDetail(id) {
+  openItemId = openItemId === id ? null : id;
+  render();
+  if (openItemId) {
+    setTimeout(() => {
+      const detail = document.getElementById('itemDetail');
+      if (detail) detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
   }
 }
 
@@ -1165,16 +1326,24 @@ function renderItems(items, cardList) {
       cardList.innerHTML = '<div class="empty-msg">⭐ まだ評価がありません<br>カードの★をタップして評価してください</div>';
       return;
     }
-    cardList.innerHTML = sorted.map((i,idx) => renderItemCard(i, currentTab, idx+1)).join('');
+    cardList.innerHTML = sorted.map((i,idx) => renderItemListItem(i, currentTab)).join('');
+    if (openItemId) {
+      const item = sorted.find(x=>x.id===openItemId);
+      if (item) cardList.innerHTML += `<div id="itemDetail">${renderItemCard(item, currentTab)}</div>`;
+    }
   } else {
     sorted = [...items].sort((a,b) => (b.date||b.createdAt||'').localeCompare(a.date||a.createdAt||''));
-    cardList.innerHTML = sorted.map(i => renderItemCard(i, currentTab)).join('');
+    cardList.innerHTML = sorted.map(i => renderItemListItem(i, currentTab)).join('');
+    if (openItemId) {
+      const item = sorted.find(x=>x.id===openItemId);
+      if (item) cardList.innerHTML += `<div id="itemDetail">${renderItemCard(item, currentTab)}</div>`;
+    }
   }
 }
 
 // ===== Tab =====
 function switchTab(tab) {
-  currentTab = tab; currentLabel = null; searchQuery = ''; rankMode = false;
+  currentTab = tab; currentLabel = null; searchQuery = ''; rankMode = false; openPersonId = null; openItemId = null;
   document.getElementById('searchInput').value = '';
   document.querySelectorAll('.tab').forEach(el => el.classList.toggle('active', el.dataset.tab===tab));
   render();
@@ -1696,6 +1865,11 @@ function openSettings() {
         <div class="fsz-btn" data-sz="large" style="flex:1;padding:12px;text-align:center;border-radius:12px;border:2px solid ${currentSize==='large'?'var(--accent)':'var(--border)'};cursor:pointer;font-size:17px;" onclick="setFontSize('large')">大きめ</div>
         <div class="fsz-btn" data-sz="xlarge" style="flex:1;padding:12px;text-align:center;border-radius:12px;border:2px solid ${currentSize==='xlarge'?'var(--accent)':'var(--border)'};cursor:pointer;font-size:20px;" onclick="setFontSize('xlarge')">特大</div>
       </div></div>
+    <div class="form-group"><label>🔒 パスコードロック</label>
+      <div style="display:flex;gap:8px;margin-top:4px;">
+        <button class="card-btn" onclick="document.getElementById('settingsModalOverlay').classList.remove('open');openPinSetup()" style="font-size:14px;padding:8px 16px;">${localStorage.getItem(PIN_KEY)?'変更':'設定'}</button>
+        ${localStorage.getItem(PIN_KEY)?`<button class="card-btn delete" onclick="removePinLock();document.getElementById('settingsModalOverlay').classList.remove('open');openSettings()" style="font-size:14px;padding:8px 16px;">解除</button>`:''}
+      </div></div>
     <div class="form-group"><label>📲 友達に教える</label>
       <div id="qrArea" style="text-align:center;padding:12px 0;"></div>
       <div style="text-align:center;margin-bottom:8px;">
@@ -1946,12 +2120,101 @@ ${budget ? '\n## 予算\n約'+budget+'円' : ''}
 }
 
 // ===== Init =====
+// ===== PIN Lock =====
+const PIN_KEY = 'awai_pin';
+let pinBuffer = '';
+let pinMode = 'unlock'; // unlock, set, confirm
+let pinTemp = '';
+
+function initPin() {
+  const savedPin = localStorage.getItem(PIN_KEY);
+  if (!savedPin) {
+    // No PIN set, hide lock screen
+    document.getElementById('pinOverlay').classList.add('hidden');
+    return;
+  }
+  pinMode = 'unlock';
+  document.getElementById('pinMessage').textContent = 'パスコードを入力';
+  document.getElementById('pinOverlay').classList.remove('hidden');
+}
+
+function pinInput(n) {
+  if (pinBuffer.length >= 4) return;
+  pinBuffer += n;
+  updatePinDots();
+  if (pinBuffer.length === 4) {
+    setTimeout(checkPin, 200);
+  }
+}
+
+function pinDelete() {
+  pinBuffer = pinBuffer.slice(0, -1);
+  updatePinDots();
+  document.getElementById('pinError').textContent = '';
+}
+
+function updatePinDots() {
+  for (let i = 0; i < 4; i++) {
+    document.getElementById('pd' + i).classList.toggle('filled', i < pinBuffer.length);
+  }
+}
+
+function checkPin() {
+  const savedPin = localStorage.getItem(PIN_KEY);
+  if (pinMode === 'unlock') {
+    if (pinBuffer === savedPin) {
+      document.getElementById('pinOverlay').classList.add('hidden');
+    } else {
+      document.getElementById('pinError').textContent = 'パスコードが違います';
+      pinBuffer = '';
+      updatePinDots();
+    }
+  } else if (pinMode === 'set') {
+    pinTemp = pinBuffer;
+    pinBuffer = '';
+    updatePinDots();
+    pinMode = 'confirm';
+    document.getElementById('pinMessage').textContent = '確認のためもう一度入力';
+    document.getElementById('pinError').textContent = '';
+  } else if (pinMode === 'confirm') {
+    if (pinBuffer === pinTemp) {
+      localStorage.setItem(PIN_KEY, pinBuffer);
+      document.getElementById('pinOverlay').classList.add('hidden');
+      alert('パスコードを設定しました');
+    } else {
+      document.getElementById('pinError').textContent = '一致しません。もう一度';
+      pinBuffer = '';
+      updatePinDots();
+      pinMode = 'set';
+      document.getElementById('pinMessage').textContent = '新しいパスコードを入力';
+    }
+  }
+}
+
+function openPinSetup() {
+  pinBuffer = '';
+  pinTemp = '';
+  pinMode = 'set';
+  updatePinDots();
+  document.getElementById('pinMessage').textContent = '新しいパスコードを入力（4桁）';
+  document.getElementById('pinError').textContent = '';
+  document.getElementById('pinOverlay').classList.remove('hidden');
+}
+
+function removePinLock() {
+  if (confirm('パスコードを解除しますか？')) {
+    localStorage.removeItem(PIN_KEY);
+    alert('パスコードを解除しました');
+  }
+}
+
 // Clear old service worker caches
 if ('caches' in window) { caches.keys().then(ks => ks.forEach(k => caches.delete(k))); }
 if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister())); }
 
 (function init() {
   try {
+  initPin();
   loadData();
   loadFontSize();
   checkReferral();

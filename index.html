@@ -903,8 +903,6 @@ function openGroupAiSuggest(groupId) {
 }
 
 async function runGroupAiSuggest(groupId) {
-  const cfg = getAiConfig();
-  if (!cfg.apiKey && !cfg.proxyUrl) { alert('⚙️ 設定からAPI Keyを入力してください'); return; }
   const group = data.groups.find(g=>g.id===groupId);
   if (!group) return;
   const members = (group.memberIds||[]).map(id=>data.people.find(p=>p.id===id)).filter(Boolean);
@@ -949,18 +947,7 @@ ${budget ? '\n## 1人あたりの予算\n約'+budget+'円' : ''}
 - 日本語で簡潔に`;
 
   try {
-    const url = cfg.proxyUrl || 'https://api.anthropic.com/v1/messages';
-    const headers = { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' };
-    if (!cfg.proxyUrl) { headers['x-api-key'] = cfg.apiKey; headers['anthropic-dangerous-direct-browser-access'] = 'true'; }
-    else { headers['x-api-key'] = cfg.apiKey; }
-
-    const res = await fetch(url, {
-      method: 'POST', headers,
-      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 1500, messages: [{ role: 'user', content: prompt }] })
-    });
-    if (!res.ok) throw new Error(`API Error ${res.status}: ${await res.text()}`);
-    const json = await res.json();
-    const text = json.content?.[0]?.text || 'No response';
+    const text = await callGemini(prompt);
     resultDiv.innerHTML = `<div style="background:var(--pickup);border:1px solid var(--pickup-border);border-radius:14px;padding:14px;">
       <div style="font-weight:600;margin-bottom:8px;font-family:'Shippori Mincho',serif;">💡 ${esc(group.name)} への提案</div>
       <div style="white-space:pre-wrap;">${esc(text)}</div></div>`;
@@ -1403,15 +1390,8 @@ function removeLabel(idx) {
 }
 
 // ===== AI Suggest =====
-const AI_KEY_STORAGE = 'awai_api_key';
-const AI_PROXY_STORAGE = 'awai_proxy_url';
-
-function getAiConfig() {
-  return {
-    apiKey: localStorage.getItem(AI_KEY_STORAGE)||'',
-    proxyUrl: localStorage.getItem(AI_PROXY_STORAGE)||''
-  };
-}
+const GEMINI_API_KEY = 'REMOVED_KEY';
+const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
 const FONTSIZE_KEY = 'awai_fontsize';
 
@@ -1430,15 +1410,10 @@ function openSettings() {
         <div id="fontNormal" style="flex:1;padding:12px;text-align:center;border-radius:12px;border:2px solid ${currentSize==='normal'?'var(--accent)':'var(--border)'};cursor:pointer;font-size:14px;" onclick="setFontSize('normal')">標準</div>
         <div id="fontLarge" style="flex:1;padding:12px;text-align:center;border-radius:12px;border:2px solid ${currentSize==='large'?'var(--accent)':'var(--border)'};cursor:pointer;font-size:17px;" onclick="setFontSize('large')">大きめ</div>
       </div></div>
-    <div class="form-group"><label>Anthropic API Key</label>
-      <input id="setApiKey" type="password" placeholder="sk-ant-..." value="${cfg.apiKey}">
-      <div class="form-hint">AI提案機能に必要。テスト用。</div></div>
-    <div class="form-group"><label>Proxy URL（任意）</label>
-      <input id="setProxyUrl" placeholder="https://your-worker.workers.dev" value="${cfg.proxyUrl}">
-      <div class="form-hint">Cloudflare Worker等。空ならAPI直接呼び出し</div></div>
+    <div class="form-group"><label>AI提案</label>
+      <div style="font-size:13px;color:var(--sub);padding:8px 0;">✅ Gemini AI 接続済み</div></div>
     <div class="form-btns">
       <button class="btn btn-secondary" onclick="document.getElementById('settingsModalOverlay').classList.remove('open')">閉じる</button>
-      <button class="btn btn-primary" onclick="saveSettings()">保存</button>
     </div>`;
   document.getElementById('settingsModalOverlay').classList.add('open');
 }
@@ -1450,11 +1425,18 @@ function setFontSize(size) {
   document.getElementById('fontLarge').style.borderColor = size==='large'?'var(--accent)':'var(--border)';
 }
 
-function saveSettings() {
-  localStorage.setItem(AI_KEY_STORAGE, document.getElementById('setApiKey').value.trim());
-  localStorage.setItem(AI_PROXY_STORAGE, document.getElementById('setProxyUrl').value.trim());
-  document.getElementById('settingsModalOverlay').classList.remove('open');
-  alert('保存しました');
+async function callGemini(prompt) {
+  const res = await fetch(GEMINI_URL + '?key=' + GEMINI_API_KEY, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { maxOutputTokens: 1500, temperature: 0.8 }
+    })
+  });
+  if (!res.ok) throw new Error(`API Error ${res.status}: ${await res.text()}`);
+  const json = await res.json();
+  return json.candidates?.[0]?.content?.parts?.[0]?.text || 'No response';
 }
 
 function openAiSuggest(personId) {
@@ -1518,11 +1500,6 @@ function openAiSuggest(personId) {
 }
 
 async function runAiSuggest(personId) {
-  const cfg = getAiConfig();
-  if (!cfg.apiKey && !cfg.proxyUrl) {
-    alert('⚙️ 設定からAPI Keyを入力してください');
-    return;
-  }
   const person = data.people.find(p=>p.id===personId);
   if (!person) return;
 
@@ -1531,7 +1508,6 @@ async function runAiSuggest(personId) {
   btn.disabled = true; btn.textContent = '考え中...';
   resultDiv.innerHTML = '<div style="text-align:center;color:var(--sub);padding:20px;">💭 AIが考えています...</div>';
 
-  // Build profile for prompt
   const profileLines = [];
   if (person.relation) profileLines.push(`関係: ${person.relation}`);
   if (person.interests?.length) profileLines.push(`好きなもの: ${person.interests.join(', ')}`);
@@ -1571,38 +1547,13 @@ ${budget ? '\n## 予算\n約'+budget+'円' : ''}
 - 相手の好みや個性に合った提案をしてください
 - 苦手なものは絶対に避けてください
 - 過去にあげたものと被らないようにしてください
-- Amazonや楽天ではなく、知る人ぞ知る名店やブランド、体験型ギフトなど**センスの良い提案**を心がけてください
+- Amazonや楽天ではなく、知る人ぞ知る名店やブランド、体験型ギフトなどセンスの良い提案を心がけてください
 - 各提案は「商品名」「店名やブランド名」「なぜこの人に合うか」「予算目安」を含めてください
 - 日本語で回答してください
 - 簡潔に、各提案は3-4行程度で`;
 
   try {
-    const url = cfg.proxyUrl || 'https://api.anthropic.com/v1/messages';
-    const headers = { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' };
-    if (!cfg.proxyUrl) {
-      headers['x-api-key'] = cfg.apiKey;
-      headers['anthropic-dangerous-direct-browser-access'] = 'true';
-    } else {
-      headers['x-api-key'] = cfg.apiKey;
-    }
-
-    const res = await fetch(url, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 1024,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
-
-    if (!res.ok) {
-      const err = await res.text();
-      throw new Error(`API Error ${res.status}: ${err}`);
-    }
-
-    const json = await res.json();
-    const text = json.content?.[0]?.text || 'No response';
+    const text = await callGemini(prompt);
     resultDiv.innerHTML = `<div style="background:var(--pickup);border:1px solid var(--pickup-border);border-radius:14px;padding:14px;">
       <div style="font-weight:600;margin-bottom:8px;font-family:'Shippori Mincho',serif;">💡 ${esc(person.nickname)} への提案</div>
       <div style="white-space:pre-wrap;">${esc(text)}</div>

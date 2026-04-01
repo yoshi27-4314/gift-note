@@ -1608,6 +1608,11 @@ function render() {
   const items = (data[currentTab]||[]).filter(i => matchesSearch(i, currentTab));
   if (currentTab !== 'people' && currentLabel !== null) {
     const filtered = items.filter(i => i.labelIdx === currentLabel);
+    if (!filtered.length && items.length) {
+      const labelName = getLabels(currentTab)[currentLabel]?.name || 'このラベル';
+      cardList.innerHTML = `<div class="empty-msg">「${esc(labelName)}」のアイテムはまだありません<br>各アイテムの編集画面からラベルを付けられます</div>`;
+      return;
+    }
     renderItems(filtered, cardList);
   } else if (currentTab === 'groups') {
     const groups = (data.groups||[]).filter(g => matchesSearch(g, 'groups'));

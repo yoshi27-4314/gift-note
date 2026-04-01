@@ -47,7 +47,29 @@ body {
   max-width: 480px; margin: 0 auto;
   min-height: 100dvh; padding-bottom: 80px;
   -webkit-tap-highlight-color: transparent;
+  font-size: 14px;
 }
+body[data-fontsize="large"] { font-size: 17px; }
+body[data-fontsize="large"] .tab { font-size: 15px; padding: 10px 16px; }
+body[data-fontsize="large"] .card-title { font-size: 19px; }
+body[data-fontsize="large"] .card-sub, body[data-fontsize="large"] .card-person { font-size: 15px; }
+body[data-fontsize="large"] .card-memo { font-size: 15px; }
+body[data-fontsize="large"] .card-tag { font-size: 13px; }
+body[data-fontsize="large"] .card-btn { font-size: 14px; padding: 6px 14px; }
+body[data-fontsize="large"] .person-nickname { font-size: 20px; }
+body[data-fontsize="large"] .person-relation { font-size: 14px; }
+body[data-fontsize="large"] .person-section-title { font-size: 13px; }
+body[data-fontsize="large"] .person-ann { font-size: 15px; }
+body[data-fontsize="large"] .profile-item { font-size: 14px; }
+body[data-fontsize="large"] .interest-tag, body[data-fontsize="large"] .food-like, body[data-fontsize="large"] .food-dislike, body[data-fontsize="large"] .personality-tag { font-size: 13px; }
+body[data-fontsize="large"] .search-input { font-size: 15px; }
+body[data-fontsize="large"] .reminder-item { font-size: 15px; }
+body[data-fontsize="large"] .label-chip { font-size: 14px; }
+body[data-fontsize="large"] .form-group label { font-size: 15px; }
+body[data-fontsize="large"] .form-group input, body[data-fontsize="large"] .form-group textarea, body[data-fontsize="large"] .form-group select { font-size: 16px; }
+body[data-fontsize="large"] .modal h2 { font-size: 20px; }
+body[data-fontsize="large"] .btn { font-size: 17px; }
+body[data-fontsize="large"] .empty-msg { font-size: 16px; }
 h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 
 /* Header */
@@ -350,7 +372,7 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 
 <div class="header">
   <div class="app-title">AWAI</div>
-  <div class="app-subtitle">大切な人を喜ばせるヒントを、あなたに</div>
+  <div class="app-subtitle">大切な人と記憶がここに</div>
   <button class="season-btn" id="seasonBtn" style="right:52px;">🌸</button>
   <button class="season-btn" id="settingsBtn" style="right:16px;font-size:12px;">⚙️</button>
 </div>
@@ -1391,10 +1413,23 @@ function getAiConfig() {
   };
 }
 
+const FONTSIZE_KEY = 'awai_fontsize';
+
+function loadFontSize() {
+  const size = localStorage.getItem(FONTSIZE_KEY) || 'normal';
+  document.body.dataset.fontsize = size;
+}
+
 function openSettings() {
   const modal = document.getElementById('settingsModal');
   const cfg = getAiConfig();
+  const currentSize = localStorage.getItem(FONTSIZE_KEY) || 'normal';
   modal.innerHTML = `<h2>⚙️ 設定</h2>
+    <div class="form-group"><label>文字サイズ</label>
+      <div style="display:flex;gap:8px;margin-top:4px;">
+        <div id="fontNormal" style="flex:1;padding:12px;text-align:center;border-radius:12px;border:2px solid ${currentSize==='normal'?'var(--accent)':'var(--border)'};cursor:pointer;font-size:14px;" onclick="setFontSize('normal')">標準</div>
+        <div id="fontLarge" style="flex:1;padding:12px;text-align:center;border-radius:12px;border:2px solid ${currentSize==='large'?'var(--accent)':'var(--border)'};cursor:pointer;font-size:17px;" onclick="setFontSize('large')">大きめ</div>
+      </div></div>
     <div class="form-group"><label>Anthropic API Key</label>
       <input id="setApiKey" type="password" placeholder="sk-ant-..." value="${cfg.apiKey}">
       <div class="form-hint">AI提案機能に必要。テスト用。</div></div>
@@ -1406,6 +1441,13 @@ function openSettings() {
       <button class="btn btn-primary" onclick="saveSettings()">保存</button>
     </div>`;
   document.getElementById('settingsModalOverlay').classList.add('open');
+}
+
+function setFontSize(size) {
+  document.body.dataset.fontsize = size;
+  localStorage.setItem(FONTSIZE_KEY, size);
+  document.getElementById('fontNormal').style.borderColor = size==='normal'?'var(--accent)':'var(--border)';
+  document.getElementById('fontLarge').style.borderColor = size==='large'?'var(--accent)':'var(--border)';
 }
 
 function saveSettings() {
@@ -1574,6 +1616,7 @@ ${budget ? '\n## 予算\n約'+budget+'円' : ''}
 // ===== Init =====
 (function init() {
   loadData();
+  loadFontSize();
   const savedSeason = localStorage.getItem(SEASON_KEY);
   setSeason(savedSeason || getAutoSeason());
 

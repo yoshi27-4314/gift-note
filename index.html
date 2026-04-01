@@ -370,6 +370,29 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 }
 .label-color-swatch.selected { border-color: var(--text); }
 .biz-avatar { background: #eef2f7 !important; }
+
+/* Star rating */
+.stars { display: inline-flex; gap: 2px; }
+.star { font-size: 18px; cursor: pointer; color: var(--border); transition: color 0.15s; user-select: none; }
+.star.on { color: #f0b040; }
+.card-stars { display: inline-flex; gap: 1px; margin-top: 4px; }
+.card-star { font-size: 14px; color: var(--border); }
+.card-star.on { color: #f0b040; }
+
+/* Ranking */
+.ranking-toggle {
+  display: flex; justify-content: center; gap: 6px; padding: 4px 16px;
+}
+.ranking-btn {
+  padding: 4px 12px; border-radius: 14px; font-size: 12px;
+  border: 1px solid var(--border); background: var(--card);
+  cursor: pointer; font-family: 'Zen Maru Gothic', sans-serif;
+}
+.ranking-btn.active { background: #f0b040; color: #fff; border-color: #f0b040; }
+.rank-number {
+  font-size: 14px; font-weight: 700; color: var(--accent);
+  min-width: 24px; text-align: center; flex-shrink: 0;
+}
 </style>
 </head>
 <body data-season="spring">
@@ -398,6 +421,10 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 </div>
 
 <div class="label-bar" id="labelBar"></div>
+<div class="ranking-toggle" id="rankingToggle" style="display:none;">
+  <div class="ranking-btn" id="rankOffBtn" onclick="setRankMode(false)">通常</div>
+  <div class="ranking-btn" id="rankOnBtn" onclick="setRankMode(true)">⭐ ランキング</div>
+</div>
 <div class="card-list" id="cardList"></div>
 
 <button class="fab" id="fabBtn">＋</button>
@@ -448,6 +475,7 @@ let currentLabel = null; // null = all
 let editingId = null;
 let editPhotoAction = 'keep';
 let searchQuery = '';
+let rankMode = false;
 
 // ===== Data =====
 function loadData() {
@@ -621,14 +649,42 @@ function renderLabelBar() {
 function filterLabel(idx) { currentLabel=idx; render(); }
 
 // ===== Render items =====
-function renderItemCard(item, tab) {
+function renderStars(rating, itemId, tab) {
+  const r = rating||0;
+  let html = '<div class="card-stars">';
+  for (let i=1; i<=5; i++) {
+    html += `<span class="card-star ${i<=r?'on':''}" onclick="setRating('${tab}','${itemId}',${i})" style="cursor:pointer;">★</span>`;
+  }
+  html += '</div>';
+  return html;
+}
+
+function setRating(tab, id, rating) {
+  const item = data[tab].find(i=>i.id===id);
+  if (!item) return;
+  item.rating = item.rating===rating ? 0 : rating; // tap same star to clear
+  saveData(); render();
+}
+
+function setRankMode(on) {
+  rankMode = on;
+  document.getElementById('rankOnBtn').classList.toggle('active', on);
+  document.getElementById('rankOffBtn').classList.toggle('active', !on);
+  render();
+}
+
+function renderItemCard(item, tab, rank) {
   const label = item.labelIdx!==undefined&&item.labelIdx!==null ? (getLabels(tab)[item.labelIdx]||null) : null;
   let html = '<div class="card">';
+  if (rank) html += `<div style="display:flex;align-items:center;gap:8px;">
+    <span class="rank-number">${rank}</span><div style="flex:1;">`;
   html += '<div class="card-title">';
   if (label) html += `<span class="card-ldot" style="background:${label.color};"></span>`;
   html += esc(item.title||'無題');
   if (label) html += ` <span class="card-label-name" style="background:${label.color};">${esc(label.name)}</span>`;
   html += '</div>';
+  html += renderStars(item.rating, item.id, tab);
+  if (rank) html += '</div></div>';
   if (item.person) html += `<div class="card-person">👤 ${esc(item.person)}</div>`;
   if (item.date) html += `<div class="card-sub">📅 ${item.date}</div>`;
   if (item.occasion) html += `<div class="card-occasion">${esc(item.occasion)}</div>`;
@@ -968,6 +1024,10 @@ function render() {
   renderReminders();
   renderPickup();
 
+  // Show ranking toggle for item tabs
+  const rankToggle = document.getElementById('rankingToggle');
+  rankToggle.style.display = ['wish','received','gave','place'].includes(currentTab) ? '' : 'none';
+
   const items = (data[currentTab]||[]).filter(i => matchesSearch(i, currentTab));
   if (currentTab !== 'people' && currentLabel !== null) {
     const filtered = items.filter(i => i.labelIdx === currentLabel);
@@ -998,13 +1058,23 @@ function renderItems(items, cardList) {
     cardList.innerHTML = `<div class="empty-msg">${msgs[currentTab]||''}<br>下の ＋ ボタンから追加できます</div>`;
     return;
   }
-  const sorted = [...items].sort((a,b) => (b.date||b.createdAt||'').localeCompare(a.date||a.createdAt||''));
-  cardList.innerHTML = sorted.map(i => renderItemCard(i, currentTab)).join('');
+  let sorted;
+  if (rankMode) {
+    sorted = [...items].filter(i=>(i.rating||0)>0).sort((a,b) => (b.rating||0)-(a.rating||0));
+    if (!sorted.length) {
+      cardList.innerHTML = '<div class="empty-msg">⭐ まだ評価がありません<br>カードの★をタップして評価してください</div>';
+      return;
+    }
+    cardList.innerHTML = sorted.map((i,idx) => renderItemCard(i, currentTab, idx+1)).join('');
+  } else {
+    sorted = [...items].sort((a,b) => (b.date||b.createdAt||'').localeCompare(a.date||a.createdAt||''));
+    cardList.innerHTML = sorted.map(i => renderItemCard(i, currentTab)).join('');
+  }
 }
 
 // ===== Tab =====
 function switchTab(tab) {
-  currentTab = tab; currentLabel = null; searchQuery = '';
+  currentTab = tab; currentLabel = null; searchQuery = ''; rankMode = false;
   document.getElementById('searchInput').value = '';
   document.querySelectorAll('.tab').forEach(el => el.classList.toggle('active', el.dataset.tab===tab));
   render();
@@ -1044,6 +1114,13 @@ function openItemModal(id) {
     html += `<div class="form-group"><label>金額（任意）</label><input id="fAmount" type="number" placeholder="例：5000" value="${item?.amount||''}"></div>`;
   }
   html += `<div class="form-group"><label>日付</label><input type="date" id="fDate" value="${item?.date||''}"></div>`;
+  // Star rating
+  const curRating = item?.rating||0;
+  html += `<div class="form-group"><label>評価</label><div class="stars" id="fStars">`;
+  for (let i=1; i<=5; i++) {
+    html += `<span class="star ${i<=curRating?'on':''}" onclick="setFormStar(${i})">★</span>`;
+  }
+  html += `</div><input type="hidden" id="fRating" value="${curRating}"><div class="form-hint">人におすすめを聞かれたときのランキングに使います</div></div>`;
   html += `<div class="form-group"><label>タグ</label><input id="fTags" placeholder="例：お酒, ゴルフ, 洋服" value="${(item?.tags||[]).join(', ')}"><div class="form-hint">カンマ区切り。大切な人の好みとマッチングします</div></div>`;
   if (showUrl) {
     html += `<div class="form-group"><label>URL</label><input type="url" id="fUrl" placeholder="https://..." value="${esc(item?.url||'')}"></div>`;
@@ -1056,6 +1133,14 @@ function openItemModal(id) {
   html += `<div class="form-btns"><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button><button class="btn btn-primary" onclick="saveItem()">保存</button></div>`;
   modal.innerHTML = html;
   document.getElementById('modalOverlay').classList.add('open');
+}
+
+function setFormStar(n) {
+  const input = document.getElementById('fRating');
+  const current = parseInt(input.value)||0;
+  const newVal = current===n ? 0 : n;
+  input.value = newVal;
+  document.querySelectorAll('#fStars .star').forEach((s,i) => s.classList.toggle('on', i<newVal));
 }
 
 function toggleFormLabel(el, idx) {
@@ -1385,6 +1470,7 @@ function saveItem() {
       occasion: document.getElementById('fOccasion')?.value.trim()||null,
       amount: document.getElementById('fAmount')?.value||null,
       date: document.getElementById('fDate')?.value||null,
+      rating: parseInt(document.getElementById('fRating')?.value)||0,
       tags: tags.length?tags:null,
       url: document.getElementById('fUrl')?.value.trim()||null,
       memo: document.getElementById('fMemo')?.value.trim()||null,

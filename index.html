@@ -1046,7 +1046,7 @@ ${budget ? '\n## 1人あたりの予算\n約'+budget+'円' : ''}
     const text = await callGemini(prompt);
     resultDiv.innerHTML = `<div style="background:var(--pickup);border:1px solid var(--pickup-border);border-radius:14px;padding:14px;">
       <div style="font-weight:600;margin-bottom:8px;font-family:'Shippori Mincho',serif;">💡 ${esc(group.name)} への提案</div>
-      <div style="white-space:pre-wrap;">${esc(text)}</div></div>`;
+      <div>${mdToHtml(text)}</div></div>`;
   } catch(e) {
     resultDiv.innerHTML = `<div style="color:#c97070;padding:12px;">エラー: ${esc(e.message)}</div>`;
   }
@@ -1643,6 +1643,22 @@ function setFontSize(size) {
   document.getElementById('fontLarge').style.borderColor = size==='large'?'var(--accent)':'var(--border)';
 }
 
+function mdToHtml(text) {
+  return text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/```[\s\S]*?```/g, '') // remove code blocks
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/^### (.+)$/gm, '<div style="font-weight:600;margin-top:12px;margin-bottom:4px;">$1</div>')
+    .replace(/^## (.+)$/gm, '<div style="font-weight:700;font-size:15px;margin-top:14px;margin-bottom:4px;">$1</div>')
+    .replace(/^# (.+)$/gm, '<div style="font-weight:700;font-size:16px;margin-top:14px;margin-bottom:6px;">$1</div>')
+    .replace(/^\* (.+)$/gm, '<div style="padding-left:12px;">・$1</div>')
+    .replace(/^- (.+)$/gm, '<div style="padding-left:12px;">・$1</div>')
+    .replace(/^\d+\. (.+)$/gm, (m, p1, offset, str) => `<div style="padding-left:12px;">${m.match(/^\d+/)[0]}. ${p1}</div>`)
+    .replace(/\n{2,}/g, '<br><br>')
+    .replace(/\n/g, '<br>');
+}
+
 async function callGemini(prompt) {
   const res = await fetch(GEMINI_URL + '?key=' + GEMINI_API_KEY, {
     method: 'POST',
@@ -1774,7 +1790,7 @@ ${budget ? '\n## 予算\n約'+budget+'円' : ''}
     const text = await callGemini(prompt);
     resultDiv.innerHTML = `<div style="background:var(--pickup);border:1px solid var(--pickup-border);border-radius:14px;padding:14px;">
       <div style="font-weight:600;margin-bottom:8px;font-family:'Shippori Mincho',serif;">💡 ${esc(person.nickname)} への提案</div>
-      <div style="white-space:pre-wrap;">${esc(text)}</div>
+      <div>${mdToHtml(text)}</div>
     </div>`;
   } catch(e) {
     resultDiv.innerHTML = `<div style="color:#c97070;padding:12px;">エラー: ${esc(e.message)}</div>`;

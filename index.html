@@ -836,6 +836,14 @@ function renderStars(rating, itemId, tab) {
   return html;
 }
 
+// ===== Pin =====
+function togglePin(tab, id) {
+  const item = data[tab].find(i=>i.id===id);
+  if (!item) return;
+  item.pinned = !item.pinned;
+  saveData(); render();
+}
+
 function setRating(tab, id, rating) {
   const item = data[tab].find(i=>i.id===id);
   if (!item) return;
@@ -871,6 +879,7 @@ function renderItemCard(item, tab, rank) {
   if (item.tags&&item.tags.length) html += `<div class="card-tags">${item.tags.map(t=>`<span class="card-tag">#${esc(t)}</span>`).join('')}</div>`;
   if (item.url) html += `<a class="card-url" href="${esc(item.url)}" target="_blank" rel="noopener">🔗 ${esc(truncUrl(item.url))}</a>`;
   html += `<div class="card-actions">
+    <button class="card-btn" onclick="event.stopPropagation();togglePin('${tab}','${item.id}')">${item.pinned?'📌 固定中':'📌 固定'}</button>
     <button class="card-btn" onclick="editItem('${tab}','${item.id}')">✏️ 編集</button>
     <button class="card-btn delete" onclick="deleteItem('${tab}','${item.id}')">🗑 削除</button>
   </div></div>`;
@@ -970,23 +979,26 @@ function renderPersonCard(p) {
     html += `<div class="person-section"><div class="person-section-title">📝 メモ</div>
     <div style="font-size:12px;line-height:1.6;white-space:pre-wrap;">${esc(p.memo)}</div></div>`;
   }
-  // Gift history
-  const history = [];
-  ['received','gave'].forEach(tab => {
-    data[tab].forEach(item => {
-      if (item.person && p.nickname && item.person.includes(p.nickname)) {
-        history.push({...item, dir: tab==='gave'?'gave':'received'});
-      }
-    });
-  });
-  if (history.length) {
-    html += '<div class="person-section"><div class="person-section-title">🎁 贈り物の記録</div>';
-    history.sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,5).forEach(h => {
-      html += `<div class="history-item"><span class="history-dir ${h.dir}">${h.dir==='gave'?'🎁 あげた':'🎀 もらった'}</span><span>${esc(h.title)}</span><span class="history-date">${h.date||''}</span></div>`;
+  // Full history: gave, received, wish, place
+  const allHistory = [];
+  const nameMatch = (itemPerson) => itemPerson && p.nickname && (itemPerson.includes(p.nickname) || (p.fullName && itemPerson.includes(p.fullName)));
+  data.gave.forEach(item => { if (nameMatch(item.person)) allHistory.push({...item, cat:'gave'}); });
+  data.received.forEach(item => { if (nameMatch(item.person)) allHistory.push({...item, cat:'received'}); });
+  data.wish.forEach(item => { if (nameMatch(item.person) || (item.memo && p.nickname && item.memo.includes(p.nickname))) allHistory.push({...item, cat:'wish'}); });
+  data.place.forEach(item => { if (nameMatch(item.person) || (item.memo && p.nickname && item.memo.includes(p.nickname))) allHistory.push({...item, cat:'place'}); });
+
+  if (allHistory.length) {
+    const catLabels = {gave:'🎁 あげた', received:'🎀 もらった', wish:'✨ あげたい', place:'📍 行きたい'};
+    const catColors = {gave:'#fdeee9', received:'#e9f0fd', wish:'#fdf0ed', place:'#edf7fa'};
+    const catTextColors = {gave:'#d48a7a', received:'#7a9ad4', wish:'#e8a598', place:'#7ec8d9'};
+    html += '<div class="person-section"><div class="person-section-title">📋 この人との記録</div>';
+    allHistory.sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,10).forEach(h => {
+      html += `<div class="history-item"><span class="history-dir" style="background:${catColors[h.cat]};color:${catTextColors[h.cat]};">${catLabels[h.cat]}</span><span>${esc(h.title)}</span><span class="history-date">${h.date||''}</span></div>`;
     });
     html += '</div>';
   }
   html += `<div class="person-actions">
+    <button class="card-btn" onclick="event.stopPropagation();togglePin('people','${p.id}')">${p.pinned?'📌 固定中':'📌 固定'}</button>
     <button class="card-btn" onclick="editItem('people','${p.id}')">✏️ 編集</button>
     <button class="card-btn" onclick="openAiSuggest('${p.id}')" style="background:var(--pickup);border-color:var(--pickup-border);">💡 コンシェルジュ</button>
     <button class="card-btn delete" onclick="deleteItem('people','${p.id}')">🗑 削除</button>
@@ -1017,7 +1029,7 @@ function renderPersonListItem(p) {
   return `<div class="list-item ${isOpen?'':''}}" onclick="togglePersonDetail('${p.id}')" style="${isOpen?'background:var(--accent-light);':''}">
     <div class="list-avatar">${p.avatar?`<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;">`:(isCorp?'🏢':'👤')}</div>
     <div class="list-body">
-      <div class="list-name">${esc(p.nickname||'名前なし')}</div>
+      <div class="list-name">${p.pinned?'📌 ':''}${esc(p.nickname||'名前なし')}</div>
       <div class="list-preview">${esc(preview)}</div>
     </div>
     <div class="list-meta">
@@ -1039,6 +1051,49 @@ function togglePersonDetail(id) {
 }
 
 // ===== Group render =====
+let openGroupId = null;
+
+function toggleGroupDetail(id) {
+  openGroupId = openGroupId === id ? null : id;
+  render();
+  if (openGroupId) {
+    setTimeout(() => {
+      const detail = document.getElementById('groupDetail');
+      if (detail) detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  }
+}
+
+function renderGroupListItem(g) {
+  const members = (g.memberIds||[]).map(id => data.people.find(p=>p.id===id)).filter(Boolean);
+  const memberNames = members.slice(0,3).map(m=>m.nickname).join(', ') + (members.length>3 ? ' ほか'+(members.length-3)+'人' : '');
+  const isOpen = openGroupId === g.id;
+  const isPinned = g.pinned;
+
+  // Nearest anniversary
+  let annBadge = '';
+  members.forEach(m => {
+    (m.anniversaries||[]).forEach(a => {
+      const days = daysUntil(a.date, a.dateType);
+      if (days!==null && days<=30 && !annBadge) {
+        annBadge = days===0 ? '🎉今日！' : 'あと'+days+'日';
+      }
+    });
+  });
+
+  return `<div class="list-item" onclick="toggleGroupDetail('${g.id}')" style="${isOpen?'background:var(--accent-light);':''}">
+    <div class="list-avatar" style="border-radius:14px;background:var(--accent-light);">👥</div>
+    <div class="list-body">
+      <div class="list-name">${isPinned?'📌 ':''}${esc(g.name||'名前なし')} <span style="font-size:11px;color:var(--sub);font-weight:400;">${members.length}人</span></div>
+      <div class="list-preview">${esc(memberNames||'メンバーなし')}</div>
+    </div>
+    <div class="list-meta">
+      ${g.description?`<div class="list-date">${esc(g.description.substring(0,8))}</div>`:''}
+      ${annBadge?`<div class="list-badge-wrap"><span class="list-ann-badge">${annBadge}</span></div>`:''}
+    </div>
+  </div>`;
+}
+
 function renderGroupCard(g) {
   const members = (g.memberIds||[]).map(id => data.people.find(p=>p.id===id)).filter(Boolean);
   let html = '<div class="card" style="border-left:3px solid var(--accent);">';
@@ -1075,8 +1130,9 @@ function renderGroupCard(g) {
     html += '</div>';
   }
   html += `<div class="card-actions">
+    <button class="card-btn" onclick="togglePin('groups','${g.id}')">${g.pinned?'📌 固定中':'📌 固定'}</button>
     <button class="card-btn" onclick="editGroup('${g.id}')">✏️ 編集</button>
-    <button class="card-btn" onclick="openGroupAiSuggest('${g.id}')" style="background:var(--pickup);border-color:var(--pickup-border);">💡 まとめてコンシェルジュ</button>
+    <button class="card-btn" onclick="openGroupAiSuggest('${g.id}')" style="background:var(--pickup);border-color:var(--pickup-border);">💡 コンシェルジュ</button>
     <button class="card-btn delete" onclick="deleteItem('groups','${g.id}')">🗑 削除</button>
   </div></div>`;
   return html;
@@ -1262,14 +1318,28 @@ function render() {
       cardList.innerHTML = '<div class="empty-msg">👥 グループを作りましょう<br>旅行のお土産やまとめた贈り物に便利です<br>下の ＋ ボタンから作成できます</div>';
       return;
     }
-    cardList.innerHTML = groups.map(g => renderGroupCard(g)).join('');
+    // Sort: pinned first, then by updatedAt
+    const sorted = [...groups].sort((a,b) => {
+      if (a.pinned && !b.pinned) return -1;
+      if (!a.pinned && b.pinned) return 1;
+      return (b.updatedAt||b.createdAt||'').localeCompare(a.updatedAt||a.createdAt||'');
+    });
+    cardList.innerHTML = sorted.map(g => renderGroupListItem(g)).join('');
+    if (openGroupId) {
+      const group = data.groups.find(x=>x.id===openGroupId);
+      if (group) cardList.innerHTML += `<div id="groupDetail">${renderGroupCard(group)}</div>`;
+    }
     return;
   } else if (currentTab === 'people') {
     if (!items.length) {
       cardList.innerHTML = '<div class="empty-msg">👤 大切な人を追加しましょう<br>下の ＋ ボタンから追加できます</div>';
       return;
     }
-    cardList.innerHTML = items.map(p => renderPersonListItem(p)).join('');
+    const sortedPeople = [...items].sort((a,b) => {
+      if (a.pinned&&!b.pinned) return -1; if (!a.pinned&&b.pinned) return 1;
+      return (a.nickname||'').localeCompare(b.nickname||'', 'ja');
+    });
+    cardList.innerHTML = sortedPeople.map(p => renderPersonListItem(p)).join('');
     // If a person detail is open, show it
     if (openPersonId) {
       const person = data.people.find(x=>x.id===openPersonId);
@@ -1291,7 +1361,7 @@ function renderItemListItem(item, tab) {
   return `<div class="list-item" onclick="toggleItemDetail('${item.id}')" style="${isOpen?'background:var(--accent-light);':''}">
     ${label?`<div style="width:6px;height:40px;border-radius:3px;background:${label.color};flex-shrink:0;"></div>`:'<div style="width:6px;"></div>'}
     <div class="list-body">
-      <div class="list-name">${esc(item.title||'無題')}${stars?` <span style="color:#f0b040;font-size:12px;">${stars}</span>`:''}</div>
+      <div class="list-name">${item.pinned?'📌 ':''}${esc(item.title||'無題')}${stars?` <span style="color:#f0b040;font-size:12px;">${stars}</span>`:''}</div>
       <div class="list-preview">${esc(preview)}</div>
     </div>
     <div class="list-meta">
@@ -1321,7 +1391,10 @@ function renderItems(items, cardList) {
   }
   let sorted;
   if (rankMode) {
-    sorted = [...items].filter(i=>(i.rating||0)>0).sort((a,b) => (b.rating||0)-(a.rating||0));
+    sorted = [...items].filter(i=>(i.rating||0)>0).sort((a,b) => {
+      if (a.pinned&&!b.pinned) return -1; if (!a.pinned&&b.pinned) return 1;
+      return (b.rating||0)-(a.rating||0);
+    });
     if (!sorted.length) {
       cardList.innerHTML = '<div class="empty-msg">⭐ まだ評価がありません<br>カードの★をタップして評価してください</div>';
       return;
@@ -1332,7 +1405,10 @@ function renderItems(items, cardList) {
       if (item) cardList.innerHTML += `<div id="itemDetail">${renderItemCard(item, currentTab)}</div>`;
     }
   } else {
-    sorted = [...items].sort((a,b) => (b.date||b.createdAt||'').localeCompare(a.date||a.createdAt||''));
+    sorted = [...items].sort((a,b) => {
+      if (a.pinned&&!b.pinned) return -1; if (!a.pinned&&b.pinned) return 1;
+      return (b.date||b.createdAt||'').localeCompare(a.date||a.createdAt||'');
+    });
     cardList.innerHTML = sorted.map(i => renderItemListItem(i, currentTab)).join('');
     if (openItemId) {
       const item = sorted.find(x=>x.id===openItemId);
@@ -1343,7 +1419,7 @@ function renderItems(items, cardList) {
 
 // ===== Tab =====
 function switchTab(tab) {
-  currentTab = tab; currentLabel = null; searchQuery = ''; rankMode = false; openPersonId = null; openItemId = null;
+  currentTab = tab; currentLabel = null; searchQuery = ''; rankMode = false; openPersonId = null; openItemId = null; openGroupId = null;
   document.getElementById('searchInput').value = '';
   document.querySelectorAll('.tab').forEach(el => el.classList.toggle('active', el.dataset.tab===tab));
   render();

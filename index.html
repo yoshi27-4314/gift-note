@@ -996,49 +996,85 @@ function jumpToItem(tab, id) {
   }, 100);
 }
 
-// ===== Regift =====
-function regiftItem(receivedId) {
-  const item = data.received.find(i=>i.id===receivedId);
+// ===== Regift (give to someone) =====
+let regiftSourceTab = null;
+let regiftSourceId = null;
+
+function regiftItem(tab, id) {
+  const item = data[tab].find(i=>i.id===id);
   if (!item) return;
+  regiftSourceTab = tab;
+  regiftSourceId = id;
   const modal = document.getElementById('modal');
-  let html = `<h2>🎁 「${esc(item.title)}」を別の人にあげる</h2>`;
-  html += `<div style="background:var(--bg);border-radius:12px;padding:10px;margin-bottom:14px;font-size:13px;">`;
-  html += `${item.person?'<div>もらった相手: '+esc(item.person)+'</div>':''}`;
-  html += `${item.date?'<div>もらった日: '+item.date+'</div>':''}`;
-  html += `</div>`;
-  html += `<div class="form-group"><label>誰にあげる？ *</label>`;
+
+  let html = `<h2>🎁 「${esc(item.title)}」を誰かにあげる</h2>`;
+  html += `<div class="form-group"><label>誰にあげる？</label>`;
   if (data.people.length) {
-    html += `<div style="max-height:250px;overflow-y:auto;">`;
+    html += `<div style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:12px;">`;
     data.people.filter(p=>p.type!=='corporate').forEach(p => {
-      html += `<div class="list-item" onclick="doRegift('${receivedId}','${p.id}')" style="padding:10px 12px;">
+      html += `<div class="list-item" onclick="regiftStep2('${p.id}')" style="padding:10px 12px;">
         <div class="list-avatar" style="width:36px;height:36px;font-size:18px;">${p.avatar?`<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;">`:'👤'}</div>
         <div class="list-name" style="font-size:14px;">${esc(p.nickname)}</div>
       </div>`;
     });
     html += `</div>`;
-  } else {
-    html += `<div style="font-size:13px;color:var(--sub);padding:12px;">大切な人を先に登録してください</div>`;
   }
+  html += `<div style="margin-top:8px;"><input id="rgManualName" placeholder="または名前を直接入力" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:12px;font-size:14px;font-family:'Zen Maru Gothic',sans-serif;color:var(--text);background:var(--bg);"></div>`;
   html += `</div>`;
-  html += `<div class="form-btns"><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button></div>`;
+  html += `<div class="form-btns"><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button><button class="btn btn-primary" onclick="regiftStep2Manual()">次へ</button></div>`;
   modal.innerHTML = html;
   document.getElementById('modalOverlay').classList.add('open');
 }
 
-function doRegift(receivedId, personId) {
-  const item = data.received.find(i=>i.id===receivedId);
+function regiftStep2(personId) {
   const person = data.people.find(p=>p.id===personId);
-  if (!item || !person) return;
+  if (person) showRegiftConfirm(person.nickname);
+}
+
+function regiftStep2Manual() {
+  const name = document.getElementById('rgManualName')?.value.trim();
+  if (!name) { alert('名前を入力するか、リストから選んでください'); return; }
+  showRegiftConfirm(name);
+}
+
+function showRegiftConfirm(recipientName) {
+  const item = data[regiftSourceTab]?.find(i=>i.id===regiftSourceId);
+  if (!item) return;
+  const modal = document.getElementById('modal');
+  const today = new Date().toISOString().split('T')[0];
+
+  let html = `<h2>🎁 あげる内容を確認</h2>`;
+  html += `<div style="background:var(--bg);border-radius:12px;padding:12px;margin-bottom:14px;">
+    <div style="font-size:15px;font-weight:600;">${esc(item.title)}</div>
+    <div style="font-size:13px;color:var(--sub);margin-top:4px;">→ ${esc(recipientName)} さんへ</div>
+  </div>`;
+  html += `<div class="form-group"><label>あげる相手</label><input id="rgRecipient" value="${esc(recipientName)}"></div>`;
+  html += `<div class="form-group"><label>日付</label><input type="date" id="rgDate" value="${today}"></div>`;
+  html += `<div class="form-group"><label>何の記念？（任意）</label><input id="rgOccasion" placeholder="例：誕生日、お礼、手土産"></div>`;
+  html += `<div class="form-group"><label>金額（任意）</label><input type="number" id="rgAmount" placeholder="例：5000" value="${item.amount||''}"></div>`;
+  html += `<div class="form-group"><label>メモ</label><textarea id="rgMemo" placeholder="一言メモ">${item.person ? item.person+'からもらったもの' : ''}</textarea></div>`;
+  html += `<div class="form-btns">
+    <button class="btn btn-secondary" onclick="regiftItem('${regiftSourceTab}','${regiftSourceId}')">← 戻る</button>
+    <button class="btn btn-primary" onclick="doRegift()">✅ 記録する</button>
+  </div>`;
+  modal.innerHTML = html;
+}
+
+function doRegift() {
+  const item = data[regiftSourceTab]?.find(i=>i.id===regiftSourceId);
+  if (!item) return;
+  const recipient = document.getElementById('rgRecipient').value.trim();
+  if (!recipient) { alert('相手の名前を入力してください'); return; }
   const now = new Date().toISOString();
   const gaveItem = {
     id: genId(),
     title: item.title,
-    person: person.nickname,
-    date: now.split('T')[0],
-    occasion: item.person ? esc(item.person) + 'からもらったもの' : null,
-    amount: item.amount || null,
+    person: recipient,
+    date: document.getElementById('rgDate').value || now.split('T')[0],
+    occasion: document.getElementById('rgOccasion').value.trim() || null,
+    amount: document.getElementById('rgAmount').value || null,
     tags: item.tags || null,
-    memo: (item.memo||'') + (item.person ? '\n※ ' + item.person + 'からもらったものを転用' : ''),
+    memo: document.getElementById('rgMemo').value.trim() || null,
     img: item.img || null,
     rating: null,
     pinned: false,
@@ -1048,7 +1084,6 @@ function doRegift(receivedId, personId) {
   data.gave.push(gaveItem);
   saveData();
   closeModal();
-  alert('✅ 「' + item.title + '」を ' + person.nickname + ' にあげた記録を追加しました');
   render();
 }
 
@@ -1098,7 +1133,7 @@ function renderItemCard(item, tab, rank) {
   else if (item.url) html += `<a class="card-url" href="${esc(item.url)}" target="_blank" rel="noopener">🔗 ${esc(truncUrl(item.url))}</a>`;
   html += `<div class="card-actions">
     <button class="card-btn" onclick="event.stopPropagation();togglePin('${tab}','${item.id}')">${item.pinned?'📌 固定中':'📌 固定'}</button>
-    ${tab==='received'?`<button class="card-btn" onclick="event.stopPropagation();regiftItem('${item.id}')" style="background:var(--pickup);border-color:var(--pickup-border);">🎁 別の人にあげる</button>`:''}
+    <button class="card-btn" onclick="event.stopPropagation();regiftItem('${tab}','${item.id}')" style="background:var(--pickup);border-color:var(--pickup-border);">🎁 誰かにあげる</button>
     <button class="card-btn" onclick="editItem('${tab}','${item.id}')">✏️ 編集</button>
     <button class="card-btn delete" onclick="deleteItem('${tab}','${item.id}')">🗑 削除</button>
   </div></div>`;

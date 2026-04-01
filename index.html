@@ -983,7 +983,8 @@ function savePlaceItem() {
 let openAllRecordId = null;
 
 function toggleAllRecordDetail(tab, id) {
-  openAllRecordId = openAllRecordId === id ? null : id;
+  const key = tab + ':' + id;
+  openAllRecordId = openAllRecordId === key ? null : key;
   render();
   if (openAllRecordId) {
     setTimeout(() => {
@@ -1582,10 +1583,11 @@ function render() {
     if (!allItems.length) {
       cardList.innerHTML = '<div class="empty-msg">📋 まだ記録がありません</div>';
     } else {
-      const isOpen = openAllRecordId;
+      const isOpenKey = openAllRecordId;
       cardList.innerHTML = allItems.map(item => {
+        const key = item._tab + ':' + item.id;
         const preview = item._icon + ' ' + (item.person?item.person+' ':'') + (item.occasion||'');
-        const active = isOpen === item.id;
+        const active = isOpenKey === key;
         return `<div class="list-item" onclick="toggleAllRecordDetail('${item._tab}','${item.id}')" style="${active?'background:var(--accent-light);':''}">
           <div style="width:6px;height:40px;border-radius:3px;background:${item._tab==='gave'?'#d48a7a':item._tab==='received'?'#7a9ad4':'var(--accent)'};flex-shrink:0;"></div>
           <div class="list-body">
@@ -1595,8 +1597,8 @@ function render() {
           <div class="list-meta"><div class="list-date">${item.date||''}</div></div>
         </div>`;
       }).join('');
-      if (isOpen) {
-        const openItem = allItems.find(x=>x.id===isOpen);
+      if (isOpenKey) {
+        const openItem = allItems.find(x=>(x._tab+':'+x.id)===isOpenKey);
         if (openItem) cardList.innerHTML += `<div id="allRecordDetail">${renderItemCard(openItem, openItem._tab)}</div>`;
       }
     }

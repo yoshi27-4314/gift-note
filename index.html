@@ -570,15 +570,26 @@ function daysSince(dateStr, dateType) {
   return Math.floor((today - past) / (1000*60*60*24));
 }
 
+const ELAPSED_MODE_KEY = 'awai_elapsed_mode';
+let elapsedMode = localStorage.getItem(ELAPSED_MODE_KEY) || 'days'; // days or years
+
+function toggleElapsedMode() {
+  elapsedMode = elapsedMode==='days' ? 'years' : 'days';
+  localStorage.setItem(ELAPSED_MODE_KEY, elapsedMode);
+  render();
+}
+
 function formatElapsed(days) {
   if (days === null) return '';
-  const years = Math.floor(days / 365);
-  const months = Math.floor((days % 365) / 30);
-  let str = '';
-  if (years > 0) str += years + '年';
-  if (months > 0) str += months + 'ヶ月';
-  if (!str) str = days + '日';
-  return str + '目';
+  if (elapsedMode === 'days') {
+    return days.toLocaleString() + '日目';
+  } else {
+    const years = Math.floor(days / 365);
+    const months = Math.floor((days % 365) / 30);
+    if (years > 0) return (years+1) + '年目（' + years + '年' + (months>0?months+'ヶ月':'') + '）';
+    if (months > 0) return months + 'ヶ月目';
+    return days + '日目';
+  }
 }
 
 // ===== Search =====
@@ -744,7 +755,7 @@ function renderPersonCard(p) {
   }
   // Anniversaries
   if (p.anniversaries&&p.anniversaries.length) {
-    html += '<div class="person-section"><div class="person-section-title">📅 記念日</div>';
+    html += `<div class="person-section"><div class="person-section-title" style="display:flex;align-items:center;justify-content:space-between;">📅 記念日 <span style="font-size:10px;padding:2px 8px;border-radius:8px;border:1px solid var(--border);cursor:pointer;background:var(--card);" onclick="toggleElapsedMode()">${elapsedMode==='days'?'📆 日数':'📅 年数'} ↔</span></div>`;
     p.anniversaries.forEach(a => {
       const days = daysUntil(a.date, a.dateType);
       const badge = days!==null ? (days===0?'🎉 今日！':'あと'+days+'日') : '';

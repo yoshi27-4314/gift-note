@@ -432,6 +432,14 @@ function loadData() {
       TABS.forEach(t => { if (Array.isArray(p[t])) data[t] = p[t]; });
       if (p.labels) data.labels = {...data.labels, ...p.labels};
     }
+    // Ensure all items have an id
+    let needsSave = false;
+    TABS.forEach(t => {
+      (data[t]||[]).forEach(item => {
+        if (!item.id) { item.id = item.createdAt || genId(); needsSave = true; }
+      });
+    });
+    if (needsSave) saveData();
     // Migrate from old format
     const old = localStorage.getItem('gn_data');
     if (old && !raw) {

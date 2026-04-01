@@ -1007,7 +1007,7 @@ function regiftItem(tab, id) {
   regiftSourceId = id;
   const modal = document.getElementById('modal');
 
-  let html = `<h2>🎁 「${esc(item.title)}」を誰かにあげる</h2>`;
+  let html = `<h2>🎁 「${esc(item.title)}」をプレゼントする</h2>`;
   html += `<div class="form-group"><label>誰にあげる？</label>`;
   if (data.people.length) {
     html += `<div style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:12px;">`;
@@ -1133,7 +1133,7 @@ function renderItemCard(item, tab, rank) {
   else if (item.url) html += `<a class="card-url" href="${esc(item.url)}" target="_blank" rel="noopener">🔗 ${esc(truncUrl(item.url))}</a>`;
   html += `<div class="card-actions">
     <button class="card-btn" onclick="event.stopPropagation();togglePin('${tab}','${item.id}')">${item.pinned?'📌 固定中':'📌 固定'}</button>
-    <button class="card-btn" onclick="event.stopPropagation();regiftItem('${tab}','${item.id}')" style="background:var(--pickup);border-color:var(--pickup-border);">🎁 誰かにあげる</button>
+    <button class="card-btn" onclick="event.stopPropagation();regiftItem('${tab}','${item.id}')" style="background:var(--pickup);border-color:var(--pickup-border);">🎁 プレゼントする</button>
     <button class="card-btn" onclick="editItem('${tab}','${item.id}')">✏️ 編集</button>
     <button class="card-btn delete" onclick="deleteItem('${tab}','${item.id}')">🗑 削除</button>
   </div></div>`;

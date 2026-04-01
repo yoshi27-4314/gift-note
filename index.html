@@ -368,6 +368,7 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
   <div class="tab" data-tab="gave">🎁 あげた</div>
   <div class="tab" data-tab="place">📍 行きたい場所</div>
   <div class="tab" data-tab="people">👤 大切な人</div>
+  <div class="tab" data-tab="groups">👥 グループ</div>
 </div>
 
 <div class="label-bar" id="labelBar"></div>
@@ -409,13 +410,13 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 // ===== Constants =====
 const STORAGE_KEY = 'awai_data';
 const SEASON_KEY = 'awai_season';
-const TABS = ['wish','received','gave','place','people'];
-const MODAL_TITLES = { wish:'ほしいもの', received:'もらったもの', gave:'あげたもの', place:'行きたいところ', people:'大切な人' };
+const TABS = ['wish','received','gave','place','people','groups'];
+const MODAL_TITLES = { wish:'ほしいもの', received:'もらったもの', gave:'あげたもの', place:'行きたいところ', people:'大切な人', groups:'グループ' };
 const SEASON_ICONS = { spring:'🌸', summer:'🌊', autumn:'🍂', winter:'❄️' };
 const LABEL_COLORS = ['#e8a598','#7a9ad4','#8abf7a','#c49a6c','#b07acc','#d4956a','#7ec8d9','#d48a7a','#8ea4bf','#6bab8a'];
 
 // ===== State =====
-let data = { wish:[], received:[], gave:[], place:[], people:[], labels:{wish:[],received:[],gave:[],place:[]} };
+let data = { wish:[], received:[], gave:[], place:[], people:[], groups:[], labels:{wish:[],received:[],gave:[],place:[]} };
 let currentTab = 'wish';
 let currentLabel = null; // null = all
 let editingId = null;
@@ -500,12 +501,20 @@ function formatAnnDate(dateStr, dateType) {
 function matchesSearch(item, tab) {
   if (!searchQuery) return true;
   const q = searchQuery.toLowerCase();
-  const fields = [item.title, item.nickname, item.person, item.memo, item.fullName, item.relation,
-    item.drinking, item.smoking, ...(item.tags||[]), ...(item.interests||[]),
+  const fields = [item.title, item.nickname, item.name, item.description, item.person, item.memo, item.fullName, item.relation,
+    item.drinking, item.smoking, item.industry, item.address, item.position, item.companyLink,
+    ...(item.tags||[]), ...(item.interests||[]),
     ...(item.foodLike||[]), ...(item.foodDislike||[]), ...(item.brands||[]),
     ...(item.personality||[]), ...(item.family||[]).map(f=>f.name+' '+f.note)
   ].filter(Boolean);
-  return fields.some(f => f.toLowerCase().includes(q));
+  // For groups, also search member names
+  if (item.memberIds) {
+    item.memberIds.forEach(id => {
+      const p = data.people.find(x=>x.id===id);
+      if (p) fields.push(p.nickname, p.fullName, p.relation);
+    });
+  }
+  return fields.some(f => f && f.toLowerCase().includes(q));
 }
 
 // ===== Pickup =====
@@ -566,7 +575,7 @@ function renderPickup() {
 function getLabels(tab) { return data.labels[tab]||[]; }
 function renderLabelBar() {
   const bar = document.getElementById('labelBar');
-  if (currentTab==='people') { bar.innerHTML=''; return; }
+  if (currentTab==='people'||currentTab==='groups') { bar.innerHTML=''; return; }
   const labels = getLabels(currentTab);
   let html = `<div class="label-chip ${currentLabel===null?'active':''}" style="color:var(--accent);${currentLabel===null?'border-color:var(--accent);':''}" onclick="filterLabel(null)"><span class="ldot" style="background:var(--accent);"></span> すべて</div>`;
   labels.forEach((l,i) => {
@@ -715,6 +724,222 @@ function renderPersonCard(p) {
   return html;
 }
 
+// ===== Group render =====
+function renderGroupCard(g) {
+  const members = (g.memberIds||[]).map(id => data.people.find(p=>p.id===id)).filter(Boolean);
+  let html = '<div class="card" style="border-left:3px solid var(--accent);">';
+  html += `<div class="card-title" style="font-size:17px;">👥 ${esc(g.name||'名前なし')}</div>`;
+  if (g.description) html += `<div class="card-sub">${esc(g.description)}</div>`;
+  html += `<div style="margin-top:8px;">`;
+  if (!members.length) {
+    html += '<div style="font-size:12px;color:var(--sub);">メンバーがいません</div>';
+  } else {
+    members.forEach(m => {
+      html += `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;">
+        <span style="width:28px;height:28px;border-radius:50%;background:var(--accent-light);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">${m.type==='corporate'?'🏢':'👤'}</span>
+        <span style="font-weight:500;">${esc(m.nickname)}</span>
+        ${m.relation?`<span style="font-size:11px;color:var(--sub);">${esc(m.relation)}</span>`:''}
+      </div>`;
+    });
+  }
+  html += '</div>';
+  // Upcoming anniversaries in this group
+  const upcoming = [];
+  members.forEach(m => {
+    (m.anniversaries||[]).forEach(a => {
+      const days = daysUntil(a.date, a.dateType);
+      if (days!==null && days<=60) upcoming.push({name:m.nickname, event:a.name, days});
+    });
+  });
+  if (upcoming.length) {
+    upcoming.sort((a,b)=>a.days-b.days);
+    html += '<div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);">';
+    html += '<div style="font-size:11px;color:var(--sub);margin-bottom:4px;">📅 近づいている記念日</div>';
+    upcoming.slice(0,3).forEach(u => {
+      html += `<div style="font-size:12px;padding:2px 0;">${esc(u.name)} — ${esc(u.event)} <span style="color:var(--accent);font-weight:600;">${u.days===0?'今日！':'あと'+u.days+'日'}</span></div>`;
+    });
+    html += '</div>';
+  }
+  html += `<div class="card-actions">
+    <button class="card-btn" onclick="editGroup('${g.id}')">✏️ 編集</button>
+    <button class="card-btn" onclick="openGroupAiSuggest('${g.id}')" style="background:var(--pickup);border-color:var(--pickup-border);">💡 まとめてAI提案</button>
+    <button class="card-btn delete" onclick="deleteItem('groups','${g.id}')">🗑 削除</button>
+  </div></div>`;
+  return html;
+}
+
+// ===== Group modal =====
+function openGroupModal(id) {
+  editingId = id||null;
+  const modal = document.getElementById('modal');
+  const isEdit = !!editingId;
+  const g = isEdit ? data.groups.find(x=>x.id===editingId) : null;
+  const selectedIds = g?.memberIds||[];
+
+  let html = `<h2>グループ を${isEdit?'編集':'作成'}</h2>`;
+  html += `<div class="form-group"><label>グループ名 *</label><input id="gName" placeholder="例：ゴルフ仲間、家族、ABC商事チーム" value="${esc(g?.name||'')}"></div>`;
+  html += `<div class="form-group"><label>説明（任意）</label><input id="gDesc" placeholder="例：毎月第2土曜にラウンド" value="${esc(g?.description||'')}"></div>`;
+  html += `<div class="form-group"><label>メンバー</label><div class="form-hint" style="margin-bottom:6px;">タップで選択・解除</div><div id="gMemberList" style="max-height:300px;overflow-y:auto;">`;
+  if (!data.people.length) {
+    html += '<div style="font-size:12px;color:var(--sub);padding:12px;">大切な人を先に登録してください</div>';
+  } else {
+    data.people.forEach(p => {
+      const checked = selectedIds.includes(p.id);
+      html += `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;" onclick="toggleGroupMember(this,'${p.id}')">
+        <span style="width:24px;height:24px;border-radius:6px;border:2px solid ${checked?'var(--accent)':'var(--border)'};background:${checked?'var(--accent)':'var(--card)'};display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;flex-shrink:0;transition:all 0.2s;" class="gcheck">${checked?'✓':''}</span>
+        <span style="font-size:16px;">${p.type==='corporate'?'🏢':'👤'}</span>
+        <div><div style="font-weight:500;font-size:14px;">${esc(p.nickname)}</div>
+        ${p.relation?`<div style="font-size:11px;color:var(--sub);">${esc(p.relation)}</div>`:''}</div>
+      </div>`;
+    });
+  }
+  html += `</div><input type="hidden" id="gMembers" value="${selectedIds.join(',')}"></div>`;
+  html += `<div class="form-btns"><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button><button class="btn btn-primary" onclick="saveGroup()">保存</button></div>`;
+  modal.innerHTML = html;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function toggleGroupMember(el, id) {
+  const input = document.getElementById('gMembers');
+  let ids = input.value ? input.value.split(',').filter(Boolean) : [];
+  const check = el.querySelector('.gcheck');
+  if (ids.includes(id)) {
+    ids = ids.filter(x=>x!==id);
+    check.style.borderColor = 'var(--border)';
+    check.style.background = 'var(--card)';
+    check.textContent = '';
+  } else {
+    ids.push(id);
+    check.style.borderColor = 'var(--accent)';
+    check.style.background = 'var(--accent)';
+    check.textContent = '✓';
+  }
+  input.value = ids.join(',');
+}
+
+function saveGroup() {
+  const name = document.getElementById('gName').value.trim();
+  if (!name) { alert('グループ名を入力してください'); return; }
+  const memberIds = document.getElementById('gMembers').value.split(',').filter(Boolean);
+  const group = {
+    id: editingId || genId(),
+    name,
+    description: document.getElementById('gDesc').value.trim()||null,
+    memberIds,
+    createdAt: editingId ? (data.groups.find(x=>x.id===editingId)?.createdAt||new Date().toISOString()) : new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  if (editingId) {
+    const idx = data.groups.findIndex(x=>x.id===editingId);
+    if (idx>=0) data.groups[idx] = group;
+  } else {
+    data.groups.push(group);
+  }
+  saveData(); closeModal(); render();
+}
+
+function editGroup(id) {
+  currentTab = 'groups';
+  document.querySelectorAll('.tab').forEach(el => el.classList.toggle('active', el.dataset.tab==='groups'));
+  openGroupModal(id);
+}
+
+// ===== Group AI suggest (batch) =====
+function openGroupAiSuggest(groupId) {
+  const group = data.groups.find(g=>g.id===groupId);
+  if (!group) return;
+  const members = (group.memberIds||[]).map(id=>data.people.find(p=>p.id===id)).filter(Boolean);
+  if (!members.length) { alert('メンバーがいません'); return; }
+
+  const modal = document.getElementById('aiModal');
+  let html = `<h2>💡 ${esc(group.name)} への贈り物提案</h2>`;
+  html += `<div style="background:var(--bg);border-radius:12px;padding:10px;font-size:12px;margin-bottom:12px;">`;
+  html += `<div style="font-size:11px;color:var(--sub);margin-bottom:4px;">メンバー ${members.length}人</div>`;
+  members.forEach(m => {
+    html += `<div>👤 ${esc(m.nickname)}${m.interests?.length?' — '+m.interests.join(', '):''}</div>`;
+  });
+  html += '</div>';
+  html += `<div class="form-group"><label>場面・シチュエーション</label>
+    <input id="aiGroupScene" placeholder="例：京都旅行のお土産、忘年会の景品">
+    <div class="form-hint">全員分まとめて提案します</div></div>`;
+  html += `<div class="form-group"><label>1人あたりの予算（任意）</label>
+    <input id="aiGroupBudget" placeholder="例：3000"></div>`;
+  html += `<div class="form-btns" style="margin-bottom:12px;">
+    <button class="btn btn-secondary" onclick="document.getElementById('aiModalOverlay').classList.remove('open')">閉じる</button>
+    <button class="btn btn-primary" id="aiGroupBtn" onclick="runGroupAiSuggest('${groupId}')">✨ まとめて提案</button></div>`;
+  html += '<div id="aiGroupResult" style="font-size:13px;line-height:1.8;white-space:pre-wrap;"></div>';
+  modal.innerHTML = html;
+  document.getElementById('aiModalOverlay').classList.add('open');
+}
+
+async function runGroupAiSuggest(groupId) {
+  const cfg = getAiConfig();
+  if (!cfg.apiKey && !cfg.proxyUrl) { alert('⚙️ 設定からAPI Keyを入力してください'); return; }
+  const group = data.groups.find(g=>g.id===groupId);
+  if (!group) return;
+  const members = (group.memberIds||[]).map(id=>data.people.find(p=>p.id===id)).filter(Boolean);
+
+  const resultDiv = document.getElementById('aiGroupResult');
+  const btn = document.getElementById('aiGroupBtn');
+  btn.disabled=true; btn.textContent='考え中...';
+  resultDiv.innerHTML = '<div style="text-align:center;color:var(--sub);padding:20px;">💭 AIが考えています...</div>';
+
+  const scene = document.getElementById('aiGroupScene')?.value.trim()||'';
+  const budget = document.getElementById('aiGroupBudget')?.value.trim()||'';
+
+  let memberProfiles = '';
+  members.forEach(m => {
+    const lines = [`名前: ${m.nickname}`];
+    if (m.relation) lines.push(`関係: ${m.relation}`);
+    if (m.interests?.length) lines.push(`好きなもの: ${m.interests.join(', ')}`);
+    if (m.foodLike?.length) lines.push(`好きな食べ物: ${m.foodLike.join(', ')}`);
+    if (m.foodDislike?.length) lines.push(`苦手: ${m.foodDislike.join(', ')}`);
+    if (m.drinking) lines.push(`お酒: ${m.drinking}`);
+    if (m.smoking) lines.push(`タバコ: ${m.smoking}`);
+    if (m.personality?.length) lines.push(`性格: ${m.personality.join(', ')}`);
+    if (m.memo) lines.push(`メモ: ${m.memo}`);
+    memberProfiles += '\n### ' + m.nickname + '\n' + lines.join('\n') + '\n';
+  });
+
+  const prompt = `あなたはギフトコンシェルジュです。以下のグループメンバー全員に対して、それぞれに合った贈り物を提案してください。
+
+## グループ: ${group.name}
+${group.description ? '説明: '+group.description : ''}
+
+## メンバー
+${memberProfiles}
+${scene ? '\n## 場面\n'+scene : ''}
+${budget ? '\n## 1人あたりの予算\n約'+budget+'円' : ''}
+
+## ルール
+- 各メンバーの好みに合わせた個別の提案をしてください
+- 苦手なものは絶対に避けてください
+- Amazonや楽天ではなく、知る人ぞ知る名店やブランド、体験型ギフトなどセンスの良い提案を
+- 各メンバーに1つずつ、「商品名」「店名」「なぜこの人に合うか」「予算目安」を含めて
+- 日本語で簡潔に`;
+
+  try {
+    const url = cfg.proxyUrl || 'https://api.anthropic.com/v1/messages';
+    const headers = { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' };
+    if (!cfg.proxyUrl) { headers['x-api-key'] = cfg.apiKey; headers['anthropic-dangerous-direct-browser-access'] = 'true'; }
+    else { headers['x-api-key'] = cfg.apiKey; }
+
+    const res = await fetch(url, {
+      method: 'POST', headers,
+      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 1500, messages: [{ role: 'user', content: prompt }] })
+    });
+    if (!res.ok) throw new Error(`API Error ${res.status}: ${await res.text()}`);
+    const json = await res.json();
+    const text = json.content?.[0]?.text || 'No response';
+    resultDiv.innerHTML = `<div style="background:var(--pickup);border:1px solid var(--pickup-border);border-radius:14px;padding:14px;">
+      <div style="font-weight:600;margin-bottom:8px;font-family:'Shippori Mincho',serif;">💡 ${esc(group.name)} への提案</div>
+      <div style="white-space:pre-wrap;">${esc(text)}</div></div>`;
+  } catch(e) {
+    resultDiv.innerHTML = `<div style="color:#c97070;padding:12px;">エラー: ${esc(e.message)}</div>`;
+  }
+  btn.disabled=false; btn.textContent='✨ まとめて提案';
+}
+
 // ===== Main render =====
 function render() {
   const cardList = document.getElementById('cardList');
@@ -726,6 +951,14 @@ function render() {
   if (currentTab !== 'people' && currentLabel !== null) {
     const filtered = items.filter(i => i.labelIdx === currentLabel);
     renderItems(filtered, cardList);
+  } else if (currentTab === 'groups') {
+    const groups = (data.groups||[]).filter(g => matchesSearch(g, 'groups'));
+    if (!groups.length) {
+      cardList.innerHTML = '<div class="empty-msg">👥 グループを作りましょう<br>旅行のお土産やまとめた贈り物に便利です<br>下の ＋ ボタンから作成できます</div>';
+      return;
+    }
+    cardList.innerHTML = groups.map(g => renderGroupCard(g)).join('');
+    return;
   } else if (currentTab === 'people') {
     if (!items.length) {
       cardList.innerHTML = '<div class="empty-msg">👤 大切な人を追加しましょう<br>下の ＋ ボタンから追加できます</div>';
@@ -1341,7 +1574,9 @@ ${budget ? '\n## 予算\n約'+budget+'円' : ''}
   });
 
   document.getElementById('fabBtn').addEventListener('click', () => {
-    if (currentTab==='people') openPeopleModal(); else openItemModal();
+    if (currentTab==='people') openPeopleModal();
+    else if (currentTab==='groups') openGroupModal();
+    else openItemModal();
   });
 
   document.getElementById('modalOverlay').addEventListener('click', e => {

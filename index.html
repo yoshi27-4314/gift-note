@@ -269,6 +269,10 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 }
 .card-btn:hover { background: var(--accent-light); }
 .card-btn.delete { color: #c97070; border-color: #e8c0c0; }
+.toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: rgba(74,63,58,0.9); color: #fff; padding: 10px 24px; border-radius: 20px; font-size: 14px; z-index: 9999; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+.toast.show { opacity: 1; }
+.pull-indicator { position: fixed; top: 0; left: 50%; transform: translateX(-50%) translateY(-50px); background: var(--accent); color: #fff; padding: 8px 20px; border-radius: 0 0 16px 16px; font-size: 13px; z-index: 9998; transition: transform 0.3s; }
+.pull-indicator.visible { transform: translateX(-50%) translateY(0); }
 
 /* Person card */
 .person-card {
@@ -1347,8 +1351,8 @@ function renderItemCard(item, tab, rank) {
     <button class="card-btn" onclick="event.stopPropagation();regiftItem('${tab}','${item.id}')" style="background:var(--pickup);border-color:var(--pickup-border);">🎁 プレゼントする</button>
     ${tab==='place'?`<button class="card-btn" onclick="event.stopPropagation();markVisited('${item.id}')" style="background:${item.visited?'#e8f5e9':'var(--pickup)'};border-color:${item.visited?'#a5d6a7':'var(--pickup-border)'};">${item.visited?'✅ 行った！':'📍 行った！'}</button>`:''}
     ${tab!=='received'&&tab!=='gave'?`<button class="card-btn" onclick="event.stopPropagation();shareItem('${tab}','${item.id}')" style="background:#e3f2fd;border-color:#90caf9;">📤 共有</button>`:''}
-    <button class="card-btn" onclick="editItem('${tab}','${item.id}')">✏️ 編集</button>
-    <button class="card-btn delete" onclick="deleteItem('${tab}','${item.id}')">🗑 削除</button>
+    <button class="card-btn" onclick="event.stopPropagation();editItem('${tab}','${item.id}')">✏️ 編集</button>
+    <button class="card-btn delete" onclick="event.stopPropagation();deleteItem('${tab}','${item.id}')">🗑 削除</button>
   </div></div>`;
   return html;
 }
@@ -1485,9 +1489,9 @@ function renderPersonCard(p) {
   <div class="person-actions">
     <button class="card-btn" onclick="event.stopPropagation();togglePin('people','${p.id}')">${p.pinned?'📌 固定中':'📌 固定'}</button>
     <button class="card-btn" onclick="event.stopPropagation();sharePerson('${p.id}')" style="background:#e3f2fd;border-color:#90caf9;">📤 共有</button>
-    <button class="card-btn" onclick="editItem('people','${p.id}')">✏️ 編集</button>
-    <button class="card-btn" onclick="openAiSuggest('${p.id}')" style="background:var(--pickup);border-color:var(--pickup-border);">💡 コンシェルジュ</button>
-    <button class="card-btn delete" onclick="deleteItem('people','${p.id}')">🗑 削除</button>
+    <button class="card-btn" onclick="event.stopPropagation();editItem('people','${p.id}')">✏️ 編集</button>
+    <button class="card-btn" onclick="event.stopPropagation();openAiSuggest('${p.id}')" style="background:var(--pickup);border-color:var(--pickup-border);">💡 コンシェルジュ</button>
+    <button class="card-btn delete" onclick="event.stopPropagation();deleteItem('people','${p.id}')">🗑 削除</button>
   </div></div>`;
   return html;
 }
@@ -1641,11 +1645,11 @@ function renderGroupCard(g) {
   }
   html += `<hr style="border:none;border-top:1px solid var(--border);margin:20px 0 16px;">
   <div class="card-actions">
-    <button class="card-btn" onclick="togglePin('groups','${g.id}')">${g.pinned?'📌 固定中':'📌 固定'}</button>
+    <button class="card-btn" onclick="event.stopPropagation();togglePin('groups','${g.id}')">${g.pinned?'📌 固定中':'📌 固定'}</button>
     <button class="card-btn" onclick="event.stopPropagation();shareGroup('${g.id}')" style="background:#e3f2fd;border-color:#90caf9;">📤 共有</button>
-    <button class="card-btn" onclick="editGroup('${g.id}')">✏️ 編集</button>
-    <button class="card-btn" onclick="openGroupAiSuggest('${g.id}')" style="background:var(--pickup);border-color:var(--pickup-border);">💡 コンシェルジュ</button>
-    <button class="card-btn delete" onclick="deleteItem('groups','${g.id}')">🗑 削除</button>
+    <button class="card-btn" onclick="event.stopPropagation();editGroup('${g.id}')">✏️ 編集</button>
+    <button class="card-btn" onclick="event.stopPropagation();openGroupAiSuggest('${g.id}')" style="background:var(--pickup);border-color:var(--pickup-border);">💡 コンシェルジュ</button>
+    <button class="card-btn delete" onclick="event.stopPropagation();deleteItem('groups','${g.id}')">🗑 削除</button>
   </div></div>`;
   return html;
 }
@@ -2416,7 +2420,15 @@ function addFamilyRow() {
   c.insertAdjacentHTML('beforeend', `<div class="form-row" style="margin-bottom:6px;"><input placeholder="名前・続柄" class="fam-name"><input placeholder="メモ" class="fam-note"><span style="color:#c97070;cursor:pointer;font-size:18px;" onclick="this.parentElement.remove()">×</span></div>`);
 }
 
+let _saving = false;
+function showToast(msg) {
+  let el = document.getElementById('toast');
+  if (!el) { el = document.createElement('div'); el.id='toast'; el.className='toast'; document.body.appendChild(el); }
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2000);
+}
 function savePerson() {
+  if (_saving) return;
   const nickname = document.getElementById('pNickname').value.trim();
   if (!nickname) { alert('呼び名を入力してください'); return; }
 
@@ -2498,6 +2510,7 @@ function savePerson() {
     updatedAt: new Date().toISOString()
   };
 
+  _saving = true;
   if (editingId) {
     const idx = data.people.findIndex(p=>p.id===editingId);
     if (idx>=0) data.people[idx] = person;
@@ -2505,6 +2518,8 @@ function savePerson() {
     data.people.push(person);
   }
   saveData(); closeModal(); render();
+  showToast(editingId ? '更新しました' : '登録しました ✓');
+  _saving = false;
 }
 
 // ===== Save Item =====
@@ -3188,6 +3203,33 @@ if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().t
   });
 
   render();
+
+  // Pull-to-refresh for iOS
+  let _ptr_startY = 0, _ptr_pulling = false;
+  const _ptr_el = document.createElement('div');
+  _ptr_el.className = 'pull-indicator';
+  _ptr_el.textContent = '↓ 引いて更新';
+  document.body.appendChild(_ptr_el);
+  document.addEventListener('touchstart', e => {
+    if (window.scrollY === 0) { _ptr_startY = e.touches[0].clientY; _ptr_pulling = true; }
+  }, {passive: true});
+  document.addEventListener('touchmove', e => {
+    if (!_ptr_pulling) return;
+    const dy = e.touches[0].clientY - _ptr_startY;
+    if (dy > 60) { _ptr_el.textContent = '↑ 離して更新'; _ptr_el.classList.add('visible'); }
+    else if (dy > 0) { _ptr_el.textContent = '↓ 引いて更新'; _ptr_el.classList.add('visible'); }
+    else { _ptr_el.classList.remove('visible'); }
+  }, {passive: true});
+  document.addEventListener('touchend', () => {
+    if (_ptr_el.classList.contains('visible') && _ptr_el.textContent.includes('離して')) {
+      _ptr_el.textContent = '更新中...';
+      setTimeout(() => { location.reload(); }, 300);
+    } else {
+      _ptr_el.classList.remove('visible');
+    }
+    _ptr_pulling = false;
+  }, {passive: true});
+
   } catch(e) { console.error('Init error:', e); alert('初期化エラー: ' + e.message); }
 })();
 </script>

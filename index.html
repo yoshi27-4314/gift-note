@@ -935,9 +935,11 @@ function openPlaceModal(id) {
   // Address + Map
   html += `<div class="form-group"><label>📍 住所</label>
     <input id="fAddress" placeholder="例：東京都渋谷区..." value="${esc(item?.address||'')}">
-    <div style="margin-top:6px;">
+    <div style="margin-top:6px;display:flex;align-items:center;gap:8px;">
       <button class="card-btn" onclick="openMapSearch()" style="font-size:13px;">🗺 Googleマップで検索</button>
+      <span id="fMapLinkStatus" style="font-size:12px;color:#6bab8a;display:${item?.googleMapUrl?'inline':'none'};">✓ リンク登録済み</span>
     </div>
+    <input type="hidden" id="fGoogleMapUrl" value="${esc(item?.googleMapUrl||'')}">
   </div>`;
 
   // Homepage URL
@@ -1057,9 +1059,12 @@ function togglePlaceWith(el, type, value) {
 function openMapSearch() {
   const address = document.getElementById('fAddress')?.value.trim();
   const title = document.getElementById('fTitle')?.value.trim();
-  const query = encodeURIComponent(address || title || '');
-  if (query) window.open('https://www.google.com/maps/search/' + query, '_blank');
-  else alert('店名か住所を入力してから検索してください');
+  const query = address || title || '';
+  if (!query) { alert('店名か住所を入力してから検索してください'); return; }
+  const mapUrl = 'https://www.google.com/maps/search/' + encodeURIComponent(query);
+  document.getElementById('fGoogleMapUrl').value = mapUrl;
+  document.getElementById('fMapLinkStatus').style.display = 'inline';
+  window.open(mapUrl, '_blank');
 }
 
 function savePlaceItem() {
@@ -1086,6 +1091,7 @@ function savePlaceItem() {
       address: document.getElementById('fAddress')?.value.trim()||null,
       mapUrl: document.getElementById('fMapUrl')?.value.trim()||null,
       url: document.getElementById('fMapUrl')?.value.trim()||null,
+      googleMapUrl: document.getElementById('fGoogleMapUrl')?.value.trim()||null,
       phone: document.getElementById('fPhone')?.value.trim()||null,
       tags: allTags.length ? allTags : null,
       placeCategory: document.getElementById('fPlaceCategory')?.value||null,
@@ -1376,8 +1382,9 @@ function renderItemCard(item, tab, rank) {
   if (item.tags&&item.tags.length) html += `<div class="card-tags">${item.tags.map(t=>`<span class="card-tag">#${esc(t)}</span>`).join('')}</div>`;
   if (item.address) html += `<div style="font-size:13px;color:var(--sub);margin-top:6px;">📍 ${esc(item.address)}</div>`;
   if (item.phone) html += `<a href="tel:${esc(item.phone)}" style="display:block;font-size:13px;color:var(--accent);margin-top:6px;text-decoration:none;">📞 ${esc(item.phone)}</a>`;
+  if (item.googleMapUrl) html += `<a class="card-url" href="${esc(item.googleMapUrl)}" target="_blank" rel="noopener" style="margin-top:6px;font-size:15px;">🗺 Googleマップで開く</a>`;
   if (item.mapUrl) html += `<a class="card-url" href="${esc(item.mapUrl)}" target="_blank" rel="noopener" style="margin-top:6px;font-size:15px;">🔗 ホームページを開く</a>`;
-  else if (item.url) html += `<a class="card-url" href="${esc(item.url)}" target="_blank" rel="noopener">🔗 ${esc(truncUrl(item.url))}</a>`;
+  else if (item.url) html += `<a class="card-url" href="${esc(item.url)}" target="_blank" rel="noopener" style="font-size:15px;">🔗 ${esc(truncUrl(item.url))}</a>`;
   html += `<div class="card-actions">
     <button class="card-btn" onclick="event.stopPropagation();togglePin('${tab}','${item.id}')">${item.pinned?'📌 固定中':'📌 固定'}</button>
     <button class="card-btn" onclick="event.stopPropagation();regiftItem('${tab}','${item.id}')" style="background:var(--pickup);border-color:var(--pickup-border);">🎁 プレゼントする</button>

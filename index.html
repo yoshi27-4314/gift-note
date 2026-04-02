@@ -1355,11 +1355,18 @@ function renderItemCard(item, tab, rank) {
   if (item.withPeople?.length) {
     const peopleLinks = item.withPeople.map(pid => {
       const pp = data.people.find(x=>x.id===pid);
-      return pp ? `<span style="color:var(--accent);cursor:pointer;text-decoration:underline;" onclick="event.stopPropagation();jumpToPerson('${pid}')">${esc(pp.nickname)}</span>` : null;
-    }).filter(Boolean);
-    if (peopleLinks.length) html += `<div class="card-person">👤 ${peopleLinks.join(', ')}</div>`;
+      if (pp) return `<span style="color:var(--accent);cursor:pointer;text-decoration:underline;" onclick="event.stopPropagation();jumpToPerson('${pid}')">${esc(pp.nickname)}</span>`;
+      return `<span>${esc(pid)}</span>`;
+    });
+    html += `<div class="card-person">👤 ${peopleLinks.join(', ')}</div>`;
   } else if (item.person) {
-    html += `<div class="card-person">👤 ${esc(item.person)}</div>`;
+    const names = item.person.split(/[,、]\s*/);
+    const links = names.map(name => {
+      const pp = data.people.find(x=>x.nickname===name||x.id===name);
+      if (pp) return `<span style="color:var(--accent);cursor:pointer;text-decoration:underline;" onclick="event.stopPropagation();jumpToPerson('${pp.id}')">${esc(pp.nickname)}</span>`;
+      return `<span>${esc(name)}</span>`;
+    });
+    html += `<div class="card-person">👤 ${links.join(', ')}</div>`;
   }
   if (item.date) html += `<div class="card-sub">📅 ${item.date}</div>`;
   if (item.occasion) html += `<div class="card-occasion">${esc(item.occasion)}</div>`;

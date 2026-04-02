@@ -1385,6 +1385,10 @@ function renderPersonCard(p) {
     ${p.industry?`<div class="person-relation">${esc(p.industry)}</div>`:''}
     ${p.companyLink?`<div class="person-relation" style="color:var(--accent);">🏢 ${esc(p.companyLink)}</div>`:''}
     </div></div>`;
+  // Corporate photo (business card etc.)
+  if (p.corpPhoto) {
+    html += `<div class="person-section"><div class="person-section-title">📷 写真</div><img src="${p.corpPhoto}" style="width:100%;max-height:250px;object-fit:contain;border-radius:12px;"></div>`;
+  }
   // Corporate seasonal gifts
   if (p.chugen||p.seibo) {
     html += '<div class="person-section"><div class="person-section-title">🎐🎄 季節の贈答</div>';
@@ -2259,6 +2263,17 @@ function openPeopleModal(id) {
   // Corporate fields
   html += `<div id="corporateFields" style="display:${isCorp?'':'none'}">`;
   html += `<div class="form-group"><label>会社名 *</label><input id="pCorpName" placeholder="例：ABC商事 株式会社" value="${esc(isCorp?p?.nickname:'')}"></div>`;
+  // Corporate photo (business card etc.)
+  html += `<div class="form-group"><label>📷 写真（名刺など）</label>
+    <div id="pCorpPhotoPreview" style="margin-bottom:8px;">${p?.corpPhoto?`<img src="${p.corpPhoto}" style="width:100%;max-height:200px;object-fit:contain;border-radius:12px;border:1px solid var(--border);">`:''}
+    </div>
+    <input type="file" id="pCorpPhotoCamera" accept="image/*" capture="environment" style="display:none;" onchange="previewCorpPhoto(this)">
+    <input type="file" id="pCorpPhotoFile" accept="image/*" style="display:none;" onchange="previewCorpPhoto(this)">
+    <div style="display:flex;gap:8px;">
+      <div style="font-size:12px;color:var(--accent);cursor:pointer;padding:4px 12px;border:1px solid var(--border);border-radius:10px;" onclick="document.getElementById('pCorpPhotoCamera').click()">📷 カメラ</div>
+      <div style="font-size:12px;color:var(--accent);cursor:pointer;padding:4px 12px;border:1px solid var(--border);border-radius:10px;" onclick="document.getElementById('pCorpPhotoFile').click()">📁 ファイル</div>
+    </div>
+  </div>`;
   html += `<div class="form-group"><label>業種</label><input id="pIndustry" placeholder="例：建設業" value="${esc(p?.industry||'')}"></div>`;
   html += `<div class="form-group"><label>住所（送付先）</label><input id="pAddress" placeholder="" value="${esc(p?.address||'')}"></div>`;
   html += `</div>`;
@@ -2418,6 +2433,14 @@ function previewAvatar(input) {
   };
   reader.readAsDataURL(input.files[0]);
 }
+function previewCorpPhoto(input) {
+  if (!input.files||!input.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('pCorpPhotoPreview').innerHTML = `<img src="${e.target.result}" style="width:100%;max-height:200px;object-fit:contain;border-radius:12px;border:1px solid var(--border);">`;
+  };
+  reader.readAsDataURL(input.files[0]);
+}
 function addFamilyRow() {
   const c = document.getElementById('familyContainer');
   const idx = c.children.length;
@@ -2477,6 +2500,12 @@ function savePerson() {
   const avatarImg = document.querySelector('#pAvatarPreview img');
   if (avatarImg && avatarImg.src.startsWith('data:')) avatarData = avatarImg.src;
 
+  // Handle corporate photo
+  const existingCorpPhoto = editingId ? (data.people.find(x=>x.id===editingId)?.corpPhoto||null) : null;
+  let corpPhotoData = existingCorpPhoto;
+  const corpPhotoImg = document.querySelector('#pCorpPhotoPreview img');
+  if (corpPhotoImg && corpPhotoImg.src.startsWith('data:')) corpPhotoData = corpPhotoImg.src;
+
   const person = {
     id: editingId || genId(),
     nickname: isCorp ? document.getElementById('pCorpName').value.trim() : nickname,
@@ -2484,6 +2513,7 @@ function savePerson() {
     relation: isCorp ? null : document.getElementById('pRelation').value.trim()||null,
     gender: isCorp ? null : document.getElementById('pGender')?.value||'unset',
     avatar: isCorp ? null : avatarData,
+    corpPhoto: isCorp ? corpPhotoData : null,
     type: personType,
     companyLink: isCorp ? null : document.getElementById('pCompanyLink')?.value.trim()||null,
     position: isCorp ? null : document.getElementById('pPosition')?.value.trim()||null,

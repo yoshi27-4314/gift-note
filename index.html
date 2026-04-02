@@ -1664,12 +1664,53 @@ function render() {
     return;
   }
 
+  // For wish tab with label filter, search across wish+received+gave
+  if (currentTab === 'wish' && currentLabel !== null) {
+    const tabIcons = {wish:'✨', received:'🎀', gave:'🎁'};
+    const allFiltered = [];
+    ['wish','received','gave'].forEach(tab => {
+      (data[tab]||[]).forEach(item => {
+        if (matchesSearch(item, tab) && item.labelIdx === currentLabel) {
+          allFiltered.push({...item, _tab:tab, _icon:tabIcons[tab]});
+        }
+      });
+    });
+    if (!allFiltered.length) {
+      const labelName = getLabels(currentTab)[currentLabel]?.name || 'このラベル';
+      cardList.innerHTML = `<div class="empty-msg">「${esc(labelName)}」のアイテムはまだありません<br>カード詳細のラベルチップをタップして紐付けてください</div>`;
+      return;
+    }
+    allFiltered.sort((a,b) => {
+      if (a.pinned&&!b.pinned) return -1; if (!a.pinned&&b.pinned) return 1;
+      return (b.date||b.createdAt||'').localeCompare(a.date||a.createdAt||'');
+    });
+    const isOpenKey = openAllRecordId;
+    cardList.innerHTML = allFiltered.map(item => {
+      const key = item._tab + ':' + item.id;
+      const preview = item._icon + ' ' + (item.person?item.person+' ':'') + (item.occasion||'');
+      const active = isOpenKey === key;
+      return `<div class="list-item" onclick="toggleAllRecordDetail('${item._tab}','${item.id}')" style="${active?'background:var(--accent-light);':''}">
+        <div style="width:6px;height:40px;border-radius:3px;background:${item._tab==='gave'?'#d48a7a':item._tab==='received'?'#7a9ad4':'var(--accent)'};flex-shrink:0;"></div>
+        <div class="list-body">
+          <div class="list-name">${item.pinned?'📌 ':''}${esc(item.title||'無題')}</div>
+          <div class="list-preview">${esc(preview)}</div>
+        </div>
+        <div class="list-meta"><div class="list-date">${item.date||''}</div></div>
+      </div>`;
+    }).join('');
+    if (isOpenKey) {
+      const openItem = allFiltered.find(x=>(x._tab+':'+x.id)===isOpenKey);
+      if (openItem) cardList.innerHTML += `<div id="allRecordDetail">${renderItemCard(openItem, openItem._tab)}</div>`;
+    }
+    return;
+  }
+
   const items = (data[currentTab]||[]).filter(i => matchesSearch(i, currentTab));
   if (currentTab !== 'people' && currentLabel !== null) {
     const filtered = items.filter(i => i.labelIdx === currentLabel);
     if (!filtered.length && items.length) {
       const labelName = getLabels(currentTab)[currentLabel]?.name || 'このラベル';
-      cardList.innerHTML = `<div class="empty-msg">「${esc(labelName)}」のアイテムはまだありません<br>各アイテムの編集画面からラベルを付けられます</div>`;
+      cardList.innerHTML = `<div class="empty-msg">「${esc(labelName)}」のアイテムはまだありません<br>カード詳細のラベルチップをタップして紐付けてください</div>`;
       return;
     }
     renderItems(filtered, cardList);

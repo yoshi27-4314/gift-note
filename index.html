@@ -2507,10 +2507,14 @@ function openLabelModal() {
   const labels = getLabels(currentTab);
   let html = `<h2>${MODAL_TITLES[currentTab]} のラベル管理</h2>`;
   labels.forEach((l,i) => {
-    html += `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
+    html += `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);">
+      <div style="display:flex;flex-direction:column;gap:2px;">
+        <span style="font-size:16px;cursor:pointer;line-height:1;opacity:${i===0?'0.3':'1'};" onclick="${i>0?`moveLabel(${i},-1)`:''}" ${i===0?'':''}">▲</span>
+        <span style="font-size:16px;cursor:pointer;line-height:1;opacity:${i===labels.length-1?'0.3':'1'};" onclick="${i<labels.length-1?`moveLabel(${i},1)`:''}" ${i===labels.length-1?'':''}">▼</span>
+      </div>
       <span style="width:12px;height:12px;border-radius:50%;background:${l.color};flex-shrink:0;"></span>
-      <span style="flex:1;">${esc(l.name)}</span>
-      <span style="font-size:11px;color:#c97070;cursor:pointer;" onclick="removeLabel(${i})">🗑</span>
+      <span style="flex:1;font-size:14px;">${esc(l.name)}</span>
+      <span style="font-size:13px;color:#c97070;cursor:pointer;" onclick="removeLabel(${i})">🗑</span>
     </div>`;
   });
   html += `<div style="border-top:1px dashed var(--border);padding-top:14px;margin-top:8px;">
@@ -2540,6 +2544,25 @@ function addLabel() {
   autoLabelAll();
   saveData(); openLabelModal(); renderLabelBar();
 }
+function moveLabel(idx, dir) {
+  const lk = getLabelKey(currentTab);
+  const labels = data.labels[lk];
+  if (!labels) return;
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= labels.length) return;
+  // Swap labels
+  [labels[idx], labels[newIdx]] = [labels[newIdx], labels[idx]];
+  // Update labelIdx on items
+  const tabsToUpdate = lk==='gift' ? ['received','gave'] : [currentTab];
+  tabsToUpdate.forEach(t => {
+    (data[t]||[]).forEach(item => {
+      if (item.labelIdx === idx) item.labelIdx = newIdx;
+      else if (item.labelIdx === newIdx) item.labelIdx = idx;
+    });
+  });
+  saveData(); openLabelModal(); renderLabelBar();
+}
+
 function removeLabel(idx) {
   if (!confirm('このラベルを削除しますか？')) return;
   const lk = getLabelKey(currentTab);

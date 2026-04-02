@@ -2264,7 +2264,8 @@ function openPeopleModal(id) {
   html += `</div>`;
 
   // Anniversaries
-  const anns = p?.anniversaries||[{name:'🎂 誕生日',date:'',dateType:'monthday',reminders:[30]}];
+  const defaultAnn = isCorp ? {name:'🏢 創立記念日',date:'',dateType:'monthday',reminders:[30]} : {name:'🎂 誕生日',date:'',dateType:'monthday',reminders:[30]};
+  const anns = p?.anniversaries||[defaultAnn];
   html += `<div class="form-group"><label>📅 記念日</label><div id="annContainer">`;
   anns.forEach((a,i) => { html += annRowHTML(a,i); });
   html += `</div><div class="add-btn" onclick="addAnnRow()">＋ 記念日を追加</div></div>`;
@@ -2281,6 +2282,7 @@ function openPeopleModal(id) {
     </div>
   </div>`;
 
+  if (!isCorp) {
   // Sizes
   const sz = p?.sizes||{};
   html += `<div class="form-group"><label>📏 サイズ（分かる範囲で）</label><div class="profile-form-grid">
@@ -2320,6 +2322,7 @@ function openPeopleModal(id) {
 
   // Personality
   html += `<div class="form-group"><label>✨ 個性</label><input id="pPersonality" placeholder="例：気配り上手, 豪快, サプライズ好き" value="${(p?.personality||[]).join(', ')}"></div>`;
+  } // end !isCorp
 
   // Memo
   html += `<div class="form-group"><label>📝 メモ</label><textarea id="pMemo" placeholder="自由にメモ。ここに書いた内容も検索でヒットします">${esc(p?.memo||'')}</textarea></div>`;
@@ -2492,20 +2495,20 @@ function savePerson() {
     seiboBudget: document.getElementById('pSeiboBudget')?.value||null,
     anniversaries,
     sizes: {
-      tops: document.getElementById('pSizeTops').value.trim()||null,
-      bottoms: document.getElementById('pSizeBottoms').value.trim()||null,
-      shoes: document.getElementById('pSizeShoes').value.trim()||null,
-      ring: document.getElementById('pSizeRing').value.trim()||null,
+      tops: document.getElementById('pSizeTops')?.value.trim()||null,
+      bottoms: document.getElementById('pSizeBottoms')?.value.trim()||null,
+      shoes: document.getElementById('pSizeShoes')?.value.trim()||null,
+      ring: document.getElementById('pSizeRing')?.value.trim()||null,
     },
-    smoking: document.getElementById('pSmoking').value.trim()||null,
-    drinking: document.getElementById('pDrinking').value.trim()||null,
-    interests: parseTags(document.getElementById('pInterests').value),
-    brands: parseTags(document.getElementById('pBrands').value),
+    smoking: document.getElementById('pSmoking')?.value.trim()||null,
+    drinking: document.getElementById('pDrinking')?.value.trim()||null,
+    interests: parseTags(document.getElementById('pInterests')?.value||''),
+    brands: parseTags(document.getElementById('pBrands')?.value||''),
     oshi: parseTags(document.getElementById('pOshi')?.value||''),
-    foodLike: parseTags(document.getElementById('pFoodLike').value),
-    foodDislike: parseTags(document.getElementById('pFoodDislike').value),
+    foodLike: parseTags(document.getElementById('pFoodLike')?.value||''),
+    foodDislike: parseTags(document.getElementById('pFoodDislike')?.value||''),
     family,
-    personality: parseTags(document.getElementById('pPersonality').value),
+    personality: parseTags(document.getElementById('pPersonality')?.value||''),
     memo: document.getElementById('pMemo').value.trim()||null,
     createdAt: editingId ? (data.people.find(p=>p.id===editingId)?.createdAt||new Date().toISOString()) : new Date().toISOString(),
     updatedAt: new Date().toISOString()

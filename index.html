@@ -559,10 +559,10 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 <div class="pickup-zone" id="pickupZone"></div>
 
 <div class="tabs" id="tabs">
-  <div class="tab active" data-tab="wish">✨ アイテムリスト</div>
+  <div class="tab active" data-tab="wish">✨ アイテム</div>
   <div class="tab" data-tab="received">🎀 もらった</div>
   <div class="tab" data-tab="gave">🎁 あげた</div>
-  <div class="tab" data-tab="place">📍 行きたい場所</div>
+  <div class="tab" data-tab="place">📍 行きたい</div>
   <div class="tab" data-tab="people">👤 大切な人</div>
   <div class="tab" data-tab="groups">👥 グループ</div>
 </div>
@@ -610,7 +610,7 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 const STORAGE_KEY = 'awai_data';
 const SEASON_KEY = 'awai_season';
 const TABS = ['wish','received','gave','place','people','groups'];
-const MODAL_TITLES = { wish:'アイテム', received:'もらったもの', gave:'あげたもの', place:'行きたいところ', people:'大切な人', groups:'グループ' };
+const MODAL_TITLES = { wish:'アイテム', received:'もらった', gave:'あげた', place:'行きたい', people:'大切な人', groups:'グループ' };
 const SEASON_ICONS = { spring:'🌸', summer:'🌊', autumn:'🍂', winter:'❄️' };
 const LABEL_COLORS = ['#e8a598','#7a9ad4','#8abf7a','#c49a6c','#b07acc','#d4956a','#7ec8d9','#d48a7a','#8ea4bf','#6bab8a'];
 
@@ -871,7 +871,7 @@ function openPlaceModal(id) {
   const item = isEdit ? data.place.find(i=>i.id===editingId) : null;
   const labels = getLabels('place');
 
-  let html = `<h2>行きたいところ を${isEdit?'編集':'追加'}</h2>`;
+  let html = `<h2>行きたい を${isEdit?'編集':'追加'}</h2>`;
   html += `<div class="form-group"><label>店名・場所名 *</label><input id="fTitle" placeholder="例：鳥貴族 名駅店、伏見稲荷大社" value="${esc(item?.title||'')}"></div>`;
 
   // Labels

@@ -836,6 +836,10 @@ function renderLabelBar() {
   }
   const labels = getLabels(currentTab);
   let html = `<div class="label-chip ${currentLabel===null?'active':''}" style="color:var(--accent);${currentLabel===null?'border-color:var(--accent);':''}" onclick="filterLabel(null)"><span class="ldot" style="background:var(--accent);"></span> すべて</div>`;
+  if (currentTab==='place') {
+    html += `<div class="label-chip ${currentLabel==='want'?'active':''}" style="color:#e8a598;${currentLabel==='want'?'border-color:#e8a598;':''}" onclick="filterLabel('want')"><span class="ldot" style="background:#e8a598;"></span> 📍 行きたい</div>`;
+    html += `<div class="label-chip ${currentLabel==='visited'?'active':''}" style="color:#6bab8a;${currentLabel==='visited'?'border-color:#6bab8a;':''}" onclick="filterLabel('visited')"><span class="ldot" style="background:#6bab8a;"></span> ✅ 行った</div>`;
+  }
   labels.forEach((l,i) => {
     html += `<div class="label-chip ${currentLabel===i?'active':''}" style="color:${l.color};${currentLabel===i?'border-color:'+l.color+';':''}" onclick="filterLabel(${i})"><span class="ldot" style="background:${l.color};"></span> ${esc(l.name)}</div>`;
   });
@@ -1185,6 +1189,65 @@ function autoLabelAll() {
   saveData();
 }
 
+function markVisited(id) {
+  const item = data.place.find(i=>i.id===id);
+  if (!item) return;
+  if (item.visited) {
+    // Toggle off
+    item.visited = false;
+    item.visitedDate = null;
+    saveData(); render();
+    return;
+  }
+  // Show date input
+  const modal = document.getElementById('modal');
+  const today = new Date().toISOString().split('T')[0];
+  modal.innerHTML = `<h2>✅ 行った！</h2>
+    <div style="background:var(--bg);border-radius:12px;padding:12px;margin-bottom:14px;">
+      <div style="font-size:15px;font-weight:600;">${esc(item.title)}</div>
+    </div>
+    <div class="form-group"><label>いつ行った？</label><input type="date" id="visitDate" value="${today}"></div>
+    <div class="form-group"><label>満足度</label><div class="stars" id="visitStars">
+      ${[1,2,3,4,5].map(i=>`<span class="star ${i<=item.rating?'on':''}" onclick="document.getElementById('visitRating').value=${i};this.parentElement.querySelectorAll('.star').forEach((s,j)=>s.classList.toggle('on',j<${i}))">★</span>`).join('')}
+    </div><input type="hidden" id="visitRating" value="${item.rating||0}"></div>
+    <div class="form-group"><label>感想メモ</label><textarea id="visitMemo" placeholder="おすすめメニュー、雰囲気、また行きたいかなど">${esc(item.memo||'')}</textarea></div>
+    <div class="form-group"><label>写真を追加</label>
+      <input type="file" id="visitCamera" accept="image/*" capture="environment" style="display:none;" onchange="previewPhoto(this,'visitPhotoPreview')">
+      <input type="file" id="visitFile" accept="image/*" style="display:none;" onchange="previewPhoto(this,'visitPhotoPreview')">
+      <div style="display:flex;gap:8px;">
+        <div style="font-size:13px;color:var(--accent);cursor:pointer;padding:6px 14px;border:1px solid var(--border);border-radius:10px;" onclick="document.getElementById('visitCamera').click()">📷 カメラ</div>
+        <div style="font-size:13px;color:var(--accent);cursor:pointer;padding:6px 14px;border:1px solid var(--border);border-radius:10px;" onclick="document.getElementById('visitFile').click()">📁 ファイル</div>
+      </div>
+      <div id="visitPhotoPreview"></div>
+    </div>
+    <div class="form-btns">
+      <button class="btn btn-secondary" onclick="closeModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveVisited('${id}')">✅ 記録する</button>
+    </div>`;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function saveVisited(id) {
+  const item = data.place.find(i=>i.id===id);
+  if (!item) return;
+  item.visited = true;
+  item.visitedDate = document.getElementById('visitDate').value;
+  item.rating = parseInt(document.getElementById('visitRating').value)||0;
+  item.memo = document.getElementById('visitMemo').value.trim()||null;
+
+  const camera = document.getElementById('visitCamera');
+  const file = document.getElementById('visitFile');
+  const photoInput = (file?.files?.length ? file : camera?.files?.length ? camera : null);
+
+  if (photoInput?.files?.[0]) {
+    const reader = new FileReader();
+    reader.onload = e => { item.img = e.target.result; saveData(); closeModal(); render(); };
+    reader.readAsDataURL(photoInput.files[0]);
+  } else {
+    saveData(); closeModal(); render();
+  }
+}
+
 function quickLabel(tab, id, labelIdx) {
   const item = data[tab].find(i=>i.id===id);
   if (!item) return;
@@ -1253,6 +1316,7 @@ function renderItemCard(item, tab, rank) {
   html += `<div class="card-actions">
     <button class="card-btn" onclick="event.stopPropagation();togglePin('${tab}','${item.id}')">${item.pinned?'📌 固定中':'📌 固定'}</button>
     <button class="card-btn" onclick="event.stopPropagation();regiftItem('${tab}','${item.id}')" style="background:var(--pickup);border-color:var(--pickup-border);">🎁 プレゼントする</button>
+    ${tab==='place'?`<button class="card-btn" onclick="event.stopPropagation();markVisited('${item.id}')" style="background:${item.visited?'#e8f5e9':'var(--pickup)'};border-color:${item.visited?'#a5d6a7':'var(--pickup-border)'};">${item.visited?'✅ 行った！':'📍 行った！'}</button>`:''}
     <button class="card-btn" onclick="editItem('${tab}','${item.id}')">✏️ 編集</button>
     <button class="card-btn delete" onclick="deleteItem('${tab}','${item.id}')">🗑 削除</button>
   </div></div>`;
@@ -1756,17 +1820,22 @@ function render() {
   // For wish tab with label filter, search across wish+received+gave
   if (currentTab === 'wish' && currentLabel !== null) {
     const tabIcons = {wish:'✨', received:'🎀', gave:'🎁'};
+    const labelName = (getLabels(currentTab)[currentLabel]?.name||'').toLowerCase();
     const allFiltered = [];
     ['wish','received','gave'].forEach(tab => {
       (data[tab]||[]).forEach(item => {
-        if (matchesSearch(item, tab) && item.labelIdx === currentLabel) {
+        if (!matchesSearch(item, tab)) return;
+        // Match by labelIdx OR text contains label name
+        const byIdx = item.labelIdx === currentLabel;
+        const text = [item.title, item.memo, ...(item.tags||[])].filter(Boolean).join(' ').toLowerCase();
+        const byText = labelName && text.includes(labelName);
+        if (byIdx || byText) {
           allFiltered.push({...item, _tab:tab, _icon:tabIcons[tab]});
         }
       });
     });
     if (!allFiltered.length) {
-      const labelName = getLabels(currentTab)[currentLabel]?.name || 'このラベル';
-      cardList.innerHTML = `<div class="empty-msg">「${esc(labelName)}」のアイテムはまだありません<br>カード詳細のラベルチップをタップして紐付けてください</div>`;
+      cardList.innerHTML = `<div class="empty-msg">「${esc(getLabels(currentTab)[currentLabel]?.name||'')}」に関連するアイテムはありません</div>`;
       return;
     }
     allFiltered.sort((a,b) => {
@@ -1795,11 +1864,19 @@ function render() {
   }
 
   const items = (data[currentTab]||[]).filter(i => matchesSearch(i, currentTab));
-  if (currentTab !== 'people' && currentLabel !== null) {
-    const filtered = items.filter(i => i.labelIdx === currentLabel);
-    if (!filtered.length && items.length) {
-      const labelName = getLabels(currentTab)[currentLabel]?.name || 'このラベル';
-      cardList.innerHTML = `<div class="empty-msg">「${esc(labelName)}」のアイテムはまだありません<br>カード詳細のラベルチップをタップして紐付けてください</div>`;
+  // Place tab: want/visited filter
+  if (currentTab === 'place' && (currentLabel==='want'||currentLabel==='visited')) {
+    const filtered = items.filter(i => currentLabel==='visited' ? i.visited : !i.visited);
+    renderItems(filtered, cardList);
+  } else if (currentTab !== 'people' && currentLabel !== null && typeof currentLabel === 'number') {
+    const ln = (getLabels(currentTab)[currentLabel]?.name||'').toLowerCase();
+    const filtered = items.filter(i => {
+      if (i.labelIdx === currentLabel) return true;
+      const text = [i.title, i.memo, ...(i.tags||[])].filter(Boolean).join(' ').toLowerCase();
+      return ln && text.includes(ln);
+    });
+    if (!filtered.length) {
+      cardList.innerHTML = `<div class="empty-msg">「${esc(getLabels(currentTab)[currentLabel]?.name||'')}」に関連するアイテムはありません</div>`;
       return;
     }
     renderItems(filtered, cardList);
@@ -1860,7 +1937,7 @@ function renderItemListItem(item, tab) {
   return `<div class="list-item" onclick="toggleItemDetail('${item.id}')" style="${isOpen?'background:var(--accent-light);':''}">
     ${label?`<div style="width:6px;height:40px;border-radius:3px;background:${label.color};flex-shrink:0;"></div>`:'<div style="width:6px;"></div>'}
     <div class="list-body">
-      <div class="list-name">${item.pinned?'📌 ':''}${esc(item.title||'無題')}${stars?` <span style="color:#f0b040;font-size:12px;">${stars}</span>`:''}</div>
+      <div class="list-name">${item.visited?'✅ ':''}${item.pinned?'📌 ':''}${esc(item.title||'無題')}${stars?` <span style="color:#f0b040;font-size:12px;">${stars}</span>`:''}</div>
       <div class="list-preview">${esc(preview)}</div>
     </div>
     <div class="list-meta">

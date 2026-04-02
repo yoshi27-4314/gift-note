@@ -1106,6 +1106,13 @@ function togglePin(tab, id) {
   saveData(); render();
 }
 
+function quickLabel(tab, id, labelIdx) {
+  const item = data[tab].find(i=>i.id===id);
+  if (!item) return;
+  item.labelIdx = labelIdx===-1 ? null : (item.labelIdx===labelIdx ? null : labelIdx);
+  saveData(); render();
+}
+
 function setRating(tab, id, rating) {
   const item = data[tab].find(i=>i.id===id);
   if (!item) return;
@@ -1131,6 +1138,19 @@ function renderItemCard(item, tab, rank) {
   html += '</div>';
   html += renderStars(item.rating, item.id, tab);
   if (rank) html += '</div></div>';
+  // Quick label assign
+  const allLabels = getLabels(tab);
+  if (allLabels.length) {
+    html += `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;">`;
+    allLabels.forEach((l,i) => {
+      const active = item.labelIdx===i;
+      html += `<span style="font-size:11px;padding:3px 8px;border-radius:10px;cursor:pointer;border:1px solid ${active?l.color:'var(--border)'};background:${active?l.color:'var(--card)'};color:${active?'#fff':'var(--text)'};" onclick="event.stopPropagation();quickLabel('${tab}','${item.id}',${i})">${esc(l.name)}</span>`;
+    });
+    if (item.labelIdx!==null&&item.labelIdx!==undefined) {
+      html += `<span style="font-size:11px;padding:3px 8px;border-radius:10px;cursor:pointer;border:1px solid var(--border);color:var(--sub);" onclick="event.stopPropagation();quickLabel('${tab}','${item.id}',-1)">✕</span>`;
+    }
+    html += `</div>`;
+  }
   if (item.person) html += `<div class="card-person">👤 ${esc(item.person)}</div>`;
   if (item.date) html += `<div class="card-sub">📅 ${item.date}</div>`;
   if (item.occasion) html += `<div class="card-occasion">${esc(item.occasion)}</div>`;

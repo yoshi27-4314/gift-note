@@ -826,7 +826,14 @@ function getLabelKey(tab) { return (tab==='gave'||tab==='received') ? 'gift' : t
 function getLabels(tab) { return data.labels[getLabelKey(tab)]||[]; }
 function renderLabelBar() {
   const bar = document.getElementById('labelBar');
-  if (currentTab==='people'||currentTab==='groups') { bar.innerHTML=''; return; }
+  if (currentTab==='groups') { bar.innerHTML=''; return; }
+  if (currentTab==='people') {
+    let phtml = `<div class="label-chip ${currentLabel===null?'active':''}" style="color:var(--accent);${currentLabel===null?'border-color:var(--accent);':''}" onclick="filterLabel(null)"><span class="ldot" style="background:var(--accent);"></span> すべて</div>`;
+    phtml += `<div class="label-chip ${currentLabel==='individual'?'active':''}" style="color:#d48a7a;${currentLabel==='individual'?'border-color:#d48a7a;':''}" onclick="filterLabel('individual')"><span class="ldot" style="background:#d48a7a;"></span> 👤 個人</div>`;
+    phtml += `<div class="label-chip ${currentLabel==='corporate'?'active':''}" style="color:#6b88a8;${currentLabel==='corporate'?'border-color:#6b88a8;':''}" onclick="filterLabel('corporate')"><span class="ldot" style="background:#6b88a8;"></span> 🏢 法人</div>`;
+    bar.innerHTML = phtml;
+    return;
+  }
   const labels = getLabels(currentTab);
   let html = `<div class="label-chip ${currentLabel===null?'active':''}" style="color:var(--accent);${currentLabel===null?'border-color:var(--accent);':''}" onclick="filterLabel(null)"><span class="ldot" style="background:var(--accent);"></span> すべて</div>`;
   labels.forEach((l,i) => {
@@ -1234,7 +1241,7 @@ function renderPersonCard(p) {
     ${p.companyLink?`<div class="person-relation" style="color:var(--accent);">🏢 ${esc(p.companyLink)}</div>`:''}
     </div></div>`;
   // Corporate seasonal gifts
-  if (isCorp && (p.chugen||p.seibo)) {
+  if (p.chugen||p.seibo) {
     html += '<div class="person-section"><div class="person-section-title">🎐🎄 季節の贈答</div>';
     if (p.chugen==='yearly') html += `<div class="person-ann"><div class="person-ann-icon">🎐</div><span class="person-ann-label">お中元</span><span>毎年手配</span>${p.chugenBudget?`<span style="margin-left:auto;font-size:12px;color:var(--accent);">¥${Number(p.chugenBudget).toLocaleString()}</span>`:''}</div>`;
     if (p.seibo==='yearly') html += `<div class="person-ann"><div class="person-ann-icon">🎄</div><span class="person-ann-label">お歳暮</span><span>毎年手配</span>${p.seiboBudget?`<span style="margin-left:auto;font-size:12px;color:var(--accent);">¥${Number(p.seiboBudget).toLocaleString()}</span>`:''}</div>`;
@@ -1784,11 +1791,16 @@ function render() {
     }
     return;
   } else if (currentTab === 'people') {
-    if (!items.length) {
-      cardList.innerHTML = '<div class="empty-msg">👤 大切な人を追加しましょう<br>下の ＋ ボタンから追加できます</div>';
+    // Filter by individual/corporate
+    let filteredPeople = items;
+    if (currentLabel === 'individual') filteredPeople = items.filter(p=>p.type!=='corporate');
+    else if (currentLabel === 'corporate') filteredPeople = items.filter(p=>p.type==='corporate');
+    if (!filteredPeople.length) {
+      const msg = currentLabel==='corporate' ? '🏢 法人はまだ登録されていません' : currentLabel==='individual' ? '👤 個人はまだ登録されていません' : '👤 大切な人を追加しましょう';
+      cardList.innerHTML = `<div class="empty-msg">${msg}<br>下の ＋ ボタンから追加できます</div>`;
       return;
     }
-    const sortedPeople = [...items].sort((a,b) => {
+    const sortedPeople = [...filteredPeople].sort((a,b) => {
       if (a.pinned&&!b.pinned) return -1; if (!a.pinned&&b.pinned) return 1;
       return (a.nickname||'').localeCompare(b.nickname||'', 'ja');
     });
@@ -2056,14 +2068,6 @@ function openPeopleModal(id) {
   html += `<div class="form-group"><label>会社名 *</label><input id="pCorpName" placeholder="例：ABC商事 株式会社" value="${esc(isCorp?p?.nickname:'')}"></div>`;
   html += `<div class="form-group"><label>業種</label><input id="pIndustry" placeholder="例：建設業" value="${esc(p?.industry||'')}"></div>`;
   html += `<div class="form-group"><label>住所（送付先）</label><input id="pAddress" placeholder="" value="${esc(p?.address||'')}"></div>`;
-  html += `<div class="form-group"><label>🎐 お中元</label><div class="form-row">
-    <select id="pChugen"><option value="">なし</option><option value="yearly" ${p?.chugen==='yearly'?'selected':''}>毎年手配</option></select>
-    <input id="pChugenBudget" placeholder="予算（例：5000）" value="${esc(p?.chugenBudget||'')}">
-  </div><div class="form-hint">6月上旬にリマインダ通知</div></div>`;
-  html += `<div class="form-group"><label>🎄 お歳暮</label><div class="form-row">
-    <select id="pSeibo"><option value="">なし</option><option value="yearly" ${p?.seibo==='yearly'?'selected':''}>毎年手配</option></select>
-    <input id="pSeiboBudget" placeholder="予算（例：5000）" value="${esc(p?.seiboBudget||'')}">
-  </div><div class="form-hint">11月上旬にリマインダ通知</div></div>`;
   html += `</div>`;
 
   // Anniversaries
@@ -2071,6 +2075,18 @@ function openPeopleModal(id) {
   html += `<div class="form-group"><label>📅 記念日</label><div id="annContainer">`;
   anns.forEach((a,i) => { html += annRowHTML(a,i); });
   html += `</div><div class="add-btn" onclick="addAnnRow()">＋ 記念日を追加</div></div>`;
+
+  // Seasonal gifts (shared: individual + corporate)
+  html += `<div class="form-group"><label>🎐🎄 季節の贈答（任意）</label>
+    <div class="form-row" style="margin-bottom:6px;">
+      <select id="pChugen" style="flex:1;"><option value="">🎐 お中元: なし</option><option value="yearly" ${p?.chugen==='yearly'?'selected':''}>🎐 お中元: 毎年</option></select>
+      <input id="pChugenBudget" placeholder="予算" value="${esc(p?.chugenBudget||'')}" style="flex:1;">
+    </div>
+    <div class="form-row">
+      <select id="pSeibo" style="flex:1;"><option value="">🎄 お歳暮: なし</option><option value="yearly" ${p?.seibo==='yearly'?'selected':''}>🎄 お歳暮: 毎年</option></select>
+      <input id="pSeiboBudget" placeholder="予算" value="${esc(p?.seiboBudget||'')}" style="flex:1;">
+    </div>
+  </div>`;
 
   // Sizes
   const sz = p?.sizes||{};
@@ -2280,10 +2296,10 @@ function savePerson() {
     position: isCorp ? null : document.getElementById('pPosition')?.value.trim()||null,
     industry: isCorp ? document.getElementById('pIndustry')?.value.trim()||null : null,
     address: isCorp ? document.getElementById('pAddress')?.value.trim()||null : null,
-    chugen: isCorp ? document.getElementById('pChugen')?.value||null : null,
-    chugenBudget: isCorp ? document.getElementById('pChugenBudget')?.value||null : null,
-    seibo: isCorp ? document.getElementById('pSeibo')?.value||null : null,
-    seiboBudget: isCorp ? document.getElementById('pSeiboBudget')?.value||null : null,
+    chugen: document.getElementById('pChugen')?.value||null,
+    chugenBudget: document.getElementById('pChugenBudget')?.value||null,
+    seibo: document.getElementById('pSeibo')?.value||null,
+    seiboBudget: document.getElementById('pSeiboBudget')?.value||null,
     anniversaries,
     sizes: {
       tops: document.getElementById('pSizeTops').value.trim()||null,

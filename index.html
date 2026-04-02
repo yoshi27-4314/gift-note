@@ -938,6 +938,11 @@ function openPlaceModal(id) {
     <div class="form-hint">お店や施設のURLを貼り付け</div>
   </div>`;
 
+  // Phone number
+  html += `<div class="form-group"><label>📞 連絡先</label>
+    <input id="fPhone" type="tel" placeholder="例：058-123-4567" value="${esc(item?.phone||'')}">
+  </div>`;
+
   // Who to go with (multiple + groups)
   const selectedWith = item?.withPeople || (item?.person ? [item.person] : []);
   const selectedGroups = item?.withGroups || [];
@@ -1073,6 +1078,7 @@ function savePlaceItem() {
       address: document.getElementById('fAddress')?.value.trim()||null,
       mapUrl: document.getElementById('fMapUrl')?.value.trim()||null,
       url: document.getElementById('fMapUrl')?.value.trim()||null,
+      phone: document.getElementById('fPhone')?.value.trim()||null,
       tags: allTags.length ? allTags : null,
       placeCategory: document.getElementById('fPlaceCategory')?.value||null,
       rating: parseInt(document.getElementById('fRating')?.value)||0,
@@ -1346,6 +1352,7 @@ function renderItemCard(item, tab, rank) {
   if (item.memo) html += `<div class="card-memo">${esc(item.memo)}</div>`;
   if (item.tags&&item.tags.length) html += `<div class="card-tags">${item.tags.map(t=>`<span class="card-tag">#${esc(t)}</span>`).join('')}</div>`;
   if (item.address) html += `<div style="font-size:13px;color:var(--sub);margin-top:6px;">📍 ${esc(item.address)}</div>`;
+  if (item.phone) html += `<a href="tel:${esc(item.phone)}" style="display:block;font-size:13px;color:var(--accent);margin-top:6px;text-decoration:none;">📞 ${esc(item.phone)}</a>`;
   if (item.mapUrl) html += `<a class="card-url" href="${esc(item.mapUrl)}" target="_blank" rel="noopener" style="margin-top:6px;">🔗 ホームページを開く</a>`;
   else if (item.url) html += `<a class="card-url" href="${esc(item.url)}" target="_blank" rel="noopener">🔗 ${esc(truncUrl(item.url))}</a>`;
   html += `<div class="card-actions">

@@ -680,9 +680,10 @@ function genId() { return Date.now().toString(36) + Math.random().toString(36).s
 function personIcon(p) {
   if (p.type==='corporate') return {emoji:'🏢', bg:'var(--accent-light)'};
   const g = p.gender||'unset';
-  if (g==='female') return {emoji:'👤', bg:'#fde4e8'};
-  if (g==='male') return {emoji:'👤', bg:'#dce8f5'};
-  return {emoji:'👤', bg:'var(--accent-light)'};
+  const svg = (c) => `<svg viewBox="0 0 24 24" style="width:60%;height:60%;"><circle cx="12" cy="8" r="4" fill="${c}"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8" fill="${c}"/></svg>`;
+  if (g==='female') return {emoji:svg('#e8879a'), bg:'#fff'};
+  if (g==='male') return {emoji:svg('#7a9ec7'), bg:'#fff'};
+  return {emoji:svg('#b0a49e'), bg:'#fff'};
 }
 
 // ===== Season =====

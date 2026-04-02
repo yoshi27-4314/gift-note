@@ -1024,6 +1024,12 @@ function savePlaceItem() {
       createdAt: editingId ? (data.place.find(i=>i.id===editingId)?.createdAt||new Date().toISOString()) : new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
+    // Auto-label if not manually set
+    if (item.labelIdx===null||item.labelIdx===undefined) {
+      const labels = getLabels('place');
+      const text = [item.title, item.memo, ...(item.tags||[])].filter(Boolean).join(' ').toLowerCase();
+      labels.forEach((l,i) => { if (text.includes(l.name.toLowerCase())) item.labelIdx = i; });
+    }
     if (editingId) {
       const idx = data.place.findIndex(i=>i.id===editingId);
       if (idx>=0) data.place[idx] = item;
@@ -1160,6 +1166,25 @@ function togglePin(tab, id) {
   saveData(); render();
 }
 
+// Auto-label: match items by title, tags, memo
+function autoLabelAll() {
+  const tabs = ['wish','received','gave','place'];
+  tabs.forEach(tab => {
+    const labels = getLabels(tab);
+    if (!labels.length) return;
+    (data[tab]||[]).forEach(item => {
+      if (item.labelIdx !== null && item.labelIdx !== undefined) return; // already labeled
+      const text = [item.title, item.memo, ...(item.tags||[])].filter(Boolean).join(' ').toLowerCase();
+      labels.forEach((l, i) => {
+        if (text.includes(l.name.toLowerCase())) {
+          item.labelIdx = i;
+        }
+      });
+    });
+  });
+  saveData();
+}
+
 function quickLabel(tab, id, labelIdx) {
   const item = data[tab].find(i=>i.id===id);
   if (!item) return;
@@ -1200,7 +1225,8 @@ function renderItemCard(item, tab, rank) {
     html += `<div style="font-size:12px;color:var(--sub);margin-top:6px;">ラベル未作成。ラベルバーの「＋」から作成してください</div>`;
   }
   if (allLabels.length) {
-    html += `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;">`;
+    html += `<div style="margin-top:8px;"><span style="font-size:12px;color:var(--sub);font-weight:500;">ラベル：</span></div>`;
+    html += `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;">`;
     allLabels.forEach((l,i) => {
       const active = item.labelIdx===i;
       html += `<span style="font-size:12px;padding:4px 10px;border-radius:10px;cursor:pointer;border:1.5px solid ${active?l.color:'var(--border)'};background:${active?l.color:'var(--card)'};color:${active?'#fff':'var(--text)'};" onclick="event.stopPropagation();quickLabel('${tab}','${item.id}',${i})">${esc(l.name)}</span>`;
@@ -2363,6 +2389,12 @@ function saveItem() {
       createdAt: editingId ? (data[currentTab].find(i=>i.id===editingId)?.createdAt||new Date().toISOString()) : new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
+    // Auto-label if not manually set
+    if (item.labelIdx===null||item.labelIdx===undefined) {
+      const labels = getLabels(currentTab);
+      const text = [item.title, item.memo, ...(item.tags||[])].filter(Boolean).join(' ').toLowerCase();
+      labels.forEach((l,i) => { if (text.includes(l.name.toLowerCase())) item.labelIdx = i; });
+    }
     if (editingId) {
       const idx = data[currentTab].findIndex(i=>i.id===editingId);
       if (idx>=0) data[currentTab][idx] = item;
@@ -2448,6 +2480,7 @@ function addLabel() {
   const lk = getLabelKey(currentTab);
   if (!data.labels[lk]) data.labels[lk] = [];
   data.labels[lk].push({name, color});
+  autoLabelAll();
   saveData(); openLabelModal(); renderLabelBar();
 }
 function removeLabel(idx) {

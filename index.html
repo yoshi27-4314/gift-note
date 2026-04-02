@@ -903,10 +903,36 @@ function openPlaceModal(id) {
     <div class="form-hint">マップアプリからリンクを貼り付け</div>
   </div>`;
 
-  // Who to go with
+  // Who to go with (multiple + groups)
+  const selectedWith = item?.withPeople || (item?.person ? [item.person] : []);
+  const selectedGroups = item?.withGroups || [];
   html += `<div class="form-group"><label>誰と行きたい？</label>
-    <input id="fPerson" placeholder="例：さとうさん" value="${esc(item?.person||'')}" list="peopleListPlace">
-    <datalist id="peopleListPlace">${data.people.map(p=>`<option value="${esc(p.nickname||'')}">`).join('')}</datalist>
+    <div class="form-hint" style="margin-bottom:6px;">タップで選択（複数OK）</div>
+    <div style="max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:12px;padding:4px;">`;
+  // Groups first
+  if (data.groups.length) {
+    data.groups.forEach(g => {
+      const checked = selectedGroups.includes(g.id);
+      html += `<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;cursor:pointer;${checked?'background:var(--accent-light);':''}border-radius:8px;margin-bottom:2px;" onclick="togglePlaceWith(this,'group','${g.id}')">
+        <span style="font-size:14px;">👥</span>
+        <span style="font-size:13px;font-weight:${checked?'600':'400'};">${esc(g.name)}</span>
+        <span style="font-size:11px;color:var(--sub);">${(g.memberIds||[]).length}人</span>
+        ${checked?'<span style="margin-left:auto;color:var(--accent);">✓</span>':''}
+      </div>`;
+    });
+  }
+  // People
+  data.people.filter(p=>p.type!=='corporate').forEach(p => {
+    const checked = selectedWith.includes(p.nickname);
+    html += `<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;cursor:pointer;${checked?'background:var(--accent-light);':''}border-radius:8px;margin-bottom:2px;" onclick="togglePlaceWith(this,'person','${esc(p.nickname)}')">
+      <span style="font-size:14px;">👤</span>
+      <span style="font-size:13px;font-weight:${checked?'600':'400'};">${esc(p.nickname)}</span>
+      ${checked?'<span style="margin-left:auto;color:var(--accent);">✓</span>':''}
+    </div>`;
+  });
+  html += `</div>
+    <input type="hidden" id="fWithPeople" value="${selectedWith.join(',')}">
+    <input type="hidden" id="fWithGroups" value="${selectedGroups.join(',')}">
   </div>`;
 
   // Memo
@@ -930,6 +956,25 @@ function togglePlaceTag(el, tag) {
     tags = tags.filter(t => t !== tag.toLowerCase());
   }
   input.value = tags.join(',');
+}
+
+function togglePlaceWith(el, type, value) {
+  const input = document.getElementById(type==='group'?'fWithGroups':'fWithPeople');
+  let vals = input.value ? input.value.split(',').filter(Boolean) : [];
+  if (vals.includes(value)) {
+    vals = vals.filter(v=>v!==value);
+    el.style.background = '';
+    el.querySelector('span:last-child')?.remove();
+  } else {
+    vals.push(value);
+    el.style.background = 'var(--accent-light)';
+    if (!el.querySelector('[style*="margin-left:auto"]')) {
+      el.insertAdjacentHTML('beforeend', '<span style="margin-left:auto;color:var(--accent);">✓</span>');
+    }
+  }
+  input.value = vals.join(',');
+  // Also update font weight
+  el.querySelector('span:nth-child(2)').style.fontWeight = vals.includes(value)?'600':'400';
 }
 
 function openMapSearch() {
@@ -957,7 +1002,9 @@ function savePlaceItem() {
     const item = {
       id: editingId || genId(),
       title,
-      person: document.getElementById('fPerson')?.value.trim()||null,
+      withPeople: document.getElementById('fWithPeople')?.value.split(',').filter(Boolean)||[],
+      withGroups: document.getElementById('fWithGroups')?.value.split(',').filter(Boolean)||[],
+      person: (document.getElementById('fWithPeople')?.value.split(',').filter(Boolean)||[]).join(', ')||null,
       labelIdx,
       address: document.getElementById('fAddress')?.value.trim()||null,
       mapUrl: document.getElementById('fMapUrl')?.value.trim()||null,
@@ -1150,6 +1197,10 @@ function renderItemCard(item, tab, rank) {
       html += `<span style="font-size:11px;padding:3px 8px;border-radius:10px;cursor:pointer;border:1px solid var(--border);color:var(--sub);" onclick="event.stopPropagation();quickLabel('${tab}','${item.id}',-1)">✕</span>`;
     }
     html += `</div>`;
+  }
+  if (item.withGroups?.length) {
+    const groupNames = item.withGroups.map(gid => data.groups.find(g=>g.id===gid)?.name).filter(Boolean);
+    if (groupNames.length) html += `<div class="card-person">👥 ${groupNames.map(n=>esc(n)).join(', ')}</div>`;
   }
   if (item.person) html += `<div class="card-person">👤 ${esc(item.person)}</div>`;
   if (item.date) html += `<div class="card-sub">📅 ${item.date}</div>`;

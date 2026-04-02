@@ -2220,13 +2220,9 @@ function openPeopleModal(id) {
   const isEdit = !!editingId;
   const p = isEdit ? data.people.find(i=>i.id===editingId) : null;
 
-  const isCorp = p?.type==='corporate';
-  let html = `<h2>大切な人 を${isEdit?'編集':'追加'}</h2>`;
-  // Type toggle
-  html += `<div style="display:flex;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:14px;">
-    <div id="typeIndividual" style="flex:1;padding:10px;text-align:center;font-size:13px;cursor:pointer;background:${!isCorp?'var(--accent)':'var(--card)'};color:${!isCorp?'#fff':'var(--text)'}" onclick="togglePersonType('individual')">👤 個人</div>
-    <div id="typeCorporate" style="flex:1;padding:10px;text-align:center;font-size:13px;cursor:pointer;background:${isCorp?'#6b88a8':'var(--card)'};color:${isCorp?'#fff':'var(--text)'}" onclick="togglePersonType('corporate')">🏢 法人</div>
-  </div><input type="hidden" id="pType" value="${p?.type||'individual'}">`;
+  const isCorp = isEdit ? p?.type==='corporate' : currentLabel==='corporate';
+  let html = `<h2>${isCorp?'🏢 法人':'👤 大切な人'} を${isEdit?'編集':'追加'}</h2>`;
+  html += `<input type="hidden" id="pType" value="${isCorp?'corporate':'individual'}">`;
 
   // Individual fields
   html += `<div id="individualFields" style="display:${isCorp?'none':''}">`;
@@ -2383,17 +2379,6 @@ function annRowHTML(a, idx) {
   </div>`;
 }
 
-function togglePersonType(type) {
-  document.getElementById('pType').value = type;
-  document.getElementById('individualFields').style.display = type==='individual'?'':'none';
-  document.getElementById('corporateFields').style.display = type==='corporate'?'':'none';
-  const indBtn = document.getElementById('typeIndividual');
-  const corpBtn = document.getElementById('typeCorporate');
-  indBtn.style.background = type==='individual'?'var(--accent)':'var(--card)';
-  indBtn.style.color = type==='individual'?'#fff':'var(--text)';
-  corpBtn.style.background = type==='corporate'?'#6b88a8':'var(--card)';
-  corpBtn.style.color = type==='corporate'?'#fff':'var(--text)';
-}
 
 let annCounter = 100;
 function addAnnRow() {

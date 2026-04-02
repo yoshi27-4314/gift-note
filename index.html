@@ -677,6 +677,13 @@ function esc(str) { const d=document.createElement('div'); d.textContent=str; re
 function parseTags(str) { return str ? str.split(/[,、，\s]+/).map(s=>s.trim().toLowerCase()).filter(Boolean) : []; }
 function truncUrl(u) { return u.length>40 ? u.substring(0,40)+'…' : u; }
 function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function personIcon(p) {
+  if (p.type==='corporate') return {emoji:'🏢', bg:'var(--accent-light)'};
+  const g = p.gender||'unset';
+  if (g==='female') return {emoji:'👩', bg:'#fde4e8'};
+  if (g==='male') return {emoji:'👨', bg:'#dce8f5'};
+  return {emoji:'👤', bg:'var(--accent-light)'};
+}
 
 // ===== Season =====
 function getAutoSeason() {
@@ -1148,7 +1155,7 @@ function regiftItem(tab, id) {
     html += `<div style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:12px;">`;
     data.people.filter(p=>p.type!=='corporate').forEach(p => {
       html += `<div class="list-item" onclick="regiftStep2('${p.id}')" style="padding:10px 12px;">
-        <div class="list-avatar" style="width:36px;height:36px;font-size:18px;">${p.avatar?`<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;">`:'👤'}</div>
+        <div class="list-avatar" style="width:36px;height:36px;font-size:18px;background:${p.avatar?'transparent':personIcon(p).bg}">${p.avatar?`<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;">`:personIcon(p).emoji}</div>
         <div class="list-name" style="font-size:14px;">${esc(p.nickname)}</div>
       </div>`;
     });
@@ -1370,7 +1377,7 @@ function renderPersonCard(p) {
   let html = '<div class="person-card">';
   const isCorp = p.type==='corporate';
   html += `<div class="person-header">
-    <div class="person-avatar${isCorp?' biz-avatar':''}" style="overflow:hidden;">${p.avatar?`<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;">`:(isCorp?'🏢':'👤')}</div>
+    <div class="person-avatar${isCorp?' biz-avatar':''}" style="overflow:hidden;background:${p.avatar?'':personIcon(p).bg};">${p.avatar?`<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;">`:(personIcon(p).emoji)}</div>
     <div><div class="person-nickname">${esc(p.nickname||'名前なし')}</div>
     ${p.relation?`<div class="person-relation">${esc(p.relation)}</div>`:''}
     ${p.fullName?`<div class="person-relation">${esc(p.fullName)}</div>`:''}
@@ -1526,7 +1533,7 @@ function renderPersonListItem(p) {
   const isOpen = openPersonId === p.id;
 
   return `<div class="list-item ${isOpen?'':''}}" onclick="togglePersonDetail('${p.id}')" style="${isOpen?'background:var(--accent-light);':''}">
-    <div class="list-avatar">${p.avatar?`<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;">`:(isCorp?'🏢':'👤')}</div>
+    <div class="list-avatar" style="background:${p.avatar?'transparent':personIcon(p).bg}">${p.avatar?`<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;">`:(personIcon(p).emoji)}</div>
     <div class="list-body">
       <div class="list-name">${p.pinned?'📌 ':''}${esc(p.nickname||'名前なし')}</div>
       <div class="list-preview">${esc(preview)}</div>
@@ -1604,7 +1611,7 @@ function renderGroupCard(g) {
   } else {
     members.forEach(m => {
       html += `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;">
-        <span style="width:28px;height:28px;border-radius:50%;background:var(--accent-light);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">${m.type==='corporate'?'🏢':'👤'}</span>
+        <span style="width:28px;height:28px;border-radius:50%;background:${personIcon(m).bg};display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">${personIcon(m).emoji}</span>
         <span style="font-weight:500;">${esc(m.nickname)}</span>
         ${m.relation?`<span style="font-size:11px;color:var(--sub);">${esc(m.relation)}</span>`:''}
       </div>`;
@@ -1682,7 +1689,7 @@ function openGroupModal(id) {
       const checked = selectedIds.includes(p.id);
       html += `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;" onclick="toggleGroupMember(this,'${p.id}')">
         <span style="width:24px;height:24px;border-radius:6px;border:2px solid ${checked?'var(--accent)':'var(--border)'};background:${checked?'var(--accent)':'var(--card)'};display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;flex-shrink:0;transition:all 0.2s;" class="gcheck">${checked?'✓':''}</span>
-        <span style="font-size:16px;">${p.type==='corporate'?'🏢':'👤'}</span>
+        <span style="font-size:16px;">${personIcon(p).emoji}</span>
         <div><div style="font-weight:500;font-size:14px;">${esc(p.nickname)}</div>
         ${p.relation?`<div style="font-size:11px;color:var(--sub);">${esc(p.relation)}</div>`:''}</div>
       </div>`;
@@ -2226,7 +2233,7 @@ function openPeopleModal(id) {
   // Avatar photo
   html += `<div class="form-group" style="text-align:center;">
     <div id="pAvatarPreview" style="width:72px;height:72px;border-radius:50%;background:var(--accent-light);margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:32px;overflow:hidden;cursor:pointer;" onclick="document.getElementById('pAvatarFile').click()">
-      ${p?.avatar ? `<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;">` : '👤'}
+      ${p?.avatar ? `<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;">` : personIcon(p||{}).emoji}
     </div>
     <input type="file" id="pAvatarCamera" accept="image/*" capture="environment" style="display:none;" onchange="previewAvatar(this)">
     <input type="file" id="pAvatarFile" accept="image/*" style="display:none;" onchange="previewAvatar(this)">

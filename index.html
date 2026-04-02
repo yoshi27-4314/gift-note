@@ -891,7 +891,8 @@ function openPlaceModal(id) {
     '📸 観光': ['神社','お寺','温泉','絶景','公園','美術館','博物館','水族館','動物園','城','庭園','展望台','街歩き','離島','世界遺産'],
     '🛍 買い物': ['ショッピングモール','アウトレット','商店街','百貨店','セレクトショップ','お土産','市場','蚤の市'],
     '🏨 宿泊': ['ホテル','旅館','民宿','グランピング','コテージ','ゲストハウス'],
-    '💆 リラックス': ['スパ','マッサージ','エステ','サウナ','岩盤浴','ヨガ','リトリート']
+    '💆 リラックス': ['スパ','マッサージ','エステ','サウナ','岩盤浴','ヨガ','リトリート'],
+    '📋 その他': []
   };
   const allGenreSuggestions = [...new Set(Object.values(placeCategories).flat())];
   const currentTags = item?.tags || [];
@@ -931,10 +932,10 @@ function openPlaceModal(id) {
     </div>
   </div>`;
 
-  // Google Maps link
-  html += `<div class="form-group"><label>🗺 Googleマップ リンク</label>
-    <input id="fMapUrl" placeholder="https://maps.google.com/..." value="${esc(item?.mapUrl||item?.url||'')}">
-    <div class="form-hint">マップアプリからリンクを貼り付け</div>
+  // Homepage URL
+  html += `<div class="form-group"><label>🔗 ホームページURL</label>
+    <input id="fMapUrl" placeholder="https://..." value="${esc(item?.mapUrl||item?.url||'')}">
+    <div class="form-hint">お店や施設のURLを貼り付け</div>
   </div>`;
 
   // Who to go with (multiple + groups)
@@ -977,7 +978,7 @@ function openPlaceModal(id) {
 
   html += `<div class="form-btns"><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button><button class="btn btn-primary" onclick="savePlaceItem()">保存</button></div>`;
   modal.innerHTML = html;
-  document.getElementById('modalOverlay').classList.add('open');
+  openModal();
 }
 
 function selectPlaceCategory(el, cat) {
@@ -997,7 +998,8 @@ function selectPlaceCategory(el, cat) {
     '📸 観光': ['神社','お寺','温泉','絶景','公園','美術館','博物館','水族館','動物園','城','庭園','展望台','街歩き','離島','世界遺産'],
     '🛍 買い物': ['ショッピングモール','アウトレット','商店街','百貨店','セレクトショップ','お土産','市場','蚤の市'],
     '🏨 宿泊': ['ホテル','旅館','民宿','グランピング','コテージ','ゲストハウス'],
-    '💆 リラックス': ['スパ','マッサージ','エステ','サウナ','岩盤浴','ヨガ','リトリート']
+    '💆 リラックス': ['スパ','マッサージ','エステ','サウナ','岩盤浴','ヨガ','リトリート'],
+    '📋 その他': []
   };
   const selectedTags = document.getElementById('fPlaceSelectedTags').value ? document.getElementById('fPlaceSelectedTags').value.split(',').filter(Boolean) : [];
   const showTags = input.value && placeCategories[input.value] ? placeCategories[input.value] : [...new Set(Object.values(placeCategories).flat())];
@@ -1150,7 +1152,7 @@ function regiftItem(tab, id) {
   html += `</div>`;
   html += `<div class="form-btns"><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button><button class="btn btn-primary" onclick="regiftStep2Manual()">次へ</button></div>`;
   modal.innerHTML = html;
-  document.getElementById('modalOverlay').classList.add('open');
+  openModal();
 }
 
 function regiftStep2(personId) {
@@ -1276,7 +1278,7 @@ function markVisited(id) {
       <button class="btn btn-secondary" onclick="closeModal()">キャンセル</button>
       <button class="btn btn-primary" onclick="saveVisited('${id}')">✅ 記録する</button>
     </div>`;
-  document.getElementById('modalOverlay').classList.add('open');
+  openModal();
 }
 
 function saveVisited(id) {
@@ -1344,7 +1346,7 @@ function renderItemCard(item, tab, rank) {
   if (item.memo) html += `<div class="card-memo">${esc(item.memo)}</div>`;
   if (item.tags&&item.tags.length) html += `<div class="card-tags">${item.tags.map(t=>`<span class="card-tag">#${esc(t)}</span>`).join('')}</div>`;
   if (item.address) html += `<div style="font-size:13px;color:var(--sub);margin-top:6px;">📍 ${esc(item.address)}</div>`;
-  if (item.mapUrl) html += `<a class="card-url" href="${esc(item.mapUrl)}" target="_blank" rel="noopener" style="margin-top:6px;">🗺 Googleマップで開く</a>`;
+  if (item.mapUrl) html += `<a class="card-url" href="${esc(item.mapUrl)}" target="_blank" rel="noopener" style="margin-top:6px;">🔗 ホームページを開く</a>`;
   else if (item.url) html += `<a class="card-url" href="${esc(item.url)}" target="_blank" rel="noopener">🔗 ${esc(truncUrl(item.url))}</a>`;
   html += `<div class="card-actions">
     <button class="card-btn" onclick="event.stopPropagation();togglePin('${tab}','${item.id}')">${item.pinned?'📌 固定中':'📌 固定'}</button>
@@ -1685,7 +1687,7 @@ function openGroupModal(id) {
   if (g?.img) html += `<div style="margin-top:-8px;margin-bottom:12px;"><img src="${g.img}" style="width:100%;max-height:120px;object-fit:cover;border-radius:12px;"></div>`;
   html += `<div class="form-btns"><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button><button class="btn btn-primary" onclick="saveGroup()">保存</button></div>`;
   modal.innerHTML = html;
-  document.getElementById('modalOverlay').classList.add('open');
+  openModal();
 }
 
 function toggleGroupMember(el, id) {
@@ -2143,7 +2145,7 @@ function openItemModal(id) {
   }
   html += `<div class="form-btns"><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button><button class="btn btn-primary" onclick="saveItem()">保存</button></div>`;
   modal.innerHTML = html;
-  document.getElementById('modalOverlay').classList.add('open');
+  openModal();
 }
 
 function setItemPurpose(purpose, el) {
@@ -2314,7 +2316,7 @@ function openPeopleModal(id) {
 
   html += `<div class="form-btns"><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button><button class="btn btn-primary" onclick="savePerson()">保存</button></div>`;
   modal.innerHTML = html;
-  document.getElementById('modalOverlay').classList.add('open');
+  openModal();
 }
 
 function annRowHTML(a, idx) {
@@ -2596,6 +2598,14 @@ function deleteItem(tab, id) {
   if (!confirm('この記録を削除しますか？')) return;
   data[tab] = data[tab].filter(i=>i.id!==id);
   saveData(); render();
+}
+
+// ===== Open modal (scroll to top) =====
+function openModal() {
+  const overlay = document.getElementById('modalOverlay');
+  overlay.classList.add('open');
+  const modal = overlay.querySelector('.modal');
+  if (modal) requestAnimationFrame(() => { modal.scrollTop = 0; });
 }
 
 // ===== Close modal =====

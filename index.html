@@ -627,7 +627,19 @@ function loadData() {
     if (raw) {
       const p = JSON.parse(raw);
       TABS.forEach(t => { if (Array.isArray(p[t])) data[t] = p[t]; });
-      if (p.labels) data.labels = {...data.labels, ...p.labels};
+      if (p.labels) {
+        data.labels = {...data.labels, ...p.labels};
+        // Merge received/gave labels into gift
+        if (!data.labels.gift) data.labels.gift = [];
+        ['received','gave'].forEach(t => {
+          if (data.labels[t]?.length) {
+            data.labels[t].forEach(l => {
+              if (!data.labels.gift.some(g=>g.name===l.name)) data.labels.gift.push(l);
+            });
+            delete data.labels[t];
+          }
+        });
+      }
     }
     // Ensure all items have an id
     let needsSave = false;
@@ -810,7 +822,8 @@ function renderPickup() {
 }
 
 // ===== Labels =====
-function getLabels(tab) { return data.labels[tab]||[]; }
+function getLabelKey(tab) { return (tab==='gave'||tab==='received') ? 'gift' : tab; }
+function getLabels(tab) { return data.labels[getLabelKey(tab)]||[]; }
 function renderLabelBar() {
   const bar = document.getElementById('labelBar');
   if (currentTab==='people'||currentTab==='groups') { bar.innerHTML=''; return; }
@@ -2299,14 +2312,20 @@ function addLabel() {
   const name = document.getElementById('newLabelName').value.trim();
   if (!name) return;
   const color = document.getElementById('newLabelColor').value;
-  if (!data.labels[currentTab]) data.labels[currentTab] = [];
-  data.labels[currentTab].push({name, color});
+  const lk = getLabelKey(currentTab);
+  if (!data.labels[lk]) data.labels[lk] = [];
+  data.labels[lk].push({name, color});
   saveData(); openLabelModal(); renderLabelBar();
 }
 function removeLabel(idx) {
   if (!confirm('このラベルを削除しますか？')) return;
-  data.labels[currentTab].splice(idx, 1);
-  data[currentTab].forEach(item => { if (item.labelIdx===idx) item.labelIdx=null; else if (item.labelIdx>idx) item.labelIdx--; });
+  const lk = getLabelKey(currentTab);
+  data.labels[lk].splice(idx, 1);
+  // Update both received and gave if shared
+  const tabsToUpdate = lk==='gift' ? ['received','gave'] : [currentTab];
+  tabsToUpdate.forEach(t => {
+    (data[t]||[]).forEach(item => { if (item.labelIdx===idx) item.labelIdx=null; else if (item.labelIdx>idx) item.labelIdx--; });
+  });
   saveData(); openLabelModal(); render();
 }
 

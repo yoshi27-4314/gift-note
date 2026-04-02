@@ -680,8 +680,8 @@ function genId() { return Date.now().toString(36) + Math.random().toString(36).s
 function personIcon(p) {
   if (p.type==='corporate') return {emoji:'🏢', bg:'var(--accent-light)'};
   const g = p.gender||'unset';
-  if (g==='female') return {emoji:'👩', bg:'#fde4e8'};
-  if (g==='male') return {emoji:'👨', bg:'#dce8f5'};
+  if (g==='female') return {emoji:'👤', bg:'#fde4e8'};
+  if (g==='male') return {emoji:'👤', bg:'#dce8f5'};
   return {emoji:'👤', bg:'var(--accent-light)'};
 }
 

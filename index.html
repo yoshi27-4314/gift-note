@@ -880,18 +880,37 @@ function openPlaceModal(id) {
     html += `</div><input type="hidden" id="fLabelIdx" value="${item?.labelIdx??''}"></div>`;
   }
 
-  // Genre tags with suggestions
-  html += `<div class="form-group"><label>ジャンル・目的</label>
-    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;">`;
-  const genreSuggestions = ['和食','イタリアン','カフェ','ラーメン','焼肉','寿司','バー','中華','フレンチ','居酒屋','カレー','パン屋','スイーツ','神社','お寺','温泉','公園','美術館','絶景','ホテル','旅行先'];
+  // Category + Genre tags with association
+  const placeCategories = {
+    '🍽 食事': ['和食','イタリアン','フレンチ','中華','焼肉','寿司','ラーメン','カレー','居酒屋','バー','カフェ','パン屋','スイーツ','ビュッフェ','鉄板焼き','海鮮','うどん・そば'],
+    '🎮 遊び': ['カラオケ','ボウリング','テーマパーク','ゲームセンター','映画館','ライブ','スポーツ観戦','釣り','キャンプ','BBQ','ドライブ','プール','スキー','ゴルフ'],
+    '📸 観光': ['神社','お寺','温泉','絶景','公園','美術館','博物館','水族館','動物園','城','庭園','展望台','街歩き','離島','世界遺産'],
+    '🛍 買い物': ['ショッピングモール','アウトレット','商店街','百貨店','セレクトショップ','お土産','市場','蚤の市'],
+    '🏨 宿泊': ['ホテル','旅館','民宿','グランピング','コテージ','ゲストハウス'],
+    '💆 リラックス': ['スパ','マッサージ','エステ','サウナ','岩盤浴','ヨガ','リトリート']
+  };
+  const allGenreSuggestions = [...new Set(Object.values(placeCategories).flat())];
   const currentTags = item?.tags || [];
-  genreSuggestions.forEach(g => {
+  const currentCat = item?.placeCategory || '';
+
+  html += `<div class="form-group"><label>カテゴリ</label>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">`;
+  Object.keys(placeCategories).forEach(cat => {
+    const active = currentCat === cat;
+    html += `<div class="date-type-chip ${active?'active':''}" onclick="selectPlaceCategory(this,'${cat}')" style="font-size:13px;padding:6px 14px;">${cat}</div>`;
+  });
+  html += `</div><input type="hidden" id="fPlaceCategory" value="${esc(currentCat)}"></div>`;
+
+  html += `<div class="form-group"><label>ジャンル・目的</label>
+    <div id="placeGenreTags" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;">`;
+  const showTags = currentCat && placeCategories[currentCat] ? placeCategories[currentCat] : allGenreSuggestions;
+  showTags.forEach(g => {
     const active = currentTags.includes(g.toLowerCase()) || currentTags.includes(g);
     html += `<div class="date-type-chip ${active?'active':''}" onclick="togglePlaceTag(this,'${g}')" style="font-size:12px;">${g}</div>`;
   });
   html += `</div>
-    <input id="fTags" placeholder="その他のタグ（カンマ区切り）" value="${currentTags.filter(t=>!genreSuggestions.map(g=>g.toLowerCase()).includes(t)&&!genreSuggestions.includes(t)).join(', ')}">
-    <input type="hidden" id="fPlaceSelectedTags" value="${currentTags.filter(t=>genreSuggestions.map(g=>g.toLowerCase()).includes(t)||genreSuggestions.includes(t)).join(',')}">
+    <input id="fTags" placeholder="その他のタグ（カンマ区切り）" value="${currentTags.filter(t=>!allGenreSuggestions.map(g=>g.toLowerCase()).includes(t)&&!allGenreSuggestions.includes(t)).join(', ')}">
+    <input type="hidden" id="fPlaceSelectedTags" value="${currentTags.filter(t=>allGenreSuggestions.map(g=>g.toLowerCase()).includes(t)||allGenreSuggestions.includes(t)).join(',')}">
   </div>`;
 
   // Star rating
@@ -955,6 +974,34 @@ function openPlaceModal(id) {
   html += `<div class="form-btns"><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button><button class="btn btn-primary" onclick="savePlaceItem()">保存</button></div>`;
   modal.innerHTML = html;
   document.getElementById('modalOverlay').classList.add('open');
+}
+
+function selectPlaceCategory(el, cat) {
+  const input = document.getElementById('fPlaceCategory');
+  const wasActive = el.classList.contains('active');
+  el.parentElement.querySelectorAll('.date-type-chip').forEach(c => c.classList.remove('active'));
+  if (wasActive) {
+    input.value = '';
+  } else {
+    el.classList.add('active');
+    input.value = cat;
+  }
+  // Update genre tags based on category
+  const placeCategories = {
+    '🍽 食事': ['和食','イタリアン','フレンチ','中華','焼肉','寿司','ラーメン','カレー','居酒屋','バー','カフェ','パン屋','スイーツ','ビュッフェ','鉄板焼き','海鮮','うどん・そば'],
+    '🎮 遊び': ['カラオケ','ボウリング','テーマパーク','ゲームセンター','映画館','ライブ','スポーツ観戦','釣り','キャンプ','BBQ','ドライブ','プール','スキー','ゴルフ'],
+    '📸 観光': ['神社','お寺','温泉','絶景','公園','美術館','博物館','水族館','動物園','城','庭園','展望台','街歩き','離島','世界遺産'],
+    '🛍 買い物': ['ショッピングモール','アウトレット','商店街','百貨店','セレクトショップ','お土産','市場','蚤の市'],
+    '🏨 宿泊': ['ホテル','旅館','民宿','グランピング','コテージ','ゲストハウス'],
+    '💆 リラックス': ['スパ','マッサージ','エステ','サウナ','岩盤浴','ヨガ','リトリート']
+  };
+  const selectedTags = document.getElementById('fPlaceSelectedTags').value ? document.getElementById('fPlaceSelectedTags').value.split(',').filter(Boolean) : [];
+  const showTags = input.value && placeCategories[input.value] ? placeCategories[input.value] : [...new Set(Object.values(placeCategories).flat())];
+  const container = document.getElementById('placeGenreTags');
+  container.innerHTML = showTags.map(g => {
+    const active = selectedTags.includes(g.toLowerCase()) || selectedTags.includes(g);
+    return `<div class="date-type-chip ${active?'active':''}" onclick="togglePlaceTag(this,'${g}')" style="font-size:12px;">${g}</div>`;
+  }).join('');
 }
 
 function togglePlaceTag(el, tag) {
@@ -1021,6 +1068,7 @@ function savePlaceItem() {
       mapUrl: document.getElementById('fMapUrl')?.value.trim()||null,
       url: document.getElementById('fMapUrl')?.value.trim()||null,
       tags: allTags.length ? allTags : null,
+      placeCategory: document.getElementById('fPlaceCategory')?.value||null,
       rating: parseInt(document.getElementById('fRating')?.value)||0,
       memo: document.getElementById('fMemo')?.value.trim()||null,
       img: imgData,
@@ -1283,6 +1331,7 @@ function renderItemCard(item, tab, rank) {
     const groupNames = item.withGroups.map(gid => data.groups.find(g=>g.id===gid)?.name).filter(Boolean);
     if (groupNames.length) html += `<div class="card-person">👥 ${groupNames.map(n=>esc(n)).join(', ')}</div>`;
   }
+  if (item.placeCategory) html += `<div style="font-size:13px;color:var(--accent);font-weight:600;margin-top:4px;">${esc(item.placeCategory)}</div>`;
   if (item.person) html += `<div class="card-person">👤 ${esc(item.person)}</div>`;
   if (item.date) html += `<div class="card-sub">📅 ${item.date}</div>`;
   if (item.occasion) html += `<div class="card-occasion">${esc(item.occasion)}</div>`;
@@ -1297,6 +1346,7 @@ function renderItemCard(item, tab, rank) {
     <button class="card-btn" onclick="event.stopPropagation();togglePin('${tab}','${item.id}')">${item.pinned?'📌 固定中':'📌 固定'}</button>
     <button class="card-btn" onclick="event.stopPropagation();regiftItem('${tab}','${item.id}')" style="background:var(--pickup);border-color:var(--pickup-border);">🎁 プレゼントする</button>
     ${tab==='place'?`<button class="card-btn" onclick="event.stopPropagation();markVisited('${item.id}')" style="background:${item.visited?'#e8f5e9':'var(--pickup)'};border-color:${item.visited?'#a5d6a7':'var(--pickup-border)'};">${item.visited?'✅ 行った！':'📍 行った！'}</button>`:''}
+    ${tab!=='received'&&tab!=='gave'?`<button class="card-btn" onclick="event.stopPropagation();shareItem('${tab}','${item.id}')" style="background:#e3f2fd;border-color:#90caf9;">📤 共有</button>`:''}
     <button class="card-btn" onclick="editItem('${tab}','${item.id}')">✏️ 編集</button>
     <button class="card-btn delete" onclick="deleteItem('${tab}','${item.id}')">🗑 削除</button>
   </div></div>`;
@@ -1430,8 +1480,10 @@ function renderPersonCard(p) {
     });
     html += '</div>';
   }
-  html += `<div class="person-actions">
+  html += `<hr style="border:none;border-top:1px solid var(--border);margin:20px 0 16px;">
+  <div class="person-actions">
     <button class="card-btn" onclick="event.stopPropagation();togglePin('people','${p.id}')">${p.pinned?'📌 固定中':'📌 固定'}</button>
+    <button class="card-btn" onclick="event.stopPropagation();sharePerson('${p.id}')" style="background:#e3f2fd;border-color:#90caf9;">📤 共有</button>
     <button class="card-btn" onclick="editItem('people','${p.id}')">✏️ 編集</button>
     <button class="card-btn" onclick="openAiSuggest('${p.id}')" style="background:var(--pickup);border-color:var(--pickup-border);">💡 コンシェルジュ</button>
     <button class="card-btn delete" onclick="deleteItem('people','${p.id}')">🗑 削除</button>
@@ -1564,6 +1616,7 @@ function renderGroupCard(g) {
   }
   html += `<div class="card-actions">
     <button class="card-btn" onclick="togglePin('groups','${g.id}')">${g.pinned?'📌 固定中':'📌 固定'}</button>
+    <button class="card-btn" onclick="event.stopPropagation();shareGroup('${g.id}')" style="background:#e3f2fd;border-color:#90caf9;">📤 共有</button>
     <button class="card-btn" onclick="editGroup('${g.id}')">✏️ 編集</button>
     <button class="card-btn" onclick="openGroupAiSuggest('${g.id}')" style="background:var(--pickup);border-color:var(--pickup-border);">💡 コンシェルジュ</button>
     <button class="card-btn delete" onclick="deleteItem('groups','${g.id}')">🗑 削除</button>
@@ -2650,6 +2703,107 @@ function showQR() {
   // Update referral count
   const countEl = document.getElementById('referralCount');
   if (countEl) countEl.textContent = localStorage.getItem(REFERRAL_COUNT_KEY) || '0';
+}
+
+function buildPersonShareText(p) {
+  let lines = [p.nickname || '名前なし'];
+  if (p.relation) lines.push(p.relation);
+  if (p.fullName) lines.push(p.fullName);
+  if (p.anniversaries && p.anniversaries.length) {
+    p.anniversaries.forEach(a => {
+      lines.push('📅 ' + a.name + (a.date ? ' ' + a.date : ''));
+    });
+  }
+  if (p.interests && p.interests.length) lines.push('💖 ' + p.interests.join(', '));
+  if (p.brands && p.brands.length) lines.push('🎨 ' + p.brands.join(', '));
+  if (p.foodLike && p.foodLike.length) lines.push('😋 好き: ' + p.foodLike.join(', '));
+  if (p.foodDislike && p.foodDislike.length) lines.push('🙅 苦手: ' + p.foodDislike.join(', '));
+  if (p.memo) lines.push(p.memo);
+  return lines.join('\n');
+}
+
+function buildGroupShareText(g) {
+  let lines = [g.name || 'グループ'];
+  if (g.members && g.members.length) {
+    const names = g.members.map(mid => {
+      const person = data.people.find(p => p.id === mid);
+      return person ? person.nickname : null;
+    }).filter(Boolean);
+    if (names.length) lines.push('👥 ' + names.join(', '));
+  }
+  if (g.memo) lines.push(g.memo);
+  return lines.join('\n');
+}
+
+function doShare(title, text, url) {
+  if (navigator.share) {
+    const shareData = { title, text };
+    if (url) shareData.url = url;
+    navigator.share(shareData).catch(() => {});
+    return;
+  }
+  const existing = document.getElementById('shareSheet');
+  if (existing) existing.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'shareSheet';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:9999;display:flex;align-items:flex-end;justify-content:center;';
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+  const sheet = document.createElement('div');
+  sheet.style.cssText = 'background:var(--card);border-radius:20px 20px 0 0;padding:24px 20px 32px;width:100%;max-width:480px;';
+  sheet.innerHTML = `
+    <div style="text-align:center;margin-bottom:16px;font-weight:700;font-size:16px;">📤 共有</div>
+    <div style="font-size:13px;color:var(--sub);background:var(--bg);border-radius:12px;padding:12px;margin-bottom:20px;white-space:pre-wrap;max-height:120px;overflow-y:auto;">${text.replace(/</g,'&lt;')}</div>
+    <div style="display:flex;gap:12px;justify-content:center;">
+      <button id="shareLineBtn" style="flex:1;padding:14px;border-radius:14px;border:none;background:#06C755;color:#fff;font-size:15px;font-weight:700;cursor:pointer;">💬 LINEで送る</button>
+      <button id="shareCopyBtn" style="flex:1;padding:14px;border-radius:14px;border:none;background:var(--accent);color:#fff;font-size:15px;font-weight:700;cursor:pointer;">🔗 コピー</button>
+    </div>
+    <button onclick="this.closest('#shareSheet').remove()" style="width:100%;margin-top:12px;padding:12px;border-radius:14px;border:1px solid var(--border);background:var(--card);font-size:14px;color:var(--sub);cursor:pointer;">キャンセル</button>
+  `;
+  overlay.appendChild(sheet);
+  document.body.appendChild(overlay);
+  sheet.querySelector('#shareLineBtn').onclick = () => {
+    window.open('https://line.me/R/share?text=' + encodeURIComponent(text), '_blank');
+    overlay.remove();
+  };
+  sheet.querySelector('#shareCopyBtn').onclick = () => {
+    navigator.clipboard.writeText(text).then(() => {
+      sheet.querySelector('#shareCopyBtn').textContent = '✅ コピーしました！';
+      setTimeout(() => overlay.remove(), 1000);
+    }).catch(() => { prompt('コピーしてください:', text); overlay.remove(); });
+  };
+}
+
+function sharePerson(id) {
+  const p = data.people.find(x => x.id === id);
+  if (!p) return;
+  doShare(p.nickname || '名前なし', buildPersonShareText(p));
+}
+
+function shareGroup(id) {
+  const g = data.groups.find(x => x.id === id);
+  if (!g) return;
+  doShare(g.name || 'グループ', buildGroupShareText(g));
+}
+
+function buildShareText(item) {
+  let lines = [item.title || '無題'];
+  if (item.occasion) lines.push(item.occasion);
+  if (item.person) lines.push('👤 ' + item.person);
+  if (item.amount) lines.push('¥' + Number(item.amount).toLocaleString());
+  if (item.tags && item.tags.length) lines.push(item.tags.map(t => '#' + t).join(' '));
+  if (item.memo) lines.push(item.memo);
+  if (item.url) lines.push(item.url);
+  else if (item.mapUrl) lines.push(item.mapUrl);
+  return lines.join('\n');
+}
+
+function shareItem(tab, id) {
+  const items = data[tab] || [];
+  const item = items.find(i => i.id === id);
+  if (!item) return;
+  const text = buildShareText(item);
+  const url = item.url || item.mapUrl || null;
+  doShare(item.title || '無題', text, url);
 }
 
 function shareApp() {

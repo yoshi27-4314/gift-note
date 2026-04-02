@@ -1192,16 +1192,21 @@ function renderItemCard(item, tab, rank) {
   html += '</div>';
   html += renderStars(item.rating, item.id, tab);
   if (rank) html += '</div></div>';
-  // Quick label assign
-  const allLabels = getLabels(tab);
+  // Quick label assign - always use wish labels for unified view
+  // Quick label assign - always use wish labels when viewing from wish tab
+  const labelSource = (currentTab==='wish') ? 'wish' : tab;
+  const allLabels = getLabels(labelSource);
+  if (!allLabels.length && currentTab==='wish') {
+    html += `<div style="font-size:12px;color:var(--sub);margin-top:6px;">ラベル未作成。ラベルバーの「＋」から作成してください</div>`;
+  }
   if (allLabels.length) {
     html += `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;">`;
     allLabels.forEach((l,i) => {
       const active = item.labelIdx===i;
-      html += `<span style="font-size:11px;padding:3px 8px;border-radius:10px;cursor:pointer;border:1px solid ${active?l.color:'var(--border)'};background:${active?l.color:'var(--card)'};color:${active?'#fff':'var(--text)'};" onclick="event.stopPropagation();quickLabel('${tab}','${item.id}',${i})">${esc(l.name)}</span>`;
+      html += `<span style="font-size:12px;padding:4px 10px;border-radius:10px;cursor:pointer;border:1.5px solid ${active?l.color:'var(--border)'};background:${active?l.color:'var(--card)'};color:${active?'#fff':'var(--text)'};" onclick="event.stopPropagation();quickLabel('${tab}','${item.id}',${i})">${esc(l.name)}</span>`;
     });
     if (item.labelIdx!==null&&item.labelIdx!==undefined) {
-      html += `<span style="font-size:11px;padding:3px 8px;border-radius:10px;cursor:pointer;border:1px solid var(--border);color:var(--sub);" onclick="event.stopPropagation();quickLabel('${tab}','${item.id}',-1)">✕</span>`;
+      html += `<span style="font-size:12px;padding:4px 10px;border-radius:10px;cursor:pointer;border:1.5px solid var(--border);color:var(--sub);" onclick="event.stopPropagation();quickLabel('${tab}','${item.id}',-1)">✕</span>`;
     }
     html += `</div>`;
   }

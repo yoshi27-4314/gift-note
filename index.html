@@ -1352,7 +1352,15 @@ function renderItemCard(item, tab, rank) {
     if (groupNames.length) html += `<div class="card-person">👥 ${groupNames.map(n=>esc(n)).join(', ')}</div>`;
   }
   if (item.placeCategory) html += `<div style="font-size:13px;color:var(--accent);font-weight:600;margin-top:4px;">${esc(item.placeCategory)}</div>`;
-  if (item.person) html += `<div class="card-person">👤 ${esc(item.person)}</div>`;
+  if (item.withPeople?.length) {
+    const peopleLinks = item.withPeople.map(pid => {
+      const pp = data.people.find(x=>x.id===pid);
+      return pp ? `<span style="color:var(--accent);cursor:pointer;text-decoration:underline;" onclick="event.stopPropagation();jumpToPerson('${pid}')">${esc(pp.nickname)}</span>` : null;
+    }).filter(Boolean);
+    if (peopleLinks.length) html += `<div class="card-person">👤 ${peopleLinks.join(', ')}</div>`;
+  } else if (item.person) {
+    html += `<div class="card-person">👤 ${esc(item.person)}</div>`;
+  }
   if (item.date) html += `<div class="card-sub">📅 ${item.date}</div>`;
   if (item.occasion) html += `<div class="card-occasion">${esc(item.occasion)}</div>`;
   if (item.amount) html += `<div class="card-amount">¥${Number(item.amount).toLocaleString()}</div>`;
@@ -1361,7 +1369,7 @@ function renderItemCard(item, tab, rank) {
   if (item.tags&&item.tags.length) html += `<div class="card-tags">${item.tags.map(t=>`<span class="card-tag">#${esc(t)}</span>`).join('')}</div>`;
   if (item.address) html += `<div style="font-size:13px;color:var(--sub);margin-top:6px;">📍 ${esc(item.address)}</div>`;
   if (item.phone) html += `<a href="tel:${esc(item.phone)}" style="display:block;font-size:13px;color:var(--accent);margin-top:6px;text-decoration:none;">📞 ${esc(item.phone)}</a>`;
-  if (item.mapUrl) html += `<a class="card-url" href="${esc(item.mapUrl)}" target="_blank" rel="noopener" style="margin-top:6px;">🔗 ホームページを開く</a>`;
+  if (item.mapUrl) html += `<a class="card-url" href="${esc(item.mapUrl)}" target="_blank" rel="noopener" style="margin-top:6px;font-size:15px;">🔗 ホームページを開く</a>`;
   else if (item.url) html += `<a class="card-url" href="${esc(item.url)}" target="_blank" rel="noopener">🔗 ${esc(truncUrl(item.url))}</a>`;
   html += `<div class="card-actions">
     <button class="card-btn" onclick="event.stopPropagation();togglePin('${tab}','${item.id}')">${item.pinned?'📌 固定中':'📌 固定'}</button>
@@ -2085,6 +2093,15 @@ function switchTab(tab) {
   render();
 }
 
+function jumpToPerson(id) {
+  switchTab('people');
+  openPersonId = id;
+  render();
+  setTimeout(() => {
+    const detail = document.getElementById('personDetail');
+    if (detail) detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 150);
+}
 function jumpToItem(tab, id) {
   switchTab(tab);
   openItemId = id;

@@ -1474,9 +1474,10 @@ function renderPersonCard(p) {
     const catLabels = {gave:'🎁 あげた', received:'🎀 もらった', wish:'💭 気になる', wantgive:'🎁 あげたい', place:'📍 行きたい'};
     const catColors = {gave:'#fdeee9', received:'#e9f0fd', wish:'#f5f0ed', wantgive:'#fdf0ed', place:'#edf7fa'};
     const catTextColors = {gave:'#d48a7a', received:'#7a9ad4', wish:'#9e8e88', wantgive:'#e8a598', place:'#7ec8d9'};
+    const catToTab = {gave:'gave', received:'received', wish:'wish', wantgive:'wish', place:'place'};
     html += '<div class="person-section"><div class="person-section-title">📋 この人との記録</div>';
     allHistory.sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,10).forEach(h => {
-      html += `<div class="history-item"><span class="history-dir" style="background:${catColors[h.cat]};color:${catTextColors[h.cat]};">${catLabels[h.cat]}</span><span>${esc(h.title)}</span><span class="history-date">${h.date||''}</span></div>`;
+      html += `<div class="history-item" onclick="event.stopPropagation();jumpToItem('${catToTab[h.cat]}','${h.id}')" style="cursor:pointer;"><span class="history-dir" style="background:${catColors[h.cat]};color:${catTextColors[h.cat]};">${catLabels[h.cat]}</span><span style="flex:1;">${esc(h.title)}</span><span class="history-date">${h.date||''}</span><span style="color:var(--accent);font-size:12px;margin-left:4px;">→</span></div>`;
     });
     html += '</div>';
   }
@@ -1614,7 +1615,32 @@ function renderGroupCard(g) {
     });
     html += '</div>';
   }
-  html += `<div class="card-actions">
+  // Group history: items related to any member
+  const groupHistory = [];
+  const catLabelsG = {gave:'🎁 あげた', received:'🎀 もらった', wish:'💭 気になる', wantgive:'🎁 あげたい', place:'📍 行きたい'};
+  const catColorsG = {gave:'#fdeee9', received:'#e9f0fd', wish:'#f5f0ed', wantgive:'#fdf0ed', place:'#edf7fa'};
+  const catTextColorsG = {gave:'#d48a7a', received:'#7a9ad4', wish:'#9e8e88', wantgive:'#e8a598', place:'#7ec8d9'};
+  const catToTabG = {gave:'gave', received:'received', wish:'wish', wantgive:'wish', place:'place'};
+  const memberNames = members.map(m => m.nickname).filter(Boolean);
+  const nameMatchG = (itemPerson) => itemPerson && memberNames.some(n => itemPerson.includes(n));
+  data.gave.forEach(item => { if (nameMatchG(item.person)) groupHistory.push({...item, cat:'gave'}); });
+  data.received.forEach(item => { if (nameMatchG(item.person)) groupHistory.push({...item, cat:'received'}); });
+  data.wish.forEach(item => {
+    if (nameMatchG(item.person) || nameMatchG(item.giftTarget)) groupHistory.push({...item, cat: item.purpose==='gift'?'wantgive':'wish'});
+  });
+  data.place.forEach(item => {
+    if (nameMatchG(item.person) || (item.withGroups && item.withGroups.includes(g.id))) groupHistory.push({...item, cat:'place'});
+  });
+  if (groupHistory.length) {
+    html += '<div style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--border);">';
+    html += '<div style="font-size:11px;color:var(--sub);margin-bottom:4px;">📋 メンバーとの記録</div>';
+    groupHistory.sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,10).forEach(h => {
+      html += `<div class="history-item" onclick="event.stopPropagation();jumpToItem('${catToTabG[h.cat]}','${h.id}')" style="cursor:pointer;"><span class="history-dir" style="background:${catColorsG[h.cat]};color:${catTextColorsG[h.cat]};">${catLabelsG[h.cat]}</span><span style="flex:1;">${esc(h.title)}</span><span class="history-date">${h.date||''}</span><span style="color:var(--accent);font-size:12px;margin-left:4px;">→</span></div>`;
+    });
+    html += '</div>';
+  }
+  html += `<hr style="border:none;border-top:1px solid var(--border);margin:20px 0 16px;">
+  <div class="card-actions">
     <button class="card-btn" onclick="togglePin('groups','${g.id}')">${g.pinned?'📌 固定中':'📌 固定'}</button>
     <button class="card-btn" onclick="event.stopPropagation();shareGroup('${g.id}')" style="background:#e3f2fd;border-color:#90caf9;">📤 共有</button>
     <button class="card-btn" onclick="editGroup('${g.id}')">✏️ 編集</button>
@@ -2032,6 +2058,16 @@ function switchTab(tab) {
   document.getElementById('searchInput').value = '';
   document.querySelectorAll('.tab').forEach(el => el.classList.toggle('active', el.dataset.tab===tab));
   render();
+}
+
+function jumpToItem(tab, id) {
+  switchTab(tab);
+  openItemId = id;
+  render();
+  setTimeout(() => {
+    const detail = document.getElementById('itemDetail');
+    if (detail) detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 150);
 }
 
 // ===== Modal: Items =====

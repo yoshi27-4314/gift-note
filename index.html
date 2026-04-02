@@ -900,7 +900,7 @@ function openPlaceModal(id) {
   html += `<div class="form-group"><label>メモ</label><textarea id="fMemo" placeholder="営業時間、予算感、おすすめメニューなど">${esc(item?.memo||'')}</textarea></div>`;
 
   // Photo
-  html += `<div class="form-group"><label>写真</label><input type="file" id="fImg" accept="image/*"><div id="photoPreview"></div></div>`;
+  html += photoInputHTML('fImg');
 
   html += `<div class="form-btns"><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button><button class="btn btn-primary" onclick="savePlaceItem()">保存</button></div>`;
   modal.innerHTML = html;
@@ -930,7 +930,7 @@ function openMapSearch() {
 function savePlaceItem() {
   const title = document.getElementById('fTitle').value.trim();
   if (!title) { alert('店名・場所名を入力してください'); return; }
-  const fileInput = document.getElementById('fImg');
+  const fileInput = getPhotoData('fImg');
 
   // Combine selected tags + typed tags
   const selectedTags = document.getElementById('fPlaceSelectedTags')?.value.split(',').filter(Boolean) || [];
@@ -1431,6 +1431,9 @@ function openGroupModal(id) {
     });
   }
   html += `</div><input type="hidden" id="gMembers" value="${selectedIds.join(',')}"></div>`;
+  // Group photo
+  html += photoInputHTML('gImg');
+  if (g?.img) html += `<div style="margin-top:-8px;margin-bottom:12px;"><img src="${g.img}" style="width:100%;max-height:120px;object-fit:cover;border-radius:12px;"></div>`;
   html += `<div class="form-btns"><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button><button class="btn btn-primary" onclick="saveGroup()">保存</button></div>`;
   modal.innerHTML = html;
   document.getElementById('modalOverlay').classList.add('open');
@@ -1458,21 +1461,36 @@ function saveGroup() {
   const name = document.getElementById('gName').value.trim();
   if (!name) { alert('グループ名を入力してください'); return; }
   const memberIds = document.getElementById('gMembers').value.split(',').filter(Boolean);
-  const group = {
-    id: editingId || genId(),
-    name,
-    description: document.getElementById('gDesc').value.trim()||null,
-    memberIds,
-    createdAt: editingId ? (data.groups.find(x=>x.id===editingId)?.createdAt||new Date().toISOString()) : new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  };
-  if (editingId) {
-    const idx = data.groups.findIndex(x=>x.id===editingId);
-    if (idx>=0) data.groups[idx] = group;
-  } else {
-    data.groups.push(group);
+  const fileInput = getPhotoData('gImg');
+  const existingImg = editingId ? (data.groups.find(x=>x.id===editingId)?.img||null) : null;
+
+  function doSaveGroup(imgData) {
+    const group = {
+      id: editingId || genId(),
+      name,
+      description: document.getElementById('gDesc').value.trim()||null,
+      memberIds,
+      img: imgData,
+      pinned: editingId ? (data.groups.find(x=>x.id===editingId)?.pinned||false) : false,
+      createdAt: editingId ? (data.groups.find(x=>x.id===editingId)?.createdAt||new Date().toISOString()) : new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    if (editingId) {
+      const idx = data.groups.findIndex(x=>x.id===editingId);
+      if (idx>=0) data.groups[idx] = group;
+    } else {
+      data.groups.push(group);
+    }
+    saveData(); closeModal(); render();
   }
-  saveData(); closeModal(); render();
+
+  if (fileInput&&fileInput.files&&fileInput.files[0]) {
+    const reader = new FileReader();
+    reader.onload = e => doSaveGroup(e.target.result);
+    reader.readAsDataURL(fileInput.files[0]);
+  } else {
+    doSaveGroup(existingImg);
+  }
 }
 
 function editGroup(id) {
@@ -1801,7 +1819,7 @@ function openItemModal(id) {
     html += `<div class="form-group"><label>URL</label><input type="url" id="fUrl" placeholder="https://..." value="${esc(item?.url||'')}"></div>`;
   }
   html += `<div class="form-group"><label>メモ</label><textarea id="fMemo" placeholder="自由にメモ">${esc(item?.memo||'')}</textarea></div>`;
-  html += `<div class="form-group"><label>写真</label><input type="file" id="fImg" accept="image/*"><div id="photoPreview"></div></div>`;
+  html += photoInputHTML('fImg');
   if (isEdit && item?.img) {
     html += `<!-- existing photo handled in JS -->`;
   }
@@ -1816,6 +1834,34 @@ function setItemPurpose(purpose, el) {
   el.classList.add('active');
   const targetGroup = document.getElementById('fGiftTargetGroup');
   if (targetGroup) targetGroup.style.display = purpose==='gift' ? '' : 'none';
+}
+
+function photoInputHTML(inputId) {
+  return `<div class="form-group"><label>写真</label>
+    <input type="file" id="${inputId}Camera" accept="image/*" capture="environment" style="display:none;" onchange="previewPhoto(this,'${inputId}Preview')">
+    <input type="file" id="${inputId}File" accept="image/*" style="display:none;" onchange="previewPhoto(this,'${inputId}Preview')">
+    <div style="display:flex;gap:8px;margin-bottom:6px;">
+      <div style="font-size:13px;color:var(--accent);cursor:pointer;padding:6px 14px;border:1px solid var(--border);border-radius:10px;" onclick="document.getElementById('${inputId}Camera').click()">📷 カメラ</div>
+      <div style="font-size:13px;color:var(--accent);cursor:pointer;padding:6px 14px;border:1px solid var(--border);border-radius:10px;" onclick="document.getElementById('${inputId}File').click()">📁 ファイル</div>
+    </div>
+    <div id="${inputId}Preview"></div>
+  </div>`;
+}
+
+function previewPhoto(input, previewId) {
+  if (!input.files||!input.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById(previewId).innerHTML = `<img src="${e.target.result}" style="width:100%;max-height:160px;object-fit:cover;border-radius:12px;margin-top:6px;">`;
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+function getPhotoData(inputId) {
+  const camera = document.getElementById(inputId+'Camera');
+  const file = document.getElementById(inputId+'File');
+  const input = (file?.files?.length ? file : camera?.files?.length ? camera : null);
+  return input;
 }
 
 function setFormStar(n) {
@@ -2147,7 +2193,7 @@ function savePerson() {
 function saveItem() {
   const title = document.getElementById('fTitle').value.trim();
   if (!title) { alert('タイトルを入力してください'); return; }
-  const fileInput = document.getElementById('fImg');
+  const fileInput = getPhotoData('fImg');
   const tags = parseTags(document.getElementById('fTags')?.value||'');
   const labelIdxEl = document.getElementById('fLabelIdx');
   const labelIdx = labelIdxEl&&labelIdxEl.value!=='' ? parseInt(labelIdxEl.value) : null;

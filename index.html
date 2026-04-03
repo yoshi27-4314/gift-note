@@ -273,6 +273,30 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 .toast.show { opacity: 1; }
 .pull-indicator { position: fixed; top: 0; left: 50%; transform: translateX(-50%) translateY(-50px); background: var(--accent); color: #fff; padding: 8px 20px; border-radius: 0 0 16px 16px; font-size: 13px; z-index: 9998; transition: transform 0.3s; }
 .pull-indicator.visible { transform: translateX(-50%) translateY(0); }
+/* Anniversary reminder popup */
+.ann-popup-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 300; display: flex; align-items: center; justify-content: center; animation: fadeIn 0.3s; }
+.ann-popup { background: var(--card); border-radius: 20px; width: 90%; max-width: 400px; max-height: 80dvh; overflow-y: auto; padding: 24px 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
+.ann-popup h2 { text-align: center; font-size: 20px; margin-bottom: 16px; }
+.ann-popup-item { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 14px; background: var(--bg); margin-bottom: 8px; cursor: pointer; transition: background 0.2s; }
+.ann-popup-item:active { background: var(--accent-light); }
+.ann-popup-item .ann-emoji { font-size: 24px; flex-shrink: 0; }
+.ann-popup-item .ann-info { flex: 1; min-width: 0; }
+.ann-popup-item .ann-person { font-size: 15px; font-weight: 600; }
+.ann-popup-item .ann-event { font-size: 13px; color: var(--sub); }
+.ann-popup-item .ann-badge { font-size: 12px; padding: 3px 10px; border-radius: 10px; white-space: nowrap; flex-shrink: 0; }
+.ann-badge-today { background: #ffe0e0; color: #d45; font-weight: 600; }
+.ann-badge-soon { background: var(--tag-bg); color: var(--accent); }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+/* Anniversary card section in people tab */
+.ann-section { background: linear-gradient(135deg, var(--accent-light), var(--card)); border-radius: 16px; padding: 14px 16px; margin-bottom: 12px; border: 1px solid var(--border); }
+.ann-section-title { font-size: 15px; font-weight: 600; margin-bottom: 10px; color: var(--text); }
+.ann-section-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); cursor: pointer; }
+.ann-section-item:last-child { border-bottom: none; }
+/* Update banner */
+.update-banner { background: linear-gradient(135deg, #e3f2fd, #bbdefb); border: 1px solid #90caf9; border-radius: 14px; padding: 12px 16px; margin: 8px 16px; display: flex; align-items: center; gap: 10px; cursor: pointer; animation: fadeIn 0.3s; }
+.update-banner .update-icon { font-size: 20px; }
+.update-banner .update-text { flex: 1; font-size: 13px; color: #1565c0; }
+.update-banner .update-close { font-size: 18px; color: #90caf9; cursor: pointer; }
 
 /* Person card */
 .person-card {
@@ -555,6 +579,7 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
   <input class="search-input" id="searchInput" type="text" placeholder="名前・タグ・メモで検索">
 </div>
 
+<div id="updateBanner"></div>
 <div class="reminder-zone" id="reminderZone"></div>
 <div class="pickup-zone" id="pickupZone"></div>
 
@@ -571,6 +596,7 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 <div class="ranking-toggle" id="rankingToggle" style="display:none;">
   <div class="ranking-btn" id="rankOnBtn" onclick="setRankMode(!rankMode)">⭐ ランキング</div>
 </div>
+<div id="annSection"></div>
 <div class="card-list" id="cardList"></div>
 
 <button class="fab" id="fabBtn">＋</button>
@@ -607,8 +633,11 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 
 <script>
 // ===== Constants =====
+const APP_VERSION = '1.6';
 const STORAGE_KEY = 'awai_data';
 const SEASON_KEY = 'awai_season';
+const ANN_POPUP_KEY = 'awai_ann_popup_date';
+const VERSION_KEY = 'awai_last_version';
 const TABS = ['wish','received','gave','place','people','groups'];
 const MODAL_TITLES = { wish:'アイテム', received:'もらった', gave:'あげた', place:'行きたい', people:'大切な人', groups:'グループ' };
 const SEASON_ICONS = { spring:'🌸', summer:'🌊', autumn:'🍂', winter:'❄️' };
@@ -1422,7 +1451,7 @@ function renderPersonCard(p) {
   }
   // Anniversaries
   if (p.anniversaries&&p.anniversaries.length) {
-    html += `<div class="person-section"><div class="person-section-title" style="display:flex;align-items:center;justify-content:space-between;">📅 記念日 <span style="font-size:10px;padding:2px 8px;border-radius:8px;border:1px solid var(--border);cursor:pointer;background:var(--card);" onclick="toggleElapsedMode()">${elapsedMode==='days'?'📆 日数':'📅 年数'} ↔</span></div>`;
+    html += `<div class="person-section"><div class="person-section-title" style="display:flex;align-items:center;justify-content:space-between;">📅 記念日 <div><span style="font-size:10px;padding:2px 8px;border-radius:8px;border:1px solid var(--border);cursor:pointer;background:var(--card);margin-right:4px;" onclick="event.stopPropagation();scrollToAnnSection()">📅 一覧へ</span><span style="font-size:10px;padding:2px 8px;border-radius:8px;border:1px solid var(--border);cursor:pointer;background:var(--card);" onclick="toggleElapsedMode()">${elapsedMode==='days'?'📆 日数':'📅 年数'} ↔</span></div></div>`;
     p.anniversaries.forEach(a => {
       const days = daysUntil(a.date, a.dateType);
       const badge = days!==null ? (days===0?'🎉 今日！':'あと'+days+'日') : '';
@@ -1875,11 +1904,119 @@ ${budget ? '\n## 1人あたりの予算\n約'+budget+'円' : ''}
 }
 
 // ===== Main render =====
+// ===== Anniversary Reminders =====
+function getUpcomingAnniversaries() {
+  const results = [];
+  (data.people||[]).forEach(p => {
+    (p.anniversaries||[]).forEach(a => {
+      const days = daysUntil(a.date, a.dateType);
+      if (days === null) return;
+      const reminders = a.reminders && a.reminders.length ? a.reminders : [];
+      const maxReminder = reminders.length ? Math.max(...reminders) : 0;
+      // Show if: has reminders and within range, or no reminders and today only
+      if (reminders.length && days <= maxReminder) {
+        results.push({ person: p, ann: a, days });
+      } else if (!reminders.length && days === 0) {
+        results.push({ person: p, ann: a, days });
+      }
+    });
+  });
+  results.sort((a,b) => a.days - b.days);
+  return results;
+}
+
+function showAnnPopup() {
+  const upcoming = getUpcomingAnniversaries();
+  if (!upcoming.length) return;
+  const today = new Date().toISOString().split('T')[0];
+  const lastShown = localStorage.getItem(ANN_POPUP_KEY);
+  const hasToday = upcoming.some(u => u.days === 0);
+  // 当日は毎回、それ以外は1日1回
+  if (!hasToday && lastShown === today) return;
+  if (!hasToday) localStorage.setItem(ANN_POPUP_KEY, today);
+
+  let html = '<div class="ann-popup"><h2>📅 記念日リマインド</h2>';
+  upcoming.forEach(u => {
+    const emoji = u.ann.name.match(/[\p{Emoji}]/u) ? u.ann.name.match(/[\p{Emoji}]/u)[0] : '📅';
+    const label = u.ann.name.replace(/[\p{Emoji}]/gu,'').trim();
+    const badgeClass = u.days === 0 ? 'ann-badge-today' : 'ann-badge-soon';
+    const badgeText = u.days === 0 ? '🎉 今日！' : 'あと'+u.days+'日';
+    html += `<div class="ann-popup-item" onclick="closeAnnPopup();jumpToPerson('${u.person.id}')">
+      <div class="ann-emoji">${emoji}</div>
+      <div class="ann-info">
+        <div class="ann-person">${esc(u.person.nickname)}</div>
+        <div class="ann-event">${esc(label)} ${formatAnnDate(u.ann.date, u.ann.dateType)}</div>
+      </div>
+      <span class="ann-badge ${badgeClass}">${badgeText}</span>
+    </div>`;
+  });
+  html += '<div style="text-align:center;margin-top:14px;"><button class="btn btn-secondary" onclick="closeAnnPopup()" style="min-width:120px;">閉じる</button></div></div>';
+  const overlay = document.createElement('div');
+  overlay.id = 'annPopupOverlay';
+  overlay.className = 'ann-popup-overlay';
+  overlay.innerHTML = html;
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeAnnPopup(); });
+  document.body.appendChild(overlay);
+}
+
+function closeAnnPopup() {
+  const el = document.getElementById('annPopupOverlay');
+  if (el) el.remove();
+}
+
+function scrollToAnnSection() {
+  openPersonId = null;
+  render();
+  setTimeout(() => {
+    const el = document.getElementById('annSectionCard');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 100);
+}
+
+function renderAnnSection() {
+  const section = document.getElementById('annSection');
+  if (currentTab !== 'people') { section.innerHTML = ''; return; }
+  const upcoming = getUpcomingAnniversaries();
+  if (!upcoming.length) { section.innerHTML = ''; return; }
+  let html = '<div class="ann-section" id="annSectionCard"><div class="ann-section-title">📅 直近の記念日</div>';
+  upcoming.forEach(u => {
+    const emoji = u.ann.name.match(/[\p{Emoji}]/u) ? u.ann.name.match(/[\p{Emoji}]/u)[0] : '📅';
+    const label = u.ann.name.replace(/[\p{Emoji}]/gu,'').trim();
+    const badgeClass = u.days === 0 ? 'ann-badge-today' : 'ann-badge-soon';
+    const badgeText = u.days === 0 ? '🎉 今日！' : 'あと'+u.days+'日';
+    html += `<div class="ann-section-item" onclick="jumpToPerson('${u.person.id}')">
+      <span style="font-size:20px;">${emoji}</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:14px;font-weight:600;">${esc(u.person.nickname)}</div>
+        <div style="font-size:12px;color:var(--sub);">${esc(label)} ${formatAnnDate(u.ann.date, u.ann.dateType)}</div>
+      </div>
+      <span class="ann-badge ${badgeClass}">${badgeText}</span>
+    </div>`;
+  });
+  html += '</div>';
+  section.innerHTML = html;
+}
+
+// ===== Update notification =====
+function checkAppUpdate() {
+  const lastVersion = localStorage.getItem(VERSION_KEY);
+  if (lastVersion && lastVersion !== APP_VERSION) {
+    const banner = document.getElementById('updateBanner');
+    banner.innerHTML = `<div class="update-banner" onclick="location.reload()">
+      <span class="update-icon">🆕</span>
+      <span class="update-text">新しいバージョン(v${APP_VERSION})に更新されました。タップして反映してください。</span>
+      <span class="update-close" onclick="event.stopPropagation();this.parentElement.remove();">✕</span>
+    </div>`;
+  }
+  localStorage.setItem(VERSION_KEY, APP_VERSION);
+}
+
 function render() {
   const cardList = document.getElementById('cardList');
   renderLabelBar();
   renderReminders();
   renderPickup();
+  renderAnnSection();
 
   // Show ranking toggle for item tabs
   const rankToggle = document.getElementById('rankingToggle');
@@ -3175,6 +3312,7 @@ function checkPin() {
   if (pinMode === 'unlock') {
     if (pinBuffer === savedPin) {
       document.getElementById('pinOverlay').classList.add('hidden');
+      setTimeout(() => showAnnPopup(), 500);
     } else {
       document.getElementById('pinError').textContent = 'パスコードが違います';
       pinBuffer = '';
@@ -3277,6 +3415,9 @@ if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().t
   });
 
   render();
+  checkAppUpdate();
+  // PINがない場合のみ起動時にポップアップ（PINありの場合はPIN解除後に表示）
+  if (!localStorage.getItem(PIN_KEY)) setTimeout(() => showAnnPopup(), 500);
 
   // Pull-to-refresh for iOS
   let _ptr_startY = 0, _ptr_pulling = false;

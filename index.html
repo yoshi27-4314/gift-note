@@ -1649,6 +1649,30 @@ function renderPersonCard(p) {
     });
     html += '</div>';
   }
+  // Counters
+  const counters = p.counters||[];
+  html += '<div class="person-section"><div class="person-section-title">🔢 カウンター</div>';
+  if (!counters.length) {
+    html += `<div style="font-size:13px;color:var(--sub);padding:8px 0;">カウンターを追加して、大切な記録を数えましょう</div>`;
+    html += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+      <div style="font-size:12px;color:var(--sub);padding:6px 12px;border:1px dashed var(--border);border-radius:10px;cursor:pointer;" onclick="event.stopPropagation();addCounter('${p.id}','一緒に食事した')">例：一緒に食事した</div>
+      <div style="font-size:12px;color:var(--sub);padding:6px 12px;border:1px dashed var(--border);border-radius:10px;cursor:pointer;" onclick="event.stopPropagation();addCounter('${p.id}','会った')">例：会った</div>
+    </div>`;
+  }
+  counters.forEach((c,ci) => {
+    html += `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);">
+      <div style="flex:1;cursor:pointer;" onclick="event.stopPropagation();toggleCounterLog('${p.id}',${ci})">
+        <span style="font-size:14px;">${esc(c.name)}</span>
+        <span style="font-size:16px;font-weight:600;color:var(--accent);margin-left:8px;">${c.count||0}回</span>
+      </div>
+      <button onclick="event.stopPropagation();incrementCounter('${p.id}',${ci})" style="background:var(--accent-light);border:1px solid var(--accent);border-radius:10px;padding:6px 14px;font-size:13px;cursor:pointer;color:var(--accent);font-family:'Zen Maru Gothic',sans-serif;">+1</button>
+      <span style="font-size:14px;color:#c97070;cursor:pointer;" onclick="event.stopPropagation();removeCounter('${p.id}',${ci})">×</span>
+    </div>`;
+    html += `<div id="counterLog_${p.id}_${ci}" style="display:none;padding:4px 0 8px;font-size:12px;color:var(--sub);"></div>`;
+  });
+  html += `<div class="add-btn" style="margin-top:8px;" onclick="event.stopPropagation();promptAddCounter('${p.id}')">＋ カウンターを追加</div>`;
+  html += '</div>';
+
   html += `<hr style="border:none;border-top:1px solid var(--border);margin:20px 0 16px;">
   <div class="person-actions">
     <button class="card-btn" onclick="event.stopPropagation();togglePin('people','${p.id}')">${p.pinned?'📌 固定中':'📌 固定'}</button>
@@ -3582,6 +3606,97 @@ function saveMyProfile() {
   localStorage.setItem(MY_PROFILE_KEY, JSON.stringify(profile));
   closeModal();
   showToast('プロフィールを保存しました ✓');
+}
+
+// ===== Counters =====
+function addCounter(personId, name) {
+  const p = data.people.find(x=>x.id===personId);
+  if (!p) return;
+  if (!p.counters) p.counters = [];
+  if (p.counters.some(c=>c.name===name)) return;
+  p.counters.push({ name, count: 0, logs: [] });
+  saveData(); render();
+  if (openPersonId) setTimeout(() => {
+    const detail = document.getElementById('personDetail');
+    if (detail) detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 100);
+}
+
+function promptAddCounter(personId) {
+  const name = prompt('カウンター名を入力してください\n例：一緒に旅行した、電話した、ライブ行った');
+  if (!name || !name.trim()) return;
+  addCounter(personId, name.trim());
+}
+
+function incrementCounter(personId, counterIdx) {
+  const p = data.people.find(x=>x.id===personId);
+  if (!p || !p.counters || !p.counters[counterIdx]) return;
+  const c = p.counters[counterIdx];
+  const today = new Date().toISOString().slice(0, 10);
+
+  // Show confirmation with date change option
+  const overlay = document.createElement('div');
+  overlay.id = 'counterConfirmOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:400;display:flex;align-items:center;justify-content:center;animation:fadeIn 0.2s;';
+  overlay.innerHTML = `<div style="background:#fff;border-radius:16px;padding:24px;width:85%;max-width:320px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,0.15);">
+    <div style="font-size:16px;font-weight:600;margin-bottom:8px;">${esc(c.name)}</div>
+    <div style="font-size:28px;font-weight:700;color:var(--accent);margin-bottom:4px;">${(c.count||0)+1}回目</div>
+    <div style="font-size:14px;color:var(--sub);margin-bottom:16px;">日付：<span id="counterDateDisplay">${today}</span></div>
+    <input type="date" id="counterDateInput" value="${today}" style="display:none;width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;font-size:15px;margin-bottom:12px;font-family:'Zen Maru Gothic',sans-serif;">
+    <div style="display:flex;gap:8px;justify-content:center;">
+      <button onclick="document.getElementById('counterDateInput').style.display='';this.style.display='none';" style="background:none;border:1px solid var(--border);border-radius:10px;padding:8px 16px;font-size:13px;cursor:pointer;color:var(--sub);font-family:'Zen Maru Gothic',sans-serif;">日付を変更</button>
+      <button onclick="confirmIncrement('${personId}',${counterIdx})" style="background:var(--accent);border:none;border-radius:10px;padding:8px 20px;font-size:14px;cursor:pointer;color:#fff;font-family:'Zen Maru Gothic',sans-serif;">OK</button>
+    </div>
+    <div style="margin-top:12px;"><span onclick="document.getElementById('counterConfirmOverlay').remove()" style="font-size:13px;color:var(--sub);cursor:pointer;">キャンセル</span></div>
+  </div>`;
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+function confirmIncrement(personId, counterIdx) {
+  const p = data.people.find(x=>x.id===personId);
+  if (!p || !p.counters || !p.counters[counterIdx]) return;
+  const c = p.counters[counterIdx];
+  const dateInput = document.getElementById('counterDateInput');
+  const date = dateInput ? dateInput.value : new Date().toISOString().slice(0, 10);
+  c.count = (c.count||0) + 1;
+  if (!c.logs) c.logs = [];
+  c.logs.unshift(date);
+
+  // Check milestones (50, 100, 150, ...)
+  if (c.count % 50 === 0) {
+    showToast('🎉 ' + c.name + ' ' + c.count + '回達成！');
+  }
+
+  document.getElementById('counterConfirmOverlay')?.remove();
+  saveData(); render();
+  if (openPersonId) setTimeout(() => {
+    const detail = document.getElementById('personDetail');
+    if (detail) detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 100);
+}
+
+function removeCounter(personId, counterIdx) {
+  if (!confirm('このカウンターを削除しますか？')) return;
+  const p = data.people.find(x=>x.id===personId);
+  if (!p || !p.counters) return;
+  p.counters.splice(counterIdx, 1);
+  saveData(); render();
+}
+
+function toggleCounterLog(personId, counterIdx) {
+  const el = document.getElementById('counterLog_' + personId + '_' + counterIdx);
+  if (!el) return;
+  if (el.style.display === 'none') {
+    const p = data.people.find(x=>x.id===personId);
+    if (!p || !p.counters || !p.counters[counterIdx]) return;
+    const logs = p.counters[counterIdx].logs || [];
+    if (!logs.length) { el.innerHTML = '<span style="color:var(--sub);">まだ記録がありません</span>'; }
+    else { el.innerHTML = logs.slice(0, 20).map(d => '<span style="display:inline-block;padding:2px 8px;margin:2px;background:var(--accent-light);border-radius:8px;">' + d + '</span>').join(''); }
+    el.style.display = '';
+  } else {
+    el.style.display = 'none';
+  }
 }
 
 // ===== Memory (記憶) =====

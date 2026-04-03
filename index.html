@@ -2927,6 +2927,10 @@ function openSettings() {
       </div>
       <div class="form-hint" style="text-align:center;">紹介した人数: <strong id="referralCount">0</strong>人</div>
     </div>
+    <div class="form-group"><label>👤 マイプロフィール</label>
+      <div class="form-hint" style="margin-bottom:8px;">自分の情報を登録しておくとコンシェルジュAIが活用します</div>
+      <button class="card-btn" onclick="document.getElementById('settingsModalOverlay').classList.remove('open');openMyProfile()" style="font-size:14px;padding:8px 20px;">✏️ プロフィールを編集</button>
+    </div>
     <div class="form-group"><label>コンシェルジュ（Gemini API Key）</label>
       <input id="setGeminiKey" type="password" placeholder="AIzaSy..." value="${localStorage.getItem(GEMINI_KEY_STORAGE)||''}">
       <div class="form-hint">Google AI Studioで無料発行 → 個人Gmailで作成推奨</div></div>
@@ -3091,6 +3095,129 @@ function checkReferral() {
       // In future: notify referrer via backend
     }
   }
+}
+
+// ===== My Profile =====
+const MY_PROFILE_KEY = 'awai_my_profile';
+function getMyProfile() { try { return JSON.parse(localStorage.getItem(MY_PROFILE_KEY))||{}; } catch(e) { return {}; } }
+
+function openMyProfile() {
+  const modal = document.getElementById('modal');
+  const p = getMyProfile();
+  const sz = p.sizes||{};
+  const anns = p.anniversaries||[{name:'🎂 誕生日',date:'',dateType:'monthday',reminders:[]}];
+
+  let html = `<h2>👤 マイプロフィール</h2>`;
+  html += `<div class="form-group"><label>名前</label><input id="myName" placeholder="自分の名前" value="${esc(p.name||'')}"></div>`;
+  // Gender
+  html += `<div class="form-group"><label>性別</label>
+    <div style="display:flex;gap:6px;margin-top:4px;">
+      ${['male','female','other','unset'].map(g => {
+        const labels = {male:'男性',female:'女性',other:'その他',unset:'未設定'};
+        const active = (p.gender||'unset')===g;
+        return `<div class="date-type-chip ${active?'active':''}" onclick="selectMyGender('${g}',this)" style="flex:1;text-align:center;">${labels[g]}</div>`;
+      }).join('')}
+    </div><input type="hidden" id="myGender" value="${p.gender||'unset'}">
+  </div>`;
+  // Anniversaries
+  html += `<div class="form-group"><label>📅 記念日</label><div id="myAnnContainer">`;
+  anns.forEach((a,i) => { html += myAnnRowHTML(a,i); });
+  html += `</div><div class="add-btn" onclick="addMyAnnRow()">＋ 記念日を追加</div></div>`;
+  // Sizes
+  html += `<div class="form-group"><label>📏 サイズ</label><div class="profile-form-grid">
+    <input id="mySizeTops" placeholder="服トップス" value="${esc(sz.tops||'')}">
+    <input id="mySizeBottoms" placeholder="服ボトムス" value="${esc(sz.bottoms||'')}">
+    <input id="mySizeShoes" placeholder="靴サイズ" value="${esc(sz.shoes||'')}">
+    <input id="mySizeRing" placeholder="指輪サイズ" value="${esc(sz.ring||'')}">
+  </div></div>`;
+  // Smoking/Drinking
+  html += `<div class="form-group"><label>🚬 嗜好品</label><div class="form-row">
+    <input id="mySmoking" placeholder="タバコ（銘柄）" value="${esc(p.smoking||'')}">
+    <input id="myDrinking" placeholder="お酒（種類）" value="${esc(p.drinking||'')}">
+  </div></div>`;
+  // Interests
+  html += `<div class="form-group"><label>💖 好きなもの・趣味</label><input id="myInterests" placeholder="例：音楽, ゴルフ, ワイン" value="${(p.interests||[]).join(', ')}"></div>`;
+  // Brands
+  html += `<div class="form-group"><label>🎨 好きなブランド・色</label><input id="myBrands" placeholder="例：ZARA, 無印, ベージュ系" value="${(p.brands||[]).join(', ')}"></div>`;
+  // Food
+  html += `<div class="form-group"><label>🍽 食の好み</label>
+    <input id="myFoodLike" placeholder="☺ 好きなもの（カンマ区切り）" value="${(p.foodLike||[]).join(', ')}" style="margin-bottom:6px;">
+    <input id="myFoodDislike" placeholder="✗ 苦手なもの（カンマ区切り）" value="${(p.foodDislike||[]).join(', ')}">
+  </div>`;
+  // Memo
+  html += `<div class="form-group"><label>📝 メモ</label><textarea id="myMemo" placeholder="自由にメモ">${esc(p.memo||'')}</textarea></div>`;
+
+  html += `<div class="form-btns"><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button><button class="btn btn-primary" onclick="saveMyProfile()">保存</button></div>`;
+  modal.innerHTML = html;
+  openModal();
+}
+
+let myAnnCounter = 200;
+function myAnnRowHTML(a, idx) {
+  const parts = (a.date||'').split('-');
+  let selMonth='', selDay='';
+  if (parts.length>=2) { selMonth=parseInt(parts[parts.length-2])||''; selDay=parseInt(parts[parts.length-1])||''; }
+  let monthOpts = '<option value="">--</option>';
+  for (let m=1; m<=12; m++) monthOpts += `<option value="${m}" ${selMonth==m?'selected':''}>${m}月</option>`;
+  let dayOpts = '<option value="">--</option>';
+  for (let d=1; d<=31; d++) dayOpts += `<option value="${d}" ${selDay==d?'selected':''}>${d}日</option>`;
+  return `<div class="ann-row" id="myAnnRow${idx}" style="border:1px solid var(--border);border-radius:12px;padding:10px;margin-bottom:8px;">
+    <input placeholder="記念日の名前" value="${esc(a.name||'')}" class="my-ann-name" style="margin-bottom:6px;">
+    <div style="display:flex;gap:6px;">
+      <select class="my-ann-month" style="flex:1;">${monthOpts}</select>
+      <select class="my-ann-day" style="flex:1;">${dayOpts}</select>
+    </div>
+    ${idx>0?`<div style="text-align:right;margin-top:4px;"><span style="font-size:12px;color:#c97070;cursor:pointer;" onclick="document.getElementById('myAnnRow${idx}').remove()">削除</span></div>`:''}
+  </div>`;
+}
+
+function addMyAnnRow() {
+  myAnnCounter++;
+  const c = document.getElementById('myAnnContainer');
+  c.insertAdjacentHTML('beforeend', myAnnRowHTML({name:'',date:'',dateType:'monthday'}, myAnnCounter));
+}
+
+function selectMyGender(g, el) {
+  document.getElementById('myGender').value = g;
+  el.parentElement.querySelectorAll('.date-type-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function saveMyProfile() {
+  const annRows = document.querySelectorAll('.my-ann-name');
+  const anniversaries = [];
+  annRows.forEach((nameEl, i) => {
+    const row = nameEl.closest('.ann-row');
+    const name = nameEl.value.trim();
+    const month = row.querySelector('.my-ann-month')?.value||'';
+    const day = row.querySelector('.my-ann-day')?.value||'';
+    let date = '';
+    if (month) date = `${String(month).padStart(2,'0')}-${String(day||1).padStart(2,'0')}`;
+    if (name||date) anniversaries.push({name:name||'記念日',date,dateType:'monthday',reminders:[]});
+  });
+
+  const profile = {
+    name: document.getElementById('myName').value.trim()||null,
+    gender: document.getElementById('myGender').value||'unset',
+    anniversaries,
+    sizes: {
+      tops: document.getElementById('mySizeTops').value.trim()||null,
+      bottoms: document.getElementById('mySizeBottoms').value.trim()||null,
+      shoes: document.getElementById('mySizeShoes').value.trim()||null,
+      ring: document.getElementById('mySizeRing').value.trim()||null,
+    },
+    smoking: document.getElementById('mySmoking').value.trim()||null,
+    drinking: document.getElementById('myDrinking').value.trim()||null,
+    interests: parseTags(document.getElementById('myInterests').value),
+    brands: parseTags(document.getElementById('myBrands').value),
+    foodLike: parseTags(document.getElementById('myFoodLike').value),
+    foodDislike: parseTags(document.getElementById('myFoodDislike').value),
+    memo: document.getElementById('myMemo').value.trim()||null,
+    updatedAt: new Date().toISOString()
+  };
+  localStorage.setItem(MY_PROFILE_KEY, JSON.stringify(profile));
+  closeModal();
+  showToast('プロフィールを保存しました ✓');
 }
 
 function saveSettings() {

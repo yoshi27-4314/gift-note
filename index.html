@@ -48,6 +48,7 @@ body {
   max-width: 480px; margin: 0 auto;
   min-height: 100dvh; padding-bottom: 80px;
   -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
   font-size: 15px;
 }
 /* Large mode (標準15px → 大21px) */
@@ -633,7 +634,7 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 
 <script>
 // ===== Constants =====
-const APP_VERSION = '1.7';
+const APP_VERSION = '1.8';
 const STORAGE_KEY = 'awai_data';
 const SEASON_KEY = 'awai_season';
 const ANN_POPUP_KEY = 'awai_ann_popup_date';
@@ -699,7 +700,14 @@ function loadData() {
     }
   } catch(e) { console.error('Load error', e); }
 }
-function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+function saveData() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch(e) {
+    console.error('Save error:', e);
+    alert('保存に失敗しました。写真が多すぎる可能性があります。不要な写真を削除してください。');
+  }
+}
 
 // ===== Helpers =====
 function esc(str) { const d=document.createElement('div'); d.textContent=str; return d.innerHTML; }
@@ -1612,7 +1620,7 @@ function renderPersonListItem(p) {
 
   const isOpen = openPersonId === p.id;
 
-  return `<div class="list-item ${isOpen?'':''}}" onclick="togglePersonDetail('${p.id}')" style="${isOpen?'background:var(--accent-light);':''}">
+  return `<div class="list-item" onclick="togglePersonDetail('${p.id}')" style="${isOpen?'background:var(--accent-light);':''}">
     <div class="list-avatar" style="background:${p.avatar?'transparent':personIcon(p).bg}">${p.avatar?`<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;">`:(personIcon(p).emoji)}</div>
     <div class="list-body">
       <div class="list-name">${p.pinned?'📌 ':''}${esc(p.nickname||'名前なし')}</div>
@@ -2818,7 +2826,6 @@ function savePerson() {
     if (!corpNickname) { alert('呼び名を入力してください'); return; }
   }
   // Handle avatar
-  const avatarInput = document.getElementById('pAvatarInput');
   const existingAvatar = editingId ? (data.people.find(x=>x.id===editingId)?.avatar||null) : null;
   let avatarData = existingAvatar;
   const avatarImg = document.querySelector('#pAvatarPreview img');
@@ -2866,6 +2873,7 @@ function savePerson() {
     family,
     personality: parseTags(document.getElementById('pPersonality')?.value||''),
     memo: document.getElementById('pMemo').value.trim()||null,
+    pinned: editingId ? (data.people.find(p=>p.id===editingId)?.pinned||false) : false,
     createdAt: editingId ? (data.people.find(p=>p.id===editingId)?.createdAt||new Date().toISOString()) : new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };
@@ -2907,6 +2915,7 @@ function saveItem() {
       url: document.getElementById('fUrl')?.value.trim()||null,
       memo: document.getElementById('fMemo')?.value.trim()||null,
       img: imgData,
+      pinned: editingId ? (data[currentTab].find(i=>i.id===editingId)?.pinned||false) : false,
       createdAt: editingId ? (data[currentTab].find(i=>i.id===editingId)?.createdAt||new Date().toISOString()) : new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -2927,7 +2936,7 @@ function saveItem() {
     if (tags.length && currentTab!=='people') {
       const matches = findMatchingPeople(tags);
       if (matches.length) {
-        alert('💡 喜びそうな人: ' + matches.map(m=>m.name).join(', '));
+        showToast('💡 喜びそうな人: ' + matches.map(m=>m.name).join(', '));
       }
     }
   }
@@ -3162,8 +3171,8 @@ function buildPersonShareText(p) {
 
 function buildGroupShareText(g) {
   let lines = [g.name || 'グループ'];
-  if (g.members && g.members.length) {
-    const names = g.members.map(mid => {
+  if (g.memberIds && g.memberIds.length) {
+    const names = g.memberIds.map(mid => {
       const person = data.people.find(p => p.id === mid);
       return person ? person.nickname : null;
     }).filter(Boolean);
@@ -3583,11 +3592,16 @@ function initPin() {
 }
 
 async function requestBiometric() {
+  // WebAuthn非対応ブラウザはPINにフォールバック
+  if (!window.PublicKeyCredential) {
+    const savedPin = localStorage.getItem(PIN_KEY);
+    if (savedPin) { initPin(); } else { document.getElementById('pinOverlay').classList.add('hidden'); }
+    return;
+  }
   const overlay = document.getElementById('pinOverlay');
   overlay.classList.remove('hidden');
   document.getElementById('pinMessage').textContent = '認証してください';
   document.getElementById('pinError').textContent = '';
-  // Hide pin pad for biometric mode
   document.querySelector('.pin-dots').style.display = 'none';
   document.querySelector('.pin-pad').style.display = 'none';
 
@@ -3795,9 +3809,10 @@ if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().t
     if (e.target===e.currentTarget) closeModal();
   });
 
+  let _searchTimer;
   document.getElementById('searchInput').addEventListener('input', e => {
-    searchQuery = e.target.value.trim();
-    render();
+    clearTimeout(_searchTimer);
+    _searchTimer = setTimeout(() => { searchQuery = e.target.value.trim(); render(); }, 200);
   });
 
   document.getElementById('settingsBtn').addEventListener('click', openSettings);
@@ -3853,13 +3868,20 @@ if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().t
   }, {passive: true});
 
   // Re-lock when app goes to background and comes back (iOS Safari/PWA)
+  // 30秒以上離れた場合のみ再ロック（一瞬の切り替えでは再ロックしない）
+  let _lastHidden = 0;
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-      const lockMethod = localStorage.getItem(LOCK_METHOD_KEY) || 'pin';
-      if (lockMethod === 'pin' && localStorage.getItem(PIN_KEY)) {
-        initPin();
-      } else if (lockMethod === 'biometric') {
-        requestBiometric();
+    if (document.visibilityState === 'hidden') {
+      _lastHidden = Date.now();
+    } else if (document.visibilityState === 'visible' && _lastHidden) {
+      const elapsed = Date.now() - _lastHidden;
+      if (elapsed >= 30000) {
+        const lockMethod = localStorage.getItem(LOCK_METHOD_KEY) || 'pin';
+        if (lockMethod === 'pin' && localStorage.getItem(PIN_KEY)) {
+          initPin();
+        } else if (lockMethod === 'biometric') {
+          requestBiometric();
+        }
       }
     }
   });

@@ -1638,11 +1638,9 @@ function renderPersonCard(p) {
   });
   data.place.forEach(item => { if (nameMatch(item.person) || (item.memo && p.nickname && item.memo.includes(p.nickname))) allHistory.push({...item, cat:'place'}); });
 
-  // Counters (上部に配置・折りたたみ)
+  // Counters (上部に配置)
   const counters = p.counters||[];
-  const counterCount = counters.reduce((s,c)=>s+(c.count||0),0);
-  html += `<div class="person-section"><div class="person-section-title" style="cursor:pointer;" onclick="event.stopPropagation();toggleCounterSection('${p.id}')">🔢 カウンター${counterCount?' ('+counterCount+')':''} <span id="counterToggle_${p.id}" style="font-size:12px;color:var(--sub);">▶</span></div>`;
-  html += `<div id="counterBody_${p.id}" style="display:none;">`;
+  html += '<div class="person-section"><div class="person-section-title">🔢 カウンター</div>';
   if (!counters.length) {
     html += `<div style="font-size:13px;color:var(--sub);padding:8px 0;">カウンターを追加して、大切な記録を数えましょう</div>`;
     html += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
@@ -1662,7 +1660,7 @@ function renderPersonCard(p) {
     html += `<div id="counterLog_${p.id}_${ci}" style="display:none;padding:4px 0 8px;font-size:12px;color:var(--sub);"></div>`;
   });
   html += `<div class="add-btn" style="margin-top:8px;" onclick="event.stopPropagation();promptAddCounter('${p.id}')">＋ カウンターを追加</div>`;
-  html += '</div></div>';
+  html += '</div>';
 
   if (allHistory.length) {
     const catLabels = {gave:'🎁 あげた', received:'🎀 もらった', wish:'💭 気になる', wantgive:'🎁 あげたい', place:'📍 行きたい'};

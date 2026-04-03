@@ -288,6 +288,14 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 .ann-badge-today { background: #ffe0e0; color: #d45; font-weight: 600; }
 .ann-badge-soon { background: var(--tag-bg); color: var(--accent); }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes obFadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+.ob-step > * { opacity: 0; animation: obFadeIn 0.8s ease forwards; }
+.ob-step > *:nth-child(1) { animation-delay: 0.3s; }
+.ob-step > *:nth-child(2) { animation-delay: 0.7s; }
+.ob-step > *:nth-child(3) { animation-delay: 1.1s; }
+.ob-step > *:nth-child(4) { animation-delay: 1.5s; }
+.ob-step > *:nth-child(5) { animation-delay: 1.8s; }
+.ob-step > *:nth-child(6) { animation-delay: 2.0s; }
 /* Anniversary card section in people tab */
 .ann-section { background: linear-gradient(135deg, var(--accent-light), var(--card)); border-radius: 16px; padding: 14px 16px; margin-bottom: 12px; border: 1px solid var(--border); }
 .ann-section-title { font-size: 15px; font-weight: 600; margin-bottom: 10px; color: var(--text); }
@@ -567,6 +575,54 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
     <div class="pin-key" onclick="pinDelete()">←</div>
   </div>
   <div class="pin-error" id="pinError"></div>
+</div>
+
+<!-- Onboarding -->
+<div id="onboardingOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:99999;overflow-y:auto;">
+  <div style="max-width:480px;margin:0 auto;padding:40px 24px;min-height:100dvh;display:flex;flex-direction:column;justify-content:center;">
+    <!-- Step 1: Welcome -->
+    <div id="obStep1" class="ob-step">
+      <div style="text-align:center;margin-bottom:32px;font-size:48px;">🕊️</div>
+      <h1 style="text-align:center;font-family:'Shippori Mincho',serif;font-size:28px;font-weight:600;margin-bottom:16px;color:var(--text);">AWAIへようこそ</h1>
+      <p style="text-align:center;color:var(--sub);font-size:15px;line-height:1.8;margin-bottom:40px;">大切な人を喜ばせたい。忘れない。</p>
+      <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;" onclick="obNext(2)">はじめる</button>
+      <p style="text-align:center;margin-top:16px;font-size:11px;color:var(--sub);">続けることで<a href="privacy.html" target="_blank" style="color:var(--accent);">プライバシーポリシー</a>に同意したものとみなします</p>
+    </div>
+    <!-- Step 2: My Profile -->
+    <div id="obStep2" class="ob-step" style="display:none;">
+      <h2 style="text-align:center;font-family:'Shippori Mincho',serif;font-size:22px;margin-bottom:8px;">まず、あなた自身のことを<br>教えてください</h2>
+      <p style="text-align:center;color:var(--sub);font-size:13px;margin-bottom:32px;">他の情報はあとで設定できます</p>
+      <div class="form-group"><label>名前</label><input id="obMyName" placeholder="あなたの名前" style="padding:14px 16px;font-size:16px;border-radius:12px;border:1px solid var(--border);width:100%;"></div>
+      <div class="form-group" style="margin-top:16px;"><label>誕生日（任意）</label>
+        <div style="display:flex;gap:8px;">
+          <input id="obMyBirthMonth" type="number" min="1" max="12" placeholder="月" style="flex:1;padding:14px 12px;font-size:16px;border-radius:12px;border:1px solid var(--border);">
+          <input id="obMyBirthDay" type="number" min="1" max="31" placeholder="日" style="flex:1;padding:14px 12px;font-size:16px;border-radius:12px;border:1px solid var(--border);">
+        </div>
+      </div>
+      <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;margin-top:32px;" onclick="obSaveProfile()">次へ</button>
+    </div>
+    <!-- Step 3: First Person -->
+    <div id="obStep3" class="ob-step" style="display:none;">
+      <h2 style="text-align:center;font-family:'Shippori Mincho',serif;font-size:22px;margin-bottom:8px;">大切な人を1人だけ<br>登録しましょう</h2>
+      <p style="text-align:center;color:var(--sub);font-size:13px;margin-bottom:32px;">名前と誕生日だけで大丈夫です</p>
+      <div class="form-group"><label>呼び名</label><input id="obPersonName" placeholder="その人の名前" style="padding:14px 16px;font-size:16px;border-radius:12px;border:1px solid var(--border);width:100%;"></div>
+      <div class="form-group" style="margin-top:16px;"><label>誕生日（任意）</label>
+        <div style="display:flex;gap:8px;">
+          <input id="obPersonBirthMonth" type="number" min="1" max="12" placeholder="月" style="flex:1;padding:14px 12px;font-size:16px;border-radius:12px;border:1px solid var(--border);">
+          <input id="obPersonBirthDay" type="number" min="1" max="31" placeholder="日" style="flex:1;padding:14px 12px;font-size:16px;border-radius:12px;border:1px solid var(--border);">
+        </div>
+      </div>
+      <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;margin-top:32px;" onclick="obSavePerson()">登録する</button>
+      <button class="btn btn-secondary" style="width:100%;padding:14px;font-size:15px;border-radius:14px;margin-top:12px;" onclick="obNext(4)">あとで</button>
+    </div>
+    <!-- Step 4: Complete -->
+    <div id="obStep4" class="ob-step" style="display:none;">
+      <div style="text-align:center;margin-bottom:24px;font-size:48px;">✨</div>
+      <h2 id="obCompleteTitle" style="text-align:center;font-family:'Shippori Mincho',serif;font-size:22px;margin-bottom:16px;">準備ができました</h2>
+      <p id="obCompleteMsg" style="text-align:center;color:var(--sub);font-size:15px;line-height:1.8;margin-bottom:40px;">あなたが愛したすべてが、ここにある。</p>
+      <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;" onclick="obFinish()">AWAIをはじめる</button>
+    </div>
+  </div>
 </div>
 
 <div class="header">
@@ -3455,6 +3511,83 @@ function saveMyProfile() {
   showToast('プロフィールを保存しました ✓');
 }
 
+// ===== Onboarding =====
+const OB_KEY = 'awai_onboarding_done';
+
+function showOnboarding() {
+  document.getElementById('onboardingOverlay').style.display = '';
+}
+
+function obNext(step) {
+  document.querySelectorAll('.ob-step').forEach(el => el.style.display = 'none');
+  const next = document.getElementById('obStep' + step);
+  if (next) {
+    next.style.display = '';
+    // Re-trigger animations
+    next.querySelectorAll(':scope > *').forEach(el => {
+      el.style.animation = 'none';
+      el.offsetHeight;
+      el.style.animation = '';
+    });
+  }
+}
+
+function obSaveProfile() {
+  const name = document.getElementById('obMyName').value.trim();
+  if (!name) { alert('名前を入力してください'); return; }
+  const month = document.getElementById('obMyBirthMonth').value;
+  const day = document.getElementById('obMyBirthDay').value;
+  const profile = getMyProfile();
+  profile.name = name;
+  if (month) {
+    const date = String(month).padStart(2,'0') + '-' + String(day||1).padStart(2,'0');
+    profile.anniversaries = [{name:'🎂 誕生日', date, dateType:'monthday', repeat:'yearly', reminders:[30]}];
+  }
+  localStorage.setItem(MY_PROFILE_KEY, JSON.stringify(profile));
+  obNext(3);
+}
+
+function obSavePerson() {
+  const name = document.getElementById('obPersonName').value.trim();
+  if (!name) { alert('名前を入力してください'); return; }
+  const month = document.getElementById('obPersonBirthMonth').value;
+  const day = document.getElementById('obPersonBirthDay').value;
+  const person = {
+    id: genId(), nickname: name, type: 'individual', gender: 'unset',
+    avatar: null, fullName: null, relation: null, companyLink: null,
+    anniversaries: [], sizes: {}, smoking: null, drinking: null,
+    interests: [], brands: [], foodLike: [], foodDislike: [],
+    personality: [], family: [], memo: null, oshi: [], corpPhoto: null
+  };
+  if (month) {
+    const date = String(month).padStart(2,'0') + '-' + String(day||1).padStart(2,'0');
+    person.anniversaries = [{name:'🎂 誕生日', date, dateType:'monthday', repeat:'yearly', reminders:[30]}];
+  }
+  data.people.push(person);
+  saveData();
+  // Show completion with countdown
+  const title = document.getElementById('obCompleteTitle');
+  const msg = document.getElementById('obCompleteMsg');
+  if (month && day) {
+    const today = new Date();
+    const thisYear = today.getFullYear();
+    let next = new Date(thisYear, parseInt(month)-1, parseInt(day));
+    if (next <= today) next = new Date(thisYear+1, parseInt(month)-1, parseInt(day));
+    const diff = Math.ceil((next - today) / (1000*60*60*24));
+    title.textContent = name + 'さんの誕生日まであと' + diff + '日';
+  }
+  obNext(4);
+}
+
+function obFinish() {
+  localStorage.setItem(OB_KEY, '1');
+  document.getElementById('onboardingOverlay').style.display = 'none';
+  loadData();
+  render();
+  checkReminders();
+  showAnnPopup();
+}
+
 // ===== Data Export / Import =====
 function exportData() {
   try {
@@ -4004,6 +4137,12 @@ if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().t
 
   render();
   checkAppUpdate();
+
+  // Onboarding check (初回起動 or 既存データなし)
+  if (!localStorage.getItem(OB_KEY) && !data.people.length && !data.wish.length) {
+    showOnboarding();
+  }
+
   // PINがない場合のみ起動時にポップアップ（PINありの場合はPIN解除後に表示）
   if (!localStorage.getItem(PIN_KEY)) setTimeout(() => showAnnPopup(), 500);
 

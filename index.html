@@ -1432,6 +1432,7 @@ function renderPersonCard(p) {
     <div class="person-avatar${isCorp?' biz-avatar':''}" style="overflow:hidden;background:${p.avatar?'':personIcon(p).bg};">${p.avatar?`<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;">`:(personIcon(p).emoji)}</div>
     <div><div class="person-nickname">${esc(p.nickname||'名前なし')}</div>
     ${p.relation?`<div class="person-relation">${esc(p.relation)}</div>`:''}
+    ${p.corpFullName?`<div class="person-relation">${esc(p.corpFullName)}</div>`:''}
     ${p.fullName?`<div class="person-relation">${esc(p.fullName)}</div>`:''}
     ${p.position?`<div class="person-relation">${esc(p.position)}</div>`:''}
     ${p.industry?`<div class="person-relation">${esc(p.industry)}</div>`:''}
@@ -2431,7 +2432,8 @@ function openPeopleModal(id) {
 
   // Corporate fields
   html += `<div id="corporateFields" style="display:${isCorp?'':'none'}">`;
-  html += `<div class="form-group"><label>会社名 *</label><input id="pCorpName" placeholder="例：ABC商事 株式会社" value="${esc(isCorp?p?.nickname:'')}"></div>`;
+  html += `<div class="form-group"><label>呼び名 *</label><input id="pCorpNickname" placeholder="例：ABC商事、〇〇さんの会社" value="${esc(isCorp?(p?.corpNickname||p?.nickname||''):'')}"><div class="form-hint">自分がどう呼んでいるか</div></div>`;
+  html += `<div class="form-group"><label>正式名称</label><input id="pCorpName" placeholder="例：ABC商事 株式会社" value="${esc(isCorp?(p?.corpFullName||p?.nickname||''):'')}"></div>`;
   // Corporate photo (business card etc.)
   html += `<div class="form-group"><label>📷 写真（名刺など）</label>
     <div id="pCorpPhotoPreview" style="margin-bottom:8px;">${p?.corpPhoto?`<img src="${p.corpPhoto}" style="width:100%;max-height:200px;object-fit:contain;border-radius:12px;border:1px solid var(--border);">`:''}
@@ -2659,8 +2661,8 @@ function savePerson() {
   const personType = document.getElementById('pType').value;
   const isCorp = personType === 'corporate';
   if (isCorp) {
-    const corpName = document.getElementById('pCorpName').value.trim();
-    if (!corpName) { alert('会社名を入力してください'); return; }
+    const corpNickname = document.getElementById('pCorpNickname').value.trim();
+    if (!corpNickname) { alert('呼び名を入力してください'); return; }
   }
   // Handle avatar
   const avatarInput = document.getElementById('pAvatarInput');
@@ -2677,7 +2679,9 @@ function savePerson() {
 
   const person = {
     id: editingId || genId(),
-    nickname: isCorp ? document.getElementById('pCorpName').value.trim() : nickname,
+    nickname: isCorp ? document.getElementById('pCorpNickname').value.trim() : nickname,
+    corpNickname: isCorp ? document.getElementById('pCorpNickname').value.trim() : null,
+    corpFullName: isCorp ? document.getElementById('pCorpName').value.trim()||null : null,
     fullName: isCorp ? null : document.getElementById('pFullName').value.trim()||null,
     relation: isCorp ? null : document.getElementById('pRelation').value.trim()||null,
     gender: isCorp ? null : document.getElementById('pGender')?.value||'unset',

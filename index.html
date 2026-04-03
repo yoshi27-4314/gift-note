@@ -2956,11 +2956,26 @@ function openSettings() {
       <div class="form-hint" style="margin-bottom:8px;">自分の情報を登録しておくとコンシェルジュAIが活用します</div>
       <button class="card-btn" onclick="document.getElementById('settingsModalOverlay').classList.remove('open');openMyProfile()" style="font-size:14px;padding:8px 20px;">✏️ プロフィールを編集</button>
     </div>
-    <div class="form-group"><label>🔒 パスコードロック</label>
-      <div style="display:flex;gap:8px;margin-top:4px;">
-        <button class="card-btn" onclick="document.getElementById('settingsModalOverlay').classList.remove('open');openPinSetup()" style="font-size:14px;padding:8px 16px;">${localStorage.getItem(PIN_KEY)?'変更':'設定'}</button>
-        ${localStorage.getItem(PIN_KEY)?`<button class="card-btn delete" onclick="removePinLock();document.getElementById('settingsModalOverlay').classList.remove('open');openSettings()" style="font-size:14px;padding:8px 16px;">解除</button>`:''}
-      </div></div>
+    <div class="form-group"><label>🔒 ロック設定</label>
+      <div class="form-hint" style="margin-bottom:8px;">アプリを開くとき・復帰時に認証を求めます</div>
+      <div style="display:flex;gap:6px;margin-bottom:8px;">
+        <div class="date-type-chip ${(localStorage.getItem(LOCK_METHOD_KEY)||'pin')==='pin'?'active':''}" onclick="setLockMethod('pin',this)" style="flex:1;text-align:center;">🔢 パスコード</div>
+        <div class="date-type-chip ${localStorage.getItem(LOCK_METHOD_KEY)==='biometric'?'active':''}" onclick="setLockMethod('biometric',this)" style="flex:1;text-align:center;">🔐 生体認証</div>
+      </div>
+      <div id="lockPinSection" style="display:${localStorage.getItem(LOCK_METHOD_KEY)==='biometric'?'none':''};">
+        <div style="display:flex;gap:8px;">
+          <button class="card-btn" onclick="document.getElementById('settingsModalOverlay').classList.remove('open');openPinSetup()" style="font-size:14px;padding:8px 16px;">${localStorage.getItem(PIN_KEY)?'パスコード変更':'パスコード設定'}</button>
+          ${localStorage.getItem(PIN_KEY)?`<button class="card-btn delete" onclick="removePinLock();document.getElementById('settingsModalOverlay').classList.remove('open');openSettings()" style="font-size:14px;padding:8px 16px;">解除</button>`:''}
+        </div>
+      </div>
+      <div id="lockBioSection" style="display:${localStorage.getItem(LOCK_METHOD_KEY)==='biometric'?'':'none'};">
+        <div class="form-hint">Face ID / Touch ID / 画面ロックで認証します</div>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button class="card-btn" onclick="setupBiometricFromSettings()" style="font-size:14px;padding:8px 16px;">🔐 生体認証を設定</button>
+          <button class="card-btn delete" onclick="removeBiometric()" style="font-size:14px;padding:8px 16px;">解除</button>
+        </div>
+      </div>
+    </div>
     <div class="form-group"><label>📲 友達に教える</label>
       <div id="qrArea" style="text-align:center;padding:12px 0;"></div>
       <div style="text-align:center;margin-bottom:8px;">
@@ -3427,20 +3442,114 @@ ${budget ? '\n## 予算\n約'+budget+'円' : ''}
 // ===== Init =====
 // ===== PIN Lock =====
 const PIN_KEY = 'awai_pin';
+const LOCK_METHOD_KEY = 'awai_lock_method'; // 'pin' or 'biometric'
 let pinBuffer = '';
 let pinMode = 'unlock'; // unlock, set, confirm
 let pinTemp = '';
 
 function initPin() {
+  const lockMethod = localStorage.getItem(LOCK_METHOD_KEY) || 'pin';
+  if (lockMethod === 'biometric') {
+    requestBiometric();
+    return;
+  }
   const savedPin = localStorage.getItem(PIN_KEY);
   if (!savedPin) {
-    // No PIN set, hide lock screen
     document.getElementById('pinOverlay').classList.add('hidden');
     return;
   }
+  pinBuffer = '';
+  updatePinDots();
   pinMode = 'unlock';
   document.getElementById('pinMessage').textContent = 'パスコードを入力';
+  document.getElementById('pinError').textContent = '';
   document.getElementById('pinOverlay').classList.remove('hidden');
+}
+
+async function requestBiometric() {
+  const overlay = document.getElementById('pinOverlay');
+  overlay.classList.remove('hidden');
+  document.getElementById('pinMessage').textContent = '認証してください';
+  document.getElementById('pinError').textContent = '';
+  // Hide pin pad for biometric mode
+  document.querySelector('.pin-dots').style.display = 'none';
+  document.querySelector('.pin-pad').style.display = 'none';
+
+  try {
+    const credential = await navigator.credentials.get({
+      publicKey: {
+        challenge: crypto.getRandomValues(new Uint8Array(32)),
+        timeout: 60000,
+        userVerification: 'required',
+        rpId: location.hostname,
+        allowCredentials: (JSON.parse(localStorage.getItem('awai_bio_cred') || '[]')).map(c => ({...c, id: new Uint8Array(c.id).buffer}))
+      }
+    });
+    if (credential) {
+      overlay.classList.add('hidden');
+      document.querySelector('.pin-dots').style.display = '';
+      document.querySelector('.pin-pad').style.display = '';
+      setTimeout(() => showAnnPopup(), 500);
+    }
+  } catch(e) {
+    // Biometric failed or cancelled - fall back to PIN
+    document.getElementById('pinError').textContent = '認証に失敗しました';
+    document.querySelector('.pin-dots').style.display = '';
+    document.querySelector('.pin-pad').style.display = '';
+    const savedPin = localStorage.getItem(PIN_KEY);
+    if (savedPin) {
+      pinBuffer = '';
+      updatePinDots();
+      pinMode = 'unlock';
+      document.getElementById('pinMessage').textContent = 'パスコードで解除';
+    } else {
+      overlay.classList.add('hidden');
+    }
+  }
+}
+
+async function setupBiometric() {
+  try {
+    if (!window.PublicKeyCredential) {
+      alert('このブラウザは生体認証に対応していません');
+      return false;
+    }
+    const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+    if (!available) {
+      alert('このデバイスは生体認証（Face ID/指紋）に対応していません');
+      return false;
+    }
+    const credential = await navigator.credentials.create({
+      publicKey: {
+        challenge: crypto.getRandomValues(new Uint8Array(32)),
+        rp: { name: 'AWAI', id: location.hostname },
+        user: {
+          id: new Uint8Array(16),
+          name: 'awai-user',
+          displayName: 'AWAIユーザー'
+        },
+        pubKeyCredParams: [{ alg: -7, type: 'public-key' }],
+        authenticatorSelection: {
+          authenticatorAttachment: 'platform',
+          userVerification: 'required'
+        },
+        timeout: 60000
+      }
+    });
+    if (credential) {
+      localStorage.setItem('awai_bio_cred', JSON.stringify([{
+        id: Array.from(new Uint8Array(credential.rawId)),
+        type: 'public-key'
+      }]));
+      localStorage.setItem(LOCK_METHOD_KEY, 'biometric');
+      alert('生体認証を設定しました');
+      return true;
+    }
+  } catch(e) {
+    console.error('Biometric setup error:', e);
+    alert('生体認証の設定に失敗しました: ' + e.message);
+  }
+  return false;
 }
 
 function pinInput(n) {
@@ -3507,9 +3616,34 @@ function openPinSetup() {
   document.getElementById('pinOverlay').classList.remove('hidden');
 }
 
+function setLockMethod(method, el) {
+  el.parentElement.querySelectorAll('.date-type-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('lockPinSection').style.display = method==='biometric'?'none':'';
+  document.getElementById('lockBioSection').style.display = method==='biometric'?'':'none';
+}
+
+async function setupBiometricFromSettings() {
+  const ok = await setupBiometric();
+  if (ok) {
+    document.getElementById('settingsModalOverlay').classList.remove('open');
+    openSettings();
+  }
+}
+
+function removeBiometric() {
+  if (confirm('生体認証を解除しますか？')) {
+    localStorage.removeItem(LOCK_METHOD_KEY);
+    localStorage.removeItem('awai_bio_cred');
+    document.getElementById('settingsModalOverlay').classList.remove('open');
+    openSettings();
+  }
+}
+
 function removePinLock() {
   if (confirm('パスコードを解除しますか？')) {
     localStorage.removeItem(PIN_KEY);
+    localStorage.removeItem(LOCK_METHOD_KEY);
     alert('パスコードを解除しました');
   }
 }
@@ -3601,6 +3735,18 @@ if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().t
     }
     _ptr_pulling = false;
   }, {passive: true});
+
+  // Re-lock when app goes to background and comes back (iOS Safari/PWA)
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      const lockMethod = localStorage.getItem(LOCK_METHOD_KEY) || 'pin';
+      if (lockMethod === 'pin' && localStorage.getItem(PIN_KEY)) {
+        initPin();
+      } else if (lockMethod === 'biometric') {
+        requestBiometric();
+      }
+    }
+  });
 
   } catch(e) { console.error('Init error:', e); alert('初期化エラー: ' + e.message); }
 })();

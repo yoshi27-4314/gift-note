@@ -3320,9 +3320,100 @@ function editItem(tab, id) {
   if (tab==='people') openPeopleModal(id); else if (tab==='place') openPlaceModal(id); else openItemModal(id);
 }
 function deleteItem(tab, id) {
-  if (!confirm('この記録を削除しますか？')) return;
-  data[tab] = data[tab].filter(i=>i.id!==id);
-  saveData(); render();
+  const lockMethod = localStorage.getItem(LOCK_METHOD_KEY);
+  const hasPin = !!localStorage.getItem(PIN_KEY);
+  const hasBio = lockMethod === 'biometric';
+
+  if (hasBio) {
+    // 生体認証で確認
+    navigator.credentials.get({
+      publicKey: {
+        challenge: new Uint8Array(32),
+        timeout: 60000,
+        userVerification: 'required',
+        allowCredentials: (JSON.parse(localStorage.getItem('awai_bio_cred') || '[]')).map(c => ({...c, id: new Uint8Array(c.id).buffer}))
+      }
+    }).then(() => {
+      data[tab] = data[tab].filter(i=>i.id!==id);
+      saveData(); openPersonId = null; openItemId = null; render();
+      showToast('削除しました');
+    }).catch(() => {
+      // 生体認証失敗→パスコードフォールバック
+      if (hasPin) deleteWithPin(tab, id);
+      else deleteWithTyping(tab, id);
+    });
+  } else if (hasPin) {
+    deleteWithPin(tab, id);
+  } else {
+    deleteWithTyping(tab, id);
+  }
+}
+
+function deleteWithPin(tab, id) {
+  const overlay = document.createElement('div');
+  overlay.id = 'deleteConfirmOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:500;display:flex;align-items:center;justify-content:center;animation:fadeIn 0.2s;';
+  overlay.innerHTML = `<div style="background:#fff;border-radius:16px;padding:24px;width:85%;max-width:320px;text-align:center;">
+    <div style="font-size:16px;font-weight:600;margin-bottom:16px;">削除の確認</div>
+    <div style="font-size:14px;color:var(--sub);margin-bottom:16px;">パスコードを入力してください</div>
+    <input type="password" id="deletePinInput" maxlength="4" inputmode="numeric" pattern="[0-9]*" style="width:120px;text-align:center;font-size:24px;letter-spacing:12px;padding:12px;border:1px solid var(--border);border-radius:12px;margin-bottom:8px;">
+    <div id="deletePinError" style="font-size:13px;color:#c97070;min-height:20px;"></div>
+    <div style="display:flex;gap:8px;justify-content:center;margin-top:12px;">
+      <button onclick="document.getElementById('deleteConfirmOverlay').remove()" style="background:none;border:1px solid var(--border);border-radius:10px;padding:10px 20px;font-size:14px;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">キャンセル</button>
+      <button onclick="confirmDeletePin('${tab}','${id}')" style="background:#c97070;border:none;border-radius:10px;padding:10px 20px;font-size:14px;cursor:pointer;color:#fff;font-family:'Zen Maru Gothic',sans-serif;">削除する</button>
+    </div>
+  </div>`;
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+  setTimeout(() => document.getElementById('deletePinInput')?.focus(), 100);
+}
+
+function confirmDeletePin(tab, id) {
+  const input = document.getElementById('deletePinInput');
+  const saved = localStorage.getItem(PIN_KEY);
+  if (input.value === saved) {
+    document.getElementById('deleteConfirmOverlay')?.remove();
+    data[tab] = data[tab].filter(i=>i.id!==id);
+    saveData(); openPersonId = null; openItemId = null; render();
+    showToast('削除しました');
+  } else {
+    document.getElementById('deletePinError').textContent = 'パスコードが違います';
+    input.value = '';
+    input.focus();
+  }
+}
+
+function deleteWithTyping(tab, id) {
+  const overlay = document.createElement('div');
+  overlay.id = 'deleteConfirmOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:500;display:flex;align-items:center;justify-content:center;animation:fadeIn 0.2s;';
+  overlay.innerHTML = `<div style="background:#fff;border-radius:16px;padding:24px;width:85%;max-width:320px;text-align:center;">
+    <div style="font-size:16px;font-weight:600;margin-bottom:16px;">削除の確認</div>
+    <div style="font-size:14px;color:var(--sub);margin-bottom:16px;">「削除」と入力してください</div>
+    <input type="text" id="deleteTypeInput" autocomplete="off" style="width:160px;text-align:center;font-size:18px;padding:12px;border:1px solid var(--border);border-radius:12px;margin-bottom:8px;">
+    <div id="deleteTypeError" style="font-size:13px;color:#c97070;min-height:20px;"></div>
+    <div style="display:flex;gap:8px;justify-content:center;margin-top:12px;">
+      <button onclick="document.getElementById('deleteConfirmOverlay').remove()" style="background:none;border:1px solid var(--border);border-radius:10px;padding:10px 20px;font-size:14px;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">キャンセル</button>
+      <button onclick="confirmDeleteTyping('${tab}','${id}')" style="background:#c97070;border:none;border-radius:10px;padding:10px 20px;font-size:14px;cursor:pointer;color:#fff;font-family:'Zen Maru Gothic',sans-serif;">削除する</button>
+    </div>
+  </div>`;
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+  setTimeout(() => document.getElementById('deleteTypeInput')?.focus(), 100);
+}
+
+function confirmDeleteTyping(tab, id) {
+  const input = document.getElementById('deleteTypeInput');
+  if (input.value === '削除') {
+    document.getElementById('deleteConfirmOverlay')?.remove();
+    data[tab] = data[tab].filter(i=>i.id!==id);
+    saveData(); openPersonId = null; openItemId = null; render();
+    showToast('削除しました');
+  } else {
+    document.getElementById('deleteTypeError').textContent = '「削除」と入力してください';
+    input.value = '';
+    input.focus();
+  }
 }
 
 // ===== Open modal (scroll to top) =====

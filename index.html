@@ -2130,12 +2130,13 @@ function showMemoryPopup() {
       if (todayD === d) matches.push(p);
     } else {
       if (todayM === m && todayD === d) matches.push(p);
-      // 「近づいたら」モードの場合は7日前から
-      if (p.reminderMode === 'always') {
+      // 「自分で決める」モードの場合は設定日数前から
+      if (p.reminderMode === 'custom') {
+        const remDays = p.reminderDays || 7;
         let next = new Date(today.getFullYear(), m-1, d);
         if (next < today) next = new Date(today.getFullYear()+1, m-1, d);
         const diff = Math.ceil((next - today) / (1000*60*60*24));
-        if (diff > 0 && diff <= 7 && !matches.includes(p)) matches.push(p);
+        if (diff > 0 && diff <= remDays && !matches.includes(p)) matches.push(p);
       }
     }
   });
@@ -4009,19 +4010,34 @@ function openMemoryModal(id) {
   </div>`;
 
   // Name
-  html += `<div class="form-group"><label>名前 *</label><input id="mNickname" placeholder="呼び名" value="${esc(p?.nickname||'')}"></div>`;
+  html += `<div class="form-group"><label>呼び名 *</label><input id="mNickname" placeholder="例：さとうさん、みーちゃん" value="${esc(p?.nickname||'')}"></div>`;
+  html += `<div class="form-group"><label>本名（任意）</label><input id="mFullName" placeholder="" value="${esc(p?.fullName||'')}"></div>`;
 
-  // Memory date
+  // Memory date - same format as anniversaries (年月日/月日/月)
   const md = p?.memoryDate||'';
   const mdParts = md.split('-');
-  const mdMonth = mdParts.length>=1 ? parseInt(mdParts[mdParts.length-2])||'' : '';
-  const mdDay = mdParts.length>=2 ? parseInt(mdParts[mdParts.length-1])||'' : '';
+  const mdDateType = p?.memoryDateFormat||'monthday';
+  let mdYear='', mdMonth='', mdDay='';
+  if (mdDateType==='full' && mdParts.length>=3) { mdYear=mdParts[0]; mdMonth=parseInt(mdParts[1])||''; mdDay=parseInt(mdParts[2])||''; }
+  else if (mdDateType==='monthday' && mdParts.length>=2) { mdMonth=parseInt(mdParts[mdParts.length-2])||''; mdDay=parseInt(mdParts[mdParts.length-1])||''; }
+  else if (mdDateType==='month' && mdParts.length>=1) { mdMonth=parseInt(mdParts[0])||''; }
+
+  const thisYear = new Date().getFullYear();
+  let yearOpts = '<option value="">--</option>';
+  for (let y=thisYear; y>=thisYear-100; y--) yearOpts += `<option value="${y}" ${mdYear==y?'selected':''}>${y}</option>`;
+
   html += `<div class="form-group"><label>🤍 記憶の日（任意）</label>
+    <div class="form-hint" style="margin-bottom:6px;">命日・最後に会った日・大切な日など、自由に</div>
+    <div style="display:flex;gap:4px;margin-bottom:8px;">
+      <div class="date-type-chip ${mdDateType==='full'?'active':''}" onclick="selectMemDateFormat('full',this)" style="flex:1;text-align:center;font-size:12px;">年月日</div>
+      <div class="date-type-chip ${mdDateType==='monthday'?'active':''}" onclick="selectMemDateFormat('monthday',this)" style="flex:1;text-align:center;font-size:12px;">月日</div>
+      <div class="date-type-chip ${mdDateType==='month'?'active':''}" onclick="selectMemDateFormat('month',this)" style="flex:1;text-align:center;font-size:12px;">月のみ</div>
+    </div><input type="hidden" id="mDateFormat" value="${mdDateType}">
     <div style="display:flex;gap:8px;">
+      <select id="mDateYear" style="flex:1;display:${mdDateType==='full'?'':'none'};">${yearOpts}</select>
       <input id="mDateMonth" type="number" min="1" max="12" placeholder="月" value="${mdMonth}" style="flex:1;">
-      <input id="mDateDay" type="number" min="1" max="31" placeholder="日" value="${mdDay}" style="flex:1;">
+      <input id="mDateDay" type="number" min="1" max="31" placeholder="日" value="${mdDay}" style="flex:1;display:${mdDateType==='month'?'none':''};">
     </div>
-    <div class="form-hint">命日・最後に会った日・大切な日など、自由に</div>
   </div>`;
 
   // Date type: yearly or monthly
@@ -4035,12 +4051,17 @@ function openMemoryModal(id) {
 
   // Reminder mode
   const remMode = p?.reminderMode||'none';
+  const remDays = p?.reminderDays||7;
   html += `<div class="form-group"><label>通知</label>
-    <div style="display:flex;gap:6px;margin-top:4px;">
-      <div class="date-type-chip ${remMode==='always'?'active':''}" onclick="selectRemMode('always',this)" style="flex:1;text-align:center;font-size:12px;">近づいたら</div>
+    <div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap;">
+      <div class="date-type-chip ${remMode==='custom'?'active':''}" onclick="selectRemMode('custom',this)" style="flex:1;text-align:center;font-size:12px;">自分で決める</div>
       <div class="date-type-chip ${remMode==='dayonly'?'active':''}" onclick="selectRemMode('dayonly',this)" style="flex:1;text-align:center;font-size:12px;">当日だけ</div>
       <div class="date-type-chip ${remMode==='none'?'active':''}" onclick="selectRemMode('none',this)" style="flex:1;text-align:center;font-size:12px;">しない</div>
     </div><input type="hidden" id="mRemMode" value="${remMode}">
+    <div id="mRemDaysRow" style="display:${remMode==='custom'?'flex':'none'};gap:8px;align-items:center;margin-top:8px;">
+      <input id="mRemDays" type="number" min="1" max="60" value="${remDays}" style="width:60px;text-align:center;">
+      <span style="font-size:13px;color:var(--sub);">日前から通知</span>
+    </div>
   </div>`;
 
   // Message
@@ -4065,6 +4086,14 @@ function selectMemoryType(type, el) {
   if (memo) memo.placeholder = type==='pet' ? 'メモ欄に種類・色・好きだったものなど覚えていることを書いておくと安心です' : '好きだったもの・口癖・思い出など';
 }
 
+function selectMemDateFormat(fmt, el) {
+  document.getElementById('mDateFormat').value = fmt;
+  el.parentElement.querySelectorAll('.date-type-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('mDateYear').style.display = fmt==='full' ? '' : 'none';
+  document.getElementById('mDateDay').style.display = fmt==='month' ? 'none' : '';
+}
+
 function selectMemDateType(type, el) {
   document.getElementById('mDateType').value = type;
   el.parentElement.querySelectorAll('.date-type-chip').forEach(c=>c.classList.remove('active'));
@@ -4075,6 +4104,8 @@ function selectRemMode(mode, el) {
   document.getElementById('mRemMode').value = mode;
   el.parentElement.querySelectorAll('.date-type-chip').forEach(c=>c.classList.remove('active'));
   el.classList.add('active');
+  const daysRow = document.getElementById('mRemDaysRow');
+  if (daysRow) daysRow.style.display = mode==='custom' ? 'flex' : 'none';
 }
 
 function saveMemory() {
@@ -4090,24 +4121,32 @@ function saveMemory() {
     if (avatarImg && avatarImg.src.startsWith('data:')) avatarData = avatarImg.src;
   }
 
+  const dateFormat = document.getElementById('mDateFormat').value;
+  const year = document.getElementById('mDateYear')?.value||'';
   const month = document.getElementById('mDateMonth').value;
   const day = document.getElementById('mDateDay').value;
   let memoryDate = '';
-  if (month) memoryDate = String(month).padStart(2,'0') + '-' + String(day||1).padStart(2,'0');
+  if (dateFormat==='full' && year && month) memoryDate = `${year}-${String(month).padStart(2,'0')}-${String(day||1).padStart(2,'0')}`;
+  else if (dateFormat==='monthday' && month) memoryDate = `${String(month).padStart(2,'0')}-${String(day||1).padStart(2,'0')}`;
+  else if (dateFormat==='month' && month) memoryDate = `${String(month).padStart(2,'0')}`;
 
+  const remMode = document.getElementById('mRemMode').value;
   const person = {
     id: editingId || genId(),
     nickname,
+    fullName: document.getElementById('mFullName').value.trim()||null,
     type: 'individual',
     isMemory: true,
     memoryType: document.getElementById('mMemoryType').value,
     memoryDate,
+    memoryDateFormat: dateFormat,
     memoryDateType: document.getElementById('mDateType').value,
     memoryMessage: document.getElementById('mMessage').value.trim()||null,
-    reminderMode: document.getElementById('mRemMode').value,
+    reminderMode: remMode,
+    reminderDays: remMode==='custom' ? (parseInt(document.getElementById('mRemDays')?.value)||7) : 0,
     avatar: avatarData,
     gender: 'unset',
-    fullName: null, relation: null, companyLink: null, position: null,
+    relation: null, companyLink: null, position: null,
     anniversaries: [],
     sizes: {}, smoking: null, drinking: null,
     interests: [], brands: [], foodLike: [], foodDislike: [],

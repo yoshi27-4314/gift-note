@@ -937,6 +937,7 @@ function renderLabelBar() {
     let phtml = `<div class="label-chip ${currentLabel===null?'active':''}" style="color:var(--accent);${currentLabel===null?'border-color:var(--accent);':''}" onclick="filterLabel(null)"><span class="ldot" style="background:var(--accent);"></span> すべて</div>`;
     phtml += `<div class="label-chip ${currentLabel==='individual'?'active':''}" style="color:#d48a7a;${currentLabel==='individual'?'border-color:#d48a7a;':''}" onclick="filterLabel('individual')"><span class="ldot" style="background:#d48a7a;"></span> 👤 個人</div>`;
     phtml += `<div class="label-chip ${currentLabel==='corporate'?'active':''}" style="color:#6b88a8;${currentLabel==='corporate'?'border-color:#6b88a8;':''}" onclick="filterLabel('corporate')"><span class="ldot" style="background:#6b88a8;"></span> 🏢 法人</div>`;
+    phtml += `<div class="label-chip ${currentLabel==='memory'?'active':''}" style="color:#a09590;${currentLabel==='memory'?'border-color:#a09590;':''}" onclick="filterLabel('memory')"><span class="ldot" style="background:#a09590;"></span> 🤍 記憶</div>`;
     bar.innerHTML = phtml;
     return;
   }
@@ -945,6 +946,7 @@ function renderLabelBar() {
   if (currentTab==='place') {
     html += `<div class="label-chip ${currentLabel==='want'?'active':''}" style="color:#e8a598;${currentLabel==='want'?'border-color:#e8a598;':''}" onclick="filterLabel('want')"><span class="ldot" style="background:#e8a598;"></span> 📍 行きたい</div>`;
     html += `<div class="label-chip ${currentLabel==='visited'?'active':''}" style="color:#6bab8a;${currentLabel==='visited'?'border-color:#6bab8a;':''}" onclick="filterLabel('visited')"><span class="ldot" style="background:#6bab8a;"></span> ✅ 行った</div>`;
+    html += `<div class="label-chip ${currentLabel==='closed'?'active':''}" style="color:#a09590;${currentLabel==='closed'?'border-color:#a09590;':''}" onclick="filterLabel('closed')"><span class="ldot" style="background:#a09590;"></span> 🤍 記憶</div>`;
   }
   labels.forEach((l,i) => {
     html += `<div class="label-chip ${currentLabel===i?'active':''}" style="color:${l.color};${currentLabel===i?'border-color:'+l.color+';':''}" onclick="filterLabel(${i})"><span class="ldot" style="background:${l.color};"></span> ${esc(l.name)}</div>`;
@@ -1481,7 +1483,9 @@ function renderItemCard(item, tab, rank) {
   html += `<div class="card-actions">
     <button class="card-btn" onclick="event.stopPropagation();togglePin('${tab}','${item.id}')">${item.pinned?'📌 固定中':'📌 固定'}</button>
     <button class="card-btn" onclick="event.stopPropagation();regiftItem('${tab}','${item.id}')" style="background:var(--pickup);border-color:var(--pickup-border);">🎁 プレゼントする</button>
-    ${tab==='place'?`<button class="card-btn" onclick="event.stopPropagation();markVisited('${item.id}')" style="background:${item.visited?'#e8f5e9':'var(--pickup)'};border-color:${item.visited?'#a5d6a7':'var(--pickup-border)'};">${item.visited?'✅ 行った！':'📍 行った！'}</button>`:''}
+    ${tab==='place'&&!item.isClosed?`<button class="card-btn" onclick="event.stopPropagation();markVisited('${item.id}')" style="background:${item.visited?'#e8f5e9':'var(--pickup)'};border-color:${item.visited?'#a5d6a7':'var(--pickup-border)'};">${item.visited?'✅ 行った！':'📍 行った！'}</button>`:''}
+    ${tab==='place'&&!item.isClosed?`<button class="card-btn" onclick="event.stopPropagation();closePlacePrompt('${item.id}')" style="background:#f5f0eb;border-color:#c5c0ba;">🤍 記憶に移す</button>`:''}
+    ${tab==='place'&&item.isClosed?`<button class="card-btn" onclick="event.stopPropagation();reopenPlace('${item.id}')" style="background:#f0f8ff;border-color:#90caf9;">↩ 戻す</button>`:''}
     ${tab!=='received'&&tab!=='gave'?`<button class="card-btn" onclick="event.stopPropagation();shareItem('${tab}','${item.id}')" style="background:#e3f2fd;border-color:#90caf9;">📤 共有</button>`:''}
     <button class="card-btn" onclick="event.stopPropagation();editItem('${tab}','${item.id}')">✏️ 編集</button>
     <button class="card-btn delete" onclick="event.stopPropagation();deleteItem('${tab}','${item.id}')">🗑 削除</button>
@@ -1649,8 +1653,10 @@ function renderPersonCard(p) {
   <div class="person-actions">
     <button class="card-btn" onclick="event.stopPropagation();togglePin('people','${p.id}')">${p.pinned?'📌 固定中':'📌 固定'}</button>
     <button class="card-btn" onclick="event.stopPropagation();sharePerson('${p.id}')" style="background:#e3f2fd;border-color:#90caf9;">📤 共有</button>
-    <button class="card-btn" onclick="event.stopPropagation();editItem('people','${p.id}')">✏️ 編集</button>
-    <button class="card-btn" onclick="event.stopPropagation();openAiSuggest('${p.id}')" style="background:var(--pickup);border-color:var(--pickup-border);">💡 コンシェルジュ</button>
+    <button class="card-btn" onclick="event.stopPropagation();${p.isMemory?`openMemoryModal('${p.id}')`:`editItem('people','${p.id}')`}">✏️ 編集</button>
+    ${!p.isMemory?`<button class="card-btn" onclick="event.stopPropagation();openAiSuggest('${p.id}')" style="background:var(--pickup);border-color:var(--pickup-border);">💡 コンシェルジュ</button>`:''}
+    ${!p.isMemory?`<button class="card-btn" onclick="event.stopPropagation();moveToMemory('${p.id}')" style="background:#f5f0eb;border-color:#c5c0ba;">🤍 記憶に移す</button>`:''}
+    ${p.isMemory?`<button class="card-btn" onclick="event.stopPropagation();restoreFromMemory('${p.id}')" style="background:#f0f8ff;border-color:#90caf9;">↩ 戻す</button>`:''}
     <button class="card-btn delete" onclick="event.stopPropagation();deleteItem('people','${p.id}')">🗑 削除</button>
   </div></div>`;
   return html;
@@ -2065,6 +2071,66 @@ function showAnnPopup() {
 function closeAnnPopup() {
   const el = document.getElementById('annPopupOverlay');
   if (el) el.remove();
+  // After closing ann popup, check memory popup
+  setTimeout(showMemoryPopup, 300);
+}
+
+function showMemoryPopup() {
+  const today = new Date();
+  const todayM = today.getMonth()+1, todayD = today.getDate();
+  const memoryKey = 'awai_memory_popup_date';
+  const lastShown = localStorage.getItem(memoryKey);
+  const todayStr = today.toISOString().split('T')[0];
+
+  const memoryPeople = data.people.filter(p => p.isMemory && p.memoryDate && p.reminderMode !== 'none');
+  const matches = [];
+  memoryPeople.forEach(p => {
+    const parts = p.memoryDate.split('-').map(Number);
+    if (parts.length < 2) return;
+    const m = parts[0], d = parts[1];
+    if (p.memoryDateType === 'monthly') {
+      if (todayD === d) matches.push(p);
+    } else {
+      if (todayM === m && todayD === d) matches.push(p);
+      // 「近づいたら」モードの場合は7日前から
+      if (p.reminderMode === 'always') {
+        let next = new Date(today.getFullYear(), m-1, d);
+        if (next < today) next = new Date(today.getFullYear()+1, m-1, d);
+        const diff = Math.ceil((next - today) / (1000*60*60*24));
+        if (diff > 0 && diff <= 7 && !matches.includes(p)) matches.push(p);
+      }
+    }
+  });
+
+  if (!matches.length) return;
+  const hasToday = matches.some(p => {
+    const parts = p.memoryDate.split('-').map(Number);
+    return (p.memoryDateType==='monthly' ? todayD===parts[1] : todayM===parts[0]&&todayD===parts[1]);
+  });
+  if (!hasToday && lastShown === todayStr) return;
+  if (!hasToday) localStorage.setItem(memoryKey, todayStr);
+
+  // Show one at a time (first match)
+  const p = matches[0];
+  const overlay = document.createElement('div');
+  overlay.id = 'memoryPopupOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.25);z-index:300;display:flex;align-items:center;justify-content:center;animation:fadeIn 0.5s;';
+  overlay.innerHTML = `<div style="background:#f9f8f6;border-radius:20px;width:90%;max-width:360px;padding:32px 24px;box-shadow:0 4px 24px rgba(0,0,0,0.1);text-align:center;">
+    <div style="font-size:18px;font-weight:600;color:#5a5550;margin-bottom:16px;">${esc(p.nickname)}</div>
+    <div style="font-size:15px;color:#7a7570;line-height:1.8;margin-bottom:8px;">思い出してみませんか。</div>
+    ${p.memoryMessage?`<div style="font-size:13px;color:#a5a09a;margin-bottom:12px;font-style:italic;">${esc(p.memoryMessage)}</div>`:''}
+    <div style="display:flex;gap:8px;justify-content:center;margin-top:20px;">
+      <button onclick="closeMemoryPopup();currentLabel='memory';jumpToPerson('${p.id}')" style="background:none;border:1px solid #c5c0ba;border-radius:12px;padding:10px 24px;font-family:'Zen Maru Gothic',sans-serif;font-size:14px;color:#7a7570;cursor:pointer;">会いに行く</button>
+      <button onclick="closeMemoryPopup()" style="background:none;border:1px solid #c5c0ba;border-radius:12px;padding:10px 24px;font-family:'Zen Maru Gothic',sans-serif;font-size:14px;color:#7a7570;cursor:pointer;">そっと閉じる</button>
+    </div>
+  </div>`;
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeMemoryPopup(); });
+  document.body.appendChild(overlay);
+}
+
+function closeMemoryPopup() {
+  const el = document.getElementById('memoryPopupOverlay');
+  if (el) el.remove();
 }
 
 function openAddMemberModal(corpId, corpName) {
@@ -2325,10 +2391,15 @@ function render() {
     return;
   }
 
-  const items = (data[currentTab]||[]).filter(i => matchesSearch(i, currentTab));
+  let items = (data[currentTab]||[]).filter(i => matchesSearch(i, currentTab));
+  // Place tab: hide closed places from default view
+  if (currentTab === 'place' && currentLabel === null) items = items.filter(i => !i.isClosed);
   // Place tab: want/visited filter
-  if (currentTab === 'place' && (currentLabel==='want'||currentLabel==='visited')) {
-    const filtered = items.filter(i => currentLabel==='visited' ? i.visited : !i.visited);
+  if (currentTab === 'place' && currentLabel==='closed') {
+    const filtered = items.filter(i => i.isClosed);
+    renderItems(filtered, cardList);
+  } else if (currentTab === 'place' && (currentLabel==='want'||currentLabel==='visited')) {
+    const filtered = items.filter(i => currentLabel==='visited' ? i.visited : (!i.visited && !i.isClosed));
     renderItems(filtered, cardList);
   } else if (currentTab !== 'people' && currentLabel !== null && typeof currentLabel === 'number') {
     const ln = (getLabels(currentTab)[currentLabel]?.name||'').toLowerCase();
@@ -2363,10 +2434,12 @@ function render() {
   } else if (currentTab === 'people') {
     // Filter by individual/corporate
     let filteredPeople = items;
-    if (currentLabel === 'individual') filteredPeople = items.filter(p=>p.type!=='corporate');
-    else if (currentLabel === 'corporate') filteredPeople = items.filter(p=>p.type==='corporate');
+    if (currentLabel === 'memory') filteredPeople = items.filter(p=>p.isMemory);
+    else if (currentLabel === 'individual') filteredPeople = items.filter(p=>p.type!=='corporate'&&!p.isMemory);
+    else if (currentLabel === 'corporate') filteredPeople = items.filter(p=>p.type==='corporate'&&!p.isMemory);
+    else filteredPeople = items.filter(p=>!p.isMemory);
     if (!filteredPeople.length) {
-      const msg = currentLabel==='corporate' ? '🏢 法人はまだ登録されていません' : currentLabel==='individual' ? '👤 個人はまだ登録されていません' : '👤 大切な人を追加しましょう';
+      const msg = currentLabel==='memory' ? '🤍 記憶はまだ登録されていません' : currentLabel==='corporate' ? '🏢 法人はまだ登録されていません' : currentLabel==='individual' ? '👤 個人はまだ登録されていません' : '👤 大切な人を追加しましょう';
       cardList.innerHTML = `<div class="empty-msg">${msg}<br>下の ＋ ボタンから追加できます</div>`;
       return;
     }
@@ -3511,6 +3584,216 @@ function saveMyProfile() {
   showToast('プロフィールを保存しました ✓');
 }
 
+// ===== Memory (記憶) =====
+function moveToMemory(id) {
+  if (!confirm('この人を記憶に移しますか？\n記録やリンクはそのまま残ります。')) return;
+  const p = data.people.find(x=>x.id===id);
+  if (!p) return;
+  p.isMemory = true;
+  p.memoryType = p.memoryType || 'person';
+  p.reminderMode = p.reminderMode || 'none';
+  saveData();
+  openPersonId = null;
+  currentLabel = 'memory';
+  render();
+  showToast('🤍 記憶に移しました');
+}
+
+function restoreFromMemory(id) {
+  if (!confirm('この人を大切な人に戻しますか？')) return;
+  const p = data.people.find(x=>x.id===id);
+  if (!p) return;
+  p.isMemory = false;
+  saveData();
+  openPersonId = null;
+  currentLabel = null;
+  render();
+  showToast('大切な人に戻しました');
+}
+
+function closePlacePrompt(id) {
+  const reason = prompt('理由（任意）：\n閉店・震災・再開発・その他', '');
+  if (reason === null) return;
+  const item = data.place.find(x=>x.id===id);
+  if (!item) return;
+  item.isClosed = true;
+  item.closedReason = reason||'';
+  saveData(); render();
+  showToast('🤍 記憶に移しました');
+}
+
+function reopenPlace(id) {
+  if (!confirm('この場所を行きたい場所に戻しますか？')) return;
+  const item = data.place.find(x=>x.id===id);
+  if (!item) return;
+  item.isClosed = false;
+  item.closedReason = '';
+  saveData(); render();
+  showToast('行きたい場所に戻しました');
+}
+
+// ===== Memory (記憶) Modal =====
+function openMemoryModal(id) {
+  editingId = id||null;
+  const modal = document.getElementById('modal');
+  const isEdit = !!editingId;
+  const p = isEdit ? data.people.find(i=>i.id===editingId) : null;
+
+  let html = `<h2>🤍 記憶を${isEdit?'編集':'追加'}</h2>`;
+
+  // Type: person or pet
+  const memType = p?.memoryType||'person';
+  html += `<div class="form-group"><label>種別</label>
+    <div style="display:flex;gap:6px;margin-top:4px;">
+      <div class="date-type-chip ${memType==='person'?'active':''}" onclick="selectMemoryType('person',this)" style="flex:1;text-align:center;">👤 個人</div>
+      <div class="date-type-chip ${memType==='pet'?'active':''}" onclick="selectMemoryType('pet',this)" style="flex:1;text-align:center;">🐾 ペット</div>
+    </div><input type="hidden" id="mMemoryType" value="${memType}">
+  </div>`;
+
+  // Avatar
+  html += `<div class="form-group" style="text-align:center;">
+    <div id="pAvatarPreview" style="width:72px;height:72px;border-radius:50%;background:var(--accent-light);margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:32px;overflow:hidden;cursor:pointer;" onclick="document.getElementById('pAvatarFile').click()">
+      ${p?.avatar ? `<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;">` : '🤍'}
+    </div>
+    <input type="file" id="pAvatarCamera" accept="image/*" capture="environment" style="display:none;" onchange="previewAvatar(this)">
+    <input type="file" id="pAvatarFile" accept="image/*" style="display:none;" onchange="previewAvatar(this)">
+    <input type="hidden" id="pAvatarRemove" value="">
+    <div style="display:flex;gap:8px;justify-content:center;">
+      <div style="font-size:12px;color:var(--accent);cursor:pointer;padding:4px 12px;border:1px solid var(--border);border-radius:10px;" onclick="document.getElementById('pAvatarCamera').click()">📷 カメラ</div>
+      <div style="font-size:12px;color:var(--accent);cursor:pointer;padding:4px 12px;border:1px solid var(--border);border-radius:10px;" onclick="document.getElementById('pAvatarFile').click()">📁 ファイル</div>
+      ${p?.avatar ? `<div style="font-size:12px;color:#c97070;cursor:pointer;padding:4px 12px;border:1px solid #c97070;border-radius:10px;" onclick="removeAvatar(event)">✕ 削除</div>` : ''}
+    </div>
+  </div>`;
+
+  // Name
+  html += `<div class="form-group"><label>名前 *</label><input id="mNickname" placeholder="呼び名" value="${esc(p?.nickname||'')}"></div>`;
+
+  // Memory date
+  const md = p?.memoryDate||'';
+  const mdParts = md.split('-');
+  const mdMonth = mdParts.length>=1 ? parseInt(mdParts[mdParts.length-2])||'' : '';
+  const mdDay = mdParts.length>=2 ? parseInt(mdParts[mdParts.length-1])||'' : '';
+  html += `<div class="form-group"><label>🤍 記憶の日（任意）</label>
+    <div style="display:flex;gap:8px;">
+      <input id="mDateMonth" type="number" min="1" max="12" placeholder="月" value="${mdMonth}" style="flex:1;">
+      <input id="mDateDay" type="number" min="1" max="31" placeholder="日" value="${mdDay}" style="flex:1;">
+    </div>
+    <div class="form-hint">命日・最後に会った日・大切な日など、自由に</div>
+  </div>`;
+
+  // Date type: yearly or monthly
+  const dateRepeat = p?.memoryDateType||'yearly';
+  html += `<div class="form-group"><label>繰り返し</label>
+    <div style="display:flex;gap:6px;margin-top:4px;">
+      <div class="date-type-chip ${dateRepeat==='yearly'?'active':''}" onclick="selectMemDateType('yearly',this)" style="flex:1;text-align:center;">年1回</div>
+      <div class="date-type-chip ${dateRepeat==='monthly'?'active':''}" onclick="selectMemDateType('monthly',this)" style="flex:1;text-align:center;">毎月</div>
+    </div><input type="hidden" id="mDateType" value="${dateRepeat}">
+  </div>`;
+
+  // Reminder mode
+  const remMode = p?.reminderMode||'none';
+  html += `<div class="form-group"><label>通知</label>
+    <div style="display:flex;gap:6px;margin-top:4px;">
+      <div class="date-type-chip ${remMode==='always'?'active':''}" onclick="selectRemMode('always',this)" style="flex:1;text-align:center;font-size:12px;">近づいたら</div>
+      <div class="date-type-chip ${remMode==='dayonly'?'active':''}" onclick="selectRemMode('dayonly',this)" style="flex:1;text-align:center;font-size:12px;">当日だけ</div>
+      <div class="date-type-chip ${remMode==='none'?'active':''}" onclick="selectRemMode('none',this)" style="flex:1;text-align:center;font-size:12px;">しない</div>
+    </div><input type="hidden" id="mRemMode" value="${remMode}">
+  </div>`;
+
+  // Message
+  html += `<div class="form-group"><label>ひとこと（任意）</label><input id="mMessage" placeholder="その人・その子への言葉" value="${esc(p?.memoryMessage||'')}"></div>`;
+
+  // Memo with hint
+  const petHint = 'メモ欄に種類・色・好きだったものなど覚えていることを書いておくと安心です';
+  const personHint = '好きだったもの・口癖・思い出など';
+  html += `<div class="form-group"><label>📝 メモ</label><textarea id="mMemo" placeholder="${memType==='pet'?petHint:personHint}">${esc(p?.memo||'')}</textarea></div>`;
+
+  html += `<div class="form-btns"><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button><button class="btn btn-primary" onclick="saveMemory()">保存</button></div>`;
+  modal.innerHTML = html;
+  openModal();
+}
+
+function selectMemoryType(type, el) {
+  document.getElementById('mMemoryType').value = type;
+  el.parentElement.querySelectorAll('.date-type-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  // Update memo placeholder
+  const memo = document.getElementById('mMemo');
+  if (memo) memo.placeholder = type==='pet' ? 'メモ欄に種類・色・好きだったものなど覚えていることを書いておくと安心です' : '好きだったもの・口癖・思い出など';
+}
+
+function selectMemDateType(type, el) {
+  document.getElementById('mDateType').value = type;
+  el.parentElement.querySelectorAll('.date-type-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function selectRemMode(mode, el) {
+  document.getElementById('mRemMode').value = mode;
+  el.parentElement.querySelectorAll('.date-type-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function saveMemory() {
+  if (_saving) return;
+  const nickname = document.getElementById('mNickname').value.trim();
+  if (!nickname) { alert('名前を入力してください'); return; }
+
+  const avatarRemoved = document.getElementById('pAvatarRemove')?.value === '1';
+  const existingAvatar = editingId ? (data.people.find(x=>x.id===editingId)?.avatar||null) : null;
+  let avatarData = avatarRemoved ? null : existingAvatar;
+  if (!avatarRemoved) {
+    const avatarImg = document.querySelector('#pAvatarPreview img');
+    if (avatarImg && avatarImg.src.startsWith('data:')) avatarData = avatarImg.src;
+  }
+
+  const month = document.getElementById('mDateMonth').value;
+  const day = document.getElementById('mDateDay').value;
+  let memoryDate = '';
+  if (month) memoryDate = String(month).padStart(2,'0') + '-' + String(day||1).padStart(2,'0');
+
+  const person = {
+    id: editingId || genId(),
+    nickname,
+    type: 'individual',
+    isMemory: true,
+    memoryType: document.getElementById('mMemoryType').value,
+    memoryDate,
+    memoryDateType: document.getElementById('mDateType').value,
+    memoryMessage: document.getElementById('mMessage').value.trim()||null,
+    reminderMode: document.getElementById('mRemMode').value,
+    avatar: avatarData,
+    gender: 'unset',
+    fullName: null, relation: null, companyLink: null, position: null,
+    anniversaries: [],
+    sizes: {}, smoking: null, drinking: null,
+    interests: [], brands: [], foodLike: [], foodDislike: [],
+    personality: [], family: [], oshi: [], corpPhoto: null,
+    memo: document.getElementById('mMemo').value.trim()||null
+  };
+
+  if (editingId) {
+    const idx = data.people.findIndex(i=>i.id===editingId);
+    if (idx>=0) {
+      // Preserve existing fields not in this form
+      const existing = data.people[idx];
+      person.anniversaries = existing.anniversaries||[];
+      person.interests = existing.interests||[];
+      person.brands = existing.brands||[];
+      person.foodLike = existing.foodLike||[];
+      person.foodDislike = existing.foodDislike||[];
+      person.family = existing.family||[];
+      person.sizes = existing.sizes||{};
+      person.pinned = existing.pinned;
+      data.people[idx] = person;
+    }
+  } else {
+    data.people.push(person);
+  }
+  saveData(); closeModal(); render();
+  showToast('保存しました ✓');
+}
+
 // ===== Onboarding =====
 const OB_KEY = 'awai_onboarding_done';
 
@@ -4095,7 +4378,8 @@ if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().t
   });
 
   document.getElementById('fabBtn').addEventListener('click', () => {
-    if (currentTab==='people') openPeopleModal();
+    if (currentTab==='people' && currentLabel==='memory') openMemoryModal();
+    else if (currentTab==='people') openPeopleModal();
     else if (currentTab==='groups') openGroupModal();
     else if (currentTab==='place') openPlaceModal();
     else openItemModal();

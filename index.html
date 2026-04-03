@@ -1638,29 +1638,31 @@ function renderPersonCard(p) {
   });
   data.place.forEach(item => { if (nameMatch(item.person) || (item.memo && p.nickname && item.memo.includes(p.nickname))) allHistory.push({...item, cat:'place'}); });
 
-  // Counters (上部に配置)
+  // Counters
   const counters = p.counters||[];
-  html += '<div class="person-section"><div class="person-section-title">🔢 カウンター</div>';
-  if (!counters.length) {
-    html += `<div style="font-size:13px;color:var(--sub);padding:8px 0;">カウンターを追加して、大切な記録を数えましょう</div>`;
-    html += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
-      <div style="font-size:12px;color:var(--sub);padding:6px 12px;border:1px dashed var(--border);border-radius:10px;cursor:pointer;" onclick="event.stopPropagation();addCounter('${p.id}','一緒に食事した')">例：一緒に食事した</div>
-      <div style="font-size:12px;color:var(--sub);padding:6px 12px;border:1px dashed var(--border);border-radius:10px;cursor:pointer;" onclick="event.stopPropagation();addCounter('${p.id}','会った')">例：会った</div>
-    </div>`;
+  function renderCounterSection() {
+    let ch = '<div class="person-section"><div class="person-section-title" style="cursor:pointer;" onclick="event.stopPropagation();toggleCounterSection(\''+p.id+'\')">🔢 カウンター <span id="counterToggle_'+p.id+'" style="font-size:12px;color:var(--sub);">▼</span></div>';
+    ch += '<div id="counterBody_'+p.id+'">';
+    counters.forEach((c,ci) => {
+      ch += `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);">
+        <div style="flex:1;cursor:pointer;" onclick="event.stopPropagation();toggleCounterLog('${p.id}',${ci})">
+          <span style="font-size:14px;">${esc(c.name)}</span>
+          <span style="font-size:16px;font-weight:600;color:var(--accent);margin-left:8px;">${c.count||0}回</span>
+        </div>
+        <button onclick="event.stopPropagation();incrementCounter('${p.id}',${ci})" style="background:var(--accent-light);border:1px solid var(--accent);border-radius:10px;padding:6px 14px;font-size:13px;cursor:pointer;color:var(--accent);font-family:'Zen Maru Gothic',sans-serif;">+1</button>
+        <span style="font-size:14px;color:#c97070;cursor:pointer;" onclick="event.stopPropagation();removeCounter('${p.id}',${ci})">×</span>
+      </div>`;
+      ch += `<div id="counterLog_${p.id}_${ci}" style="display:none;padding:4px 0 8px;font-size:12px;color:var(--sub);"></div>`;
+    });
+    ch += `<div class="add-btn" style="margin-top:8px;" onclick="event.stopPropagation();promptAddCounter('${p.id}')">＋ カウンターを追加</div>`;
+    ch += '</div></div>';
+    return ch;
   }
-  counters.forEach((c,ci) => {
-    html += `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);">
-      <div style="flex:1;cursor:pointer;" onclick="event.stopPropagation();toggleCounterLog('${p.id}',${ci})">
-        <span style="font-size:14px;">${esc(c.name)}</span>
-        <span style="font-size:16px;font-weight:600;color:var(--accent);margin-left:8px;">${c.count||0}回</span>
-      </div>
-      <button onclick="event.stopPropagation();incrementCounter('${p.id}',${ci})" style="background:var(--accent-light);border:1px solid var(--accent);border-radius:10px;padding:6px 14px;font-size:13px;cursor:pointer;color:var(--accent);font-family:'Zen Maru Gothic',sans-serif;">+1</button>
-      <span style="font-size:14px;color:#c97070;cursor:pointer;" onclick="event.stopPropagation();removeCounter('${p.id}',${ci})">×</span>
-    </div>`;
-    html += `<div id="counterLog_${p.id}_${ci}" style="display:none;padding:4px 0 8px;font-size:12px;color:var(--sub);"></div>`;
-  });
-  html += `<div class="add-btn" style="margin-top:8px;" onclick="event.stopPropagation();promptAddCounter('${p.id}')">＋ カウンターを追加</div>`;
-  html += '</div>';
+
+  // カウンターあり → 上部に表示（開閉可能）
+  if (counters.length) {
+    html += renderCounterSection();
+  }
 
   if (allHistory.length) {
     const catLabels = {gave:'🎁 あげた', received:'🎀 もらった', wish:'💭 気になる', wantgive:'🎁 あげたい', place:'📍 行きたい'};
@@ -1672,6 +1674,17 @@ function renderPersonCard(p) {
       html += `<div class="history-item" onclick="event.stopPropagation();jumpToItem('${catToTab[h.cat]}','${h.id}')" style="cursor:pointer;"><span class="history-dir" style="background:${catColors[h.cat]};color:${catTextColors[h.cat]};">${catLabels[h.cat]}</span><span style="flex:1;">${esc(h.title)}</span><span class="history-date">${h.date||''}</span><span style="color:var(--accent);font-size:12px;margin-left:4px;">→</span></div>`;
     });
     html += '</div>';
+  }
+
+  // カウンターなし → 下部にさりげなく追加ボタン
+  if (!counters.length) {
+    html += `<div class="person-section" style="padding-top:4px;">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <div style="font-size:12px;color:var(--sub);padding:6px 12px;border:1px dashed var(--border);border-radius:10px;cursor:pointer;" onclick="event.stopPropagation();addCounter('${p.id}','一緒に食事した')">🔢 一緒に食事した</div>
+        <div style="font-size:12px;color:var(--sub);padding:6px 12px;border:1px dashed var(--border);border-radius:10px;cursor:pointer;" onclick="event.stopPropagation();addCounter('${p.id}','会った')">🔢 会った</div>
+        <div style="font-size:12px;color:var(--sub);padding:6px 12px;border:1px dashed var(--border);border-radius:10px;cursor:pointer;" onclick="event.stopPropagation();promptAddCounter('${p.id}')">＋ カウンター</div>
+      </div>
+    </div>`;
   }
 
   html += `<hr style="border:none;border-top:1px solid var(--border);margin:20px 0 16px;">

@@ -581,6 +581,7 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 </div>
 
 <div id="updateBanner"></div>
+<div id="backupBanner"></div>
 <div class="reminder-zone" id="reminderZone"></div>
 <div class="pickup-zone" id="pickupZone"></div>
 
@@ -2122,6 +2123,8 @@ function checkAppUpdate() {
   localStorage.setItem(VERSION_KEY, APP_VERSION);
   // 定期チェック開始
   scheduleUpdateCheck();
+  // バックアップリマインドチェック
+  checkBackupReminder();
 }
 
 function shouldCheckNow() {
@@ -3467,11 +3470,44 @@ function exportData() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+    localStorage.setItem('awai_last_backup', new Date().toISOString());
+    hideBackupBanner();
     showToast('バックアップを保存しました ✓');
   } catch(e) {
     console.error('Export error:', e);
     alert('バックアップに失敗しました: ' + e.message);
   }
+}
+
+function checkBackupReminder() {
+  const banner = document.getElementById('backupBanner');
+  if (!banner) return;
+  const lastBackup = localStorage.getItem('awai_last_backup');
+  if (!lastBackup) {
+    // 一度もバックアップしていない＋データがある場合のみ表示
+    const hasData = data.people.length > 0 || data.wish.length > 0 || data.place.length > 0;
+    if (hasData) showBackupBanner('まだバックアップがありません');
+    return;
+  }
+  const daysSince = Math.floor((Date.now() - new Date(lastBackup).getTime()) / (1000 * 60 * 60 * 24));
+  if (daysSince >= 7) {
+    showBackupBanner(daysSince + '日間バックアップされていません');
+  }
+}
+
+function showBackupBanner(msg) {
+  const banner = document.getElementById('backupBanner');
+  if (!banner) return;
+  banner.innerHTML = `<div class="update-banner" style="background:linear-gradient(135deg,#fff3e0,#ffe0b2);border-color:#ffb74d;" onclick="openSettings()">
+    <span class="update-icon">💾</span>
+    <span class="update-text" style="color:#e65100;">${msg}。タップしてバックアップしてください。</span>
+    <span class="update-close" style="color:#ffb74d;" onclick="event.stopPropagation();this.parentElement.remove();">✕</span>
+  </div>`;
+}
+
+function hideBackupBanner() {
+  const banner = document.getElementById('backupBanner');
+  if (banner) banner.innerHTML = '';
 }
 
 function importData(event) {

@@ -3476,8 +3476,8 @@ function openSettings() {
     <div class="form-group"><label>💾 データ管理</label>
       <div class="form-hint" style="margin-bottom:8px;">大切なデータを守るため、定期的にバックアップしてください</div>
       <div style="display:flex;gap:8px;">
-        <button class="card-btn" onclick="exportData()" style="font-size:14px;padding:8px 16px;">📥 バックアップ</button>
-        <button class="card-btn" onclick="document.getElementById('importFileInput').click()" style="font-size:14px;padding:8px 16px;">📤 復元</button>
+        <button class="card-btn" onclick="exportData()" style="font-size:14px;padding:8px 16px;">📥 データをファイルに保存</button>
+        <button class="card-btn" onclick="document.getElementById('importFileInput').click()" style="font-size:14px;padding:8px 16px;">📤 ファイルからデータを戻す</button>
         <input type="file" id="importFileInput" accept=".json" style="display:none;" onchange="importData(event)">
       </div>
     </div>
@@ -3486,7 +3486,7 @@ function openSettings() {
       <div class="form-hint">Google AI Studioで無料発行 → 個人Gmailで作成推奨</div></div>
     <div class="form-btns">
       <button class="btn btn-secondary" onclick="document.getElementById('settingsModalOverlay').classList.remove('open')">閉じる</button>
-      <button class="btn btn-primary" onclick="saveSettings()">保存</button>
+      <button class="btn btn-primary" onclick="saveSettings()">設定を保存</button>
     </div>`;
   document.getElementById('settingsModalOverlay').classList.add('open');
   setTimeout(showQR, 100);

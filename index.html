@@ -1914,7 +1914,6 @@ function getUpcomingAnniversaries() {
       if (days === null) return;
       const reminders = a.reminders && a.reminders.length ? a.reminders : [];
       const maxReminder = reminders.length ? Math.max(...reminders) : 0;
-      // Show if: has reminders and within range, or no reminders and today only
       if (reminders.length && days <= maxReminder) {
         results.push({ person: p, ann: a, days });
       } else if (!reminders.length && days === 0) {
@@ -1922,6 +1921,22 @@ function getUpcomingAnniversaries() {
       }
     });
   });
+  // My profile anniversaries
+  const myProfile = getMyProfile();
+  if (myProfile.anniversaries) {
+    const me = { id: '_myprofile', nickname: myProfile.name || '自分', type: 'myprofile' };
+    myProfile.anniversaries.forEach(a => {
+      const days = daysUntil(a.date, a.dateType);
+      if (days === null) return;
+      const reminders = a.reminders && a.reminders.length ? a.reminders : [];
+      const maxReminder = reminders.length ? Math.max(...reminders) : 0;
+      if (reminders.length && days <= maxReminder) {
+        results.push({ person: me, ann: a, days });
+      } else if (!reminders.length && days === 0) {
+        results.push({ person: me, ann: a, days });
+      }
+    });
+  }
   results.sort((a,b) => a.days - b.days);
   return results;
 }
@@ -1942,7 +1957,8 @@ function showAnnPopup() {
     const label = u.ann.name.replace(/[\p{Emoji}]/gu,'').trim();
     const badgeClass = u.days === 0 ? 'ann-badge-today' : 'ann-badge-soon';
     const badgeText = u.days === 0 ? '🎉 今日！' : 'あと'+u.days+'日';
-    html += `<div class="ann-popup-item" onclick="closeAnnPopup();jumpToPerson('${u.person.id}')">
+    const popupClick = u.person.id==='_myprofile' ? 'closeAnnPopup();openMyProfile()' : `closeAnnPopup();jumpToPerson('${u.person.id}')`;
+    html += `<div class="ann-popup-item" onclick="${popupClick}">
       <div class="ann-emoji">${emoji}</div>
       <div class="ann-info">
         <div class="ann-person">${esc(u.person.nickname)}</div>
@@ -1985,7 +2001,8 @@ function renderAnnSection() {
     const label = u.ann.name.replace(/[\p{Emoji}]/gu,'').trim();
     const badgeClass = u.days === 0 ? 'ann-badge-today' : 'ann-badge-soon';
     const badgeText = u.days === 0 ? '🎉 今日！' : 'あと'+u.days+'日';
-    html += `<div class="ann-section-item" onclick="jumpToPerson('${u.person.id}')">
+    const sectionClick = u.person.id==='_myprofile' ? 'openMyProfile()' : `jumpToPerson('${u.person.id}')`;
+    html += `<div class="ann-section-item" onclick="${sectionClick}">
       <span style="font-size:20px;">${emoji}</span>
       <div style="flex:1;min-width:0;">
         <div style="font-size:14px;font-weight:600;">${esc(u.person.nickname)}</div>
@@ -2915,6 +2932,10 @@ function openSettings() {
         <div class="fsz-btn" data-sz="large" style="flex:1;padding:12px;text-align:center;border-radius:12px;border:2px solid ${currentSize==='large'?'var(--accent)':'var(--border)'};cursor:pointer;font-size:17px;" onclick="setFontSize('large')">大きめ</div>
         <div class="fsz-btn" data-sz="xlarge" style="flex:1;padding:12px;text-align:center;border-radius:12px;border:2px solid ${currentSize==='xlarge'?'var(--accent)':'var(--border)'};cursor:pointer;font-size:20px;" onclick="setFontSize('xlarge')">特大</div>
       </div></div>
+    <div class="form-group"><label>👤 マイプロフィール</label>
+      <div class="form-hint" style="margin-bottom:8px;">自分の情報を登録しておくとコンシェルジュAIが活用します</div>
+      <button class="card-btn" onclick="document.getElementById('settingsModalOverlay').classList.remove('open');openMyProfile()" style="font-size:14px;padding:8px 20px;">✏️ プロフィールを編集</button>
+    </div>
     <div class="form-group"><label>🔒 パスコードロック</label>
       <div style="display:flex;gap:8px;margin-top:4px;">
         <button class="card-btn" onclick="document.getElementById('settingsModalOverlay').classList.remove('open');openPinSetup()" style="font-size:14px;padding:8px 16px;">${localStorage.getItem(PIN_KEY)?'変更':'設定'}</button>
@@ -2926,10 +2947,6 @@ function openSettings() {
         <button class="card-btn" onclick="shareApp()" style="font-size:14px;padding:8px 20px;">🔗 URLをシェア</button>
       </div>
       <div class="form-hint" style="text-align:center;">紹介した人数: <strong id="referralCount">0</strong>人</div>
-    </div>
-    <div class="form-group"><label>👤 マイプロフィール</label>
-      <div class="form-hint" style="margin-bottom:8px;">自分の情報を登録しておくとコンシェルジュAIが活用します</div>
-      <button class="card-btn" onclick="document.getElementById('settingsModalOverlay').classList.remove('open');openMyProfile()" style="font-size:14px;padding:8px 20px;">✏️ プロフィールを編集</button>
     </div>
     <div class="form-group"><label>コンシェルジュ（Gemini API Key）</label>
       <input id="setGeminiKey" type="password" placeholder="AIzaSy..." value="${localStorage.getItem(GEMINI_KEY_STORAGE)||''}">
@@ -3119,9 +3136,9 @@ function openMyProfile() {
       }).join('')}
     </div><input type="hidden" id="myGender" value="${p.gender||'unset'}">
   </div>`;
-  // Anniversaries
+  // Anniversaries (reuse annRowHTML with offset index to avoid ID collision)
   html += `<div class="form-group"><label>📅 記念日</label><div id="myAnnContainer">`;
-  anns.forEach((a,i) => { html += myAnnRowHTML(a,i); });
+  anns.forEach((a,i) => { html += annRowHTML(a, 500+i); });
   html += `</div><div class="add-btn" onclick="addMyAnnRow()">＋ 記念日を追加</div></div>`;
   // Sizes
   html += `<div class="form-group"><label>📏 サイズ</label><div class="profile-form-grid">
@@ -3152,29 +3169,11 @@ function openMyProfile() {
   openModal();
 }
 
-let myAnnCounter = 200;
-function myAnnRowHTML(a, idx) {
-  const parts = (a.date||'').split('-');
-  let selMonth='', selDay='';
-  if (parts.length>=2) { selMonth=parseInt(parts[parts.length-2])||''; selDay=parseInt(parts[parts.length-1])||''; }
-  let monthOpts = '<option value="">--</option>';
-  for (let m=1; m<=12; m++) monthOpts += `<option value="${m}" ${selMonth==m?'selected':''}>${m}月</option>`;
-  let dayOpts = '<option value="">--</option>';
-  for (let d=1; d<=31; d++) dayOpts += `<option value="${d}" ${selDay==d?'selected':''}>${d}日</option>`;
-  return `<div class="ann-row" id="myAnnRow${idx}" style="border:1px solid var(--border);border-radius:12px;padding:10px;margin-bottom:8px;">
-    <input placeholder="記念日の名前" value="${esc(a.name||'')}" class="my-ann-name" style="margin-bottom:6px;">
-    <div style="display:flex;gap:6px;">
-      <select class="my-ann-month" style="flex:1;">${monthOpts}</select>
-      <select class="my-ann-day" style="flex:1;">${dayOpts}</select>
-    </div>
-    ${idx>0?`<div style="text-align:right;margin-top:4px;"><span style="font-size:12px;color:#c97070;cursor:pointer;" onclick="document.getElementById('myAnnRow${idx}').remove()">削除</span></div>`:''}
-  </div>`;
-}
-
+let myAnnCounter = 500;
 function addMyAnnRow() {
   myAnnCounter++;
   const c = document.getElementById('myAnnContainer');
-  c.insertAdjacentHTML('beforeend', myAnnRowHTML({name:'',date:'',dateType:'monthday'}, myAnnCounter));
+  c.insertAdjacentHTML('beforeend', annRowHTML({name:'',date:'',dateType:'monthday',reminders:[]}, myAnnCounter));
 }
 
 function selectMyGender(g, el) {
@@ -3184,16 +3183,23 @@ function selectMyGender(g, el) {
 }
 
 function saveMyProfile() {
-  const annRows = document.querySelectorAll('.my-ann-name');
+  const annRows = document.getElementById('myAnnContainer').querySelectorAll('.ann-row');
   const anniversaries = [];
-  annRows.forEach((nameEl, i) => {
-    const row = nameEl.closest('.ann-row');
-    const name = nameEl.value.trim();
-    const month = row.querySelector('.my-ann-month')?.value||'';
-    const day = row.querySelector('.my-ann-day')?.value||'';
+  annRows.forEach(row => {
+    const name = row.querySelector('.ann-name').value.trim();
+    const dateTypeChips = row.querySelectorAll('.date-type-chips')[0];
+    const activeChip = dateTypeChips?.querySelector('.date-type-chip.active');
+    const dateType = activeChip ? (activeChip.textContent.includes('年月日')?'full':activeChip.textContent.includes('月日')?'monthday':'month') : 'monthday';
+    const year = row.querySelector('.ann-year')?.value||'';
+    const month = row.querySelector('.ann-month')?.value||'';
+    const day = row.querySelector('.ann-day')?.value||'';
     let date = '';
-    if (month) date = `${String(month).padStart(2,'0')}-${String(day||1).padStart(2,'0')}`;
-    if (name||date) anniversaries.push({name:name||'記念日',date,dateType:'monthday',reminders:[]});
+    if (dateType==='full' && year && month) date = `${year}-${String(month).padStart(2,'0')}-${String(day||1).padStart(2,'0')}`;
+    else if (dateType==='monthday' && month) date = `${String(month).padStart(2,'0')}-${String(day||1).padStart(2,'0')}`;
+    else if (dateType==='month' && month) date = `${String(month).padStart(2,'0')}`;
+    const repeat = row.querySelector('.ann-repeat')?.value||'yearly';
+    const reminders = row.querySelector('.ann-reminders').value.split(/[,、\s]+/).map(Number).filter(n=>!isNaN(n));
+    if (name||date) anniversaries.push({name:name||'記念日',date,dateType,repeat,reminders});
   });
 
   const profile = {

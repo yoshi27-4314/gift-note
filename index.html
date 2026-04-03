@@ -403,6 +403,12 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 .form-group input:focus, .form-group textarea:focus { border-color: var(--accent); }
 .form-group textarea { resize: vertical; min-height: 50px; }
 .form-hint { font-size: 12px; color: var(--sub); margin-top: 3px; }
+.help-btn { display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--accent-light);color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--accent);margin-left:6px;vertical-align:middle;flex-shrink:0; }
+.help-popup { position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:450;display:flex;align-items:center;justify-content:center;animation:fadeIn 0.2s; }
+.help-popup-inner { background:#fff;border-radius:16px;padding:20px;width:88%;max-width:340px;max-height:70dvh;overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,0.15); }
+.help-popup-inner h3 { font-size:15px;margin-bottom:10px;color:var(--text); }
+.help-popup-inner p { font-size:13px;color:var(--sub);line-height:1.7;margin-bottom:8px; }
+.help-popup-inner .help-example { background:var(--accent-light);border-radius:10px;padding:10px 12px;margin:8px 0;font-size:13px;line-height:1.6; }
 .form-row { display: flex; gap: 8px; }
 .form-row > * { flex: 1; }
 .form-btns { display: flex; gap: 10px; margin-top: 18px; }
@@ -2843,8 +2849,8 @@ function openPeopleModal(id) {
       ${p?.avatar ? `<div style="font-size:12px;color:#c97070;cursor:pointer;padding:4px 12px;border:1px solid #c97070;border-radius:10px;" onclick="removeAvatar(event)">✕ 削除</div>` : ''}
     </div>
   </div>`;
-  html += `<div class="form-group"><label>呼び名 *</label><input id="pNickname" placeholder="例：さとうさん、みーちゃん、部長" value="${esc(p?.nickname||'')}"><div class="form-hint">自分がその人をどう呼んでいるか</div></div>`;
-  html += `<div class="form-group"><label>本名（任意）</label><input id="pFullName" placeholder="" value="${esc(p?.fullName||'')}"></div>`;
+  html += `<div class="form-group"><label>呼び名 * ${helpBtn('nickname')}</label><input id="pNickname" placeholder="例：さとうさん、みーちゃん、部長" value="${esc(p?.nickname||'')}"></div>`;
+  html += `<div class="form-group"><label>本名（任意）${helpBtn('fullName')}</label><input id="pFullName" placeholder="" value="${esc(p?.fullName||'')}"></div>`;
   // Gender
   html += `<div class="form-group"><label>性別</label>
     <div style="display:flex;gap:6px;margin-top:4px;">
@@ -2855,7 +2861,7 @@ function openPeopleModal(id) {
       }).join('')}
     </div><input type="hidden" id="pGender" value="${p?.gender||'unset'}">
   </div>`;
-  html += `<div class="form-group"><label>関係</label><input id="pRelation" placeholder="例：友人、同僚、取引先、家族" value="${esc(p?.relation||'')}"></div>`;
+  html += `<div class="form-group"><label>関係 ${helpBtn('relation')}</label><input id="pRelation" placeholder="例：友人、同僚、取引先、家族" value="${esc(p?.relation||'')}"></div>`;
   html += `<div class="form-group"><label>所属法人（任意）</label><input id="pCompanyLink" placeholder="登録済みの法人名" value="${esc(p?.companyLink||'')}" list="companyList">
     <datalist id="companyList">${data.people.filter(x=>x.type==='corporate').map(x=>`<option value="${esc(x.nickname||'')}">`).join('')}</datalist></div>`;
   html += `<div class="form-group"><label>役職</label><input id="pPosition" placeholder="例：営業部長" value="${esc(p?.position||'')}"></div>`;
@@ -2884,7 +2890,7 @@ function openPeopleModal(id) {
   // Anniversaries
   const defaultAnn = isCorp ? {name:'🏢 創立記念日',date:'',dateType:'monthday',reminders:[30]} : {name:'🎂 誕生日',date:'',dateType:'monthday',reminders:[30]};
   const anns = p?.anniversaries||[defaultAnn];
-  html += `<div class="form-group"><label>📅 記念日</label><div id="annContainer">`;
+  html += `<div class="form-group"><label>📅 記念日 ${helpBtn('anniversary')}</label><div id="annContainer">`;
   anns.forEach((a,i) => { html += annRowHTML(a,i); });
   html += `</div><div class="add-btn" onclick="addAnnRow()">＋ 記念日を追加</div></div>`;
 
@@ -2903,7 +2909,7 @@ function openPeopleModal(id) {
   if (!isCorp) {
   // Sizes
   const sz = p?.sizes||{};
-  html += `<div class="form-group"><label>📏 サイズ（分かる範囲で）</label><div class="profile-form-grid">
+  html += `<div class="form-group"><label>📏 サイズ（分かる範囲で）${helpBtn('sizes')}</label><div class="profile-form-grid">
     <input id="pSizeTops" placeholder="服トップス" value="${esc(sz.tops||'')}">
     <input id="pSizeBottoms" placeholder="服ボトムス" value="${esc(sz.bottoms||'')}">
     <input id="pSizeShoes" placeholder="靴サイズ" value="${esc(sz.shoes||'')}">
@@ -2911,39 +2917,39 @@ function openPeopleModal(id) {
   </div></div>`;
 
   // Smoking/Drinking
-  html += `<div class="form-group"><label>🚬 嗜好品</label><div class="form-row">
+  html += `<div class="form-group"><label>🚬 嗜好品 ${helpBtn('smoking')}</label><div class="form-row">
     <input id="pSmoking" placeholder="タバコ（銘柄）" value="${esc(p?.smoking||'')}">
     <input id="pDrinking" placeholder="お酒（種類）" value="${esc(p?.drinking||'')}">
   </div></div>`;
 
   // Interests
-  html += `<div class="form-group"><label>💖 好きなもの・趣味</label><input id="pInterests" placeholder="例：音楽, ゴルフ, ワイン" value="${(p?.interests||[]).join(', ')}"><div class="form-hint">カンマ区切り。ピックアップのマッチングに使います</div></div>`;
+  html += `<div class="form-group"><label>💖 好きなもの・趣味 ${helpBtn('interests')}</label><input id="pInterests" placeholder="例：音楽, ゴルフ, ワイン" value="${(p?.interests||[]).join(', ')}"></div>`;
 
   // Brands
-  html += `<div class="form-group"><label>🎨 好きなブランド・色</label><input id="pBrands" placeholder="例：ZARA, 無印, ベージュ系" value="${(p?.brands||[]).join(', ')}"></div>`;
+  html += `<div class="form-group"><label>🎨 好きなブランド・色 ${helpBtn('brands')}</label><input id="pBrands" placeholder="例：ZARA, 無印, ベージュ系" value="${(p?.brands||[]).join(', ')}"></div>`;
 
   // Oshi-katsu
-  html += `<div class="form-group"><label>🌟 推し活</label><input id="pOshi" placeholder="例：Snow Man, 鬼滅の刃, 阪神タイガース" value="${(p?.oshi||[]).join(', ')}"><div class="form-hint">推しのアーティスト・キャラ・チーム等</div></div>`;
+  html += `<div class="form-group"><label>🌟 推し活 ${helpBtn('oshi')}</label><input id="pOshi" placeholder="例：Snow Man, 鬼滅の刃, 阪神タイガース" value="${(p?.oshi||[]).join(', ')}"></div>`;
 
   // Food
-  html += `<div class="form-group"><label>🍽 食の好み</label>
+  html += `<div class="form-group"><label>🍽 食の好み ${helpBtn('food')}</label>
     <input id="pFoodLike" placeholder="☺ 好きなもの（カンマ区切り）" value="${(p?.foodLike||[]).join(', ')}" style="margin-bottom:6px;">
     <input id="pFoodDislike" placeholder="✗ 苦手なもの（カンマ区切り）" value="${(p?.foodDislike||[]).join(', ')}">
   </div>`;
 
   // Family
-  html += `<div class="form-group"><label>👨‍👩‍👧 家族構成</label><div id="familyContainer">`;
+  html += `<div class="form-group"><label>👨‍👩‍👧 家族構成 ${helpBtn('family')}</label><div id="familyContainer">`;
   (p?.family||[]).forEach((f,i) => {
     html += `<div class="form-row" style="margin-bottom:6px;" id="famRow${i}"><input placeholder="名前・続柄" value="${esc(f.name||'')}" class="fam-name"><input placeholder="メモ" value="${esc(f.note||'')}" class="fam-note"><span style="color:#c97070;cursor:pointer;font-size:18px;" onclick="this.parentElement.remove()">×</span></div>`;
   });
   html += `</div><div class="add-btn" onclick="addFamilyRow()">＋ 家族を追加</div></div>`;
 
   // Personality
-  html += `<div class="form-group"><label>✨ 個性</label><input id="pPersonality" placeholder="例：気配り上手, 豪快, サプライズ好き" value="${(p?.personality||[]).join(', ')}"></div>`;
+  html += `<div class="form-group"><label>✨ 個性 ${helpBtn('personality')}</label><input id="pPersonality" placeholder="例：気配り上手, 豪快, サプライズ好き" value="${(p?.personality||[]).join(', ')}"></div>`;
   } // end !isCorp
 
   // Memo
-  html += `<div class="form-group"><label>📝 メモ</label><textarea id="pMemo" placeholder="自由にメモ。ここに書いた内容も検索でヒットします">${esc(p?.memo||'')}</textarea></div>`;
+  html += `<div class="form-group"><label>📝 メモ ${helpBtn('memo')}</label><textarea id="pMemo" placeholder="自由にメモ。ここに書いた内容も検索でヒットします">${esc(p?.memo||'')}</textarea></div>`;
 
   // Memory fields (記憶の人の場合のみ表示)
   if (p?.isMemory) {
@@ -4061,6 +4067,126 @@ function registerFromQR() {
   showToast(nickname + 'さんを登録しました ✓');
 }
 
+// ===== Help Popups =====
+const HELP_TEXTS = {
+  nickname: {
+    title: '呼び名',
+    desc: '自分がその人をどう呼んでいるかを入力します。',
+    examples: ['さとうさん', 'みーちゃん', '部長', 'パパ'],
+    tip: 'ニックネームでも敬称でも、自分が一番しっくりくる呼び方で。LINEの登録名より、自分が心の中で呼んでいる名前の方が思い出しやすいです。'
+  },
+  fullName: {
+    title: '本名',
+    desc: 'フルネームを入力します。任意です。',
+    examples: ['佐藤 太郎', '田中 花子'],
+    tip: '呼び名とは別に本名を記録しておくと、お中元・お歳暮の送り状や年賀状を書く時に便利です。'
+  },
+  relation: {
+    title: '関係',
+    desc: 'その人との関係を入力します。',
+    examples: ['友人', '同僚', '取引先', '家族', '幼なじみ', 'ゴルフ仲間', 'ラウンジのお客さん'],
+    tip: '仕事関係の人も、プライベートの友人も、全部ここで管理できます。'
+  },
+  anniversary: {
+    title: '記念日',
+    desc: '誕生日・結婚記念日・出会った日など、大切な日を登録します。',
+    examples: ['🎂 誕生日', '💍 結婚記念日', '🤝 出会った日', '🎓 卒業記念日'],
+    tip: '記念日を登録しておくと、近づいた時にAWAIがそっと教えてくれます。「あの人の誕生日、いつだっけ？」がなくなります。'
+  },
+  sizes: {
+    title: 'サイズ',
+    desc: '服・靴・指輪のサイズを記録します。',
+    examples: ['服トップス：M', '靴：25.5cm', '指輪：9号'],
+    tip: 'プレゼントを贈る時に「サイズ何だっけ？」と聞かずに済みます。さりげなく聞いた時にメモしておくと、いざという時に役立ちます。'
+  },
+  smoking: {
+    title: '嗜好品',
+    desc: 'タバコの銘柄やお酒の好みを記録します。',
+    examples: ['タバコ：アイコス テリア', 'お酒：日本酒（辛口）', 'ワイン好き（赤）'],
+    tip: '接待や食事会の手配、お中元・お歳暮の選択に直結します。「あの人、何飲む人だっけ？」がなくなります。'
+  },
+  interests: {
+    title: '好きなもの・趣味',
+    desc: 'その人の趣味や興味があることを記録します。カンマ区切りで複数登録できます。',
+    examples: ['ゴルフ', '料理', 'ワイン', '旅行', 'K-POP', '釣り'],
+    tip: 'ここに登録した情報は、アイテムのタグと自動でマッチングされます。「この商品、あの人が喜びそう」とAWAIが教えてくれます。'
+  },
+  brands: {
+    title: 'ブランド・色',
+    desc: '好きなブランドや好みの色を記録します。',
+    examples: ['ZARA', '無印良品', 'ベージュ系', '北欧デザイン'],
+    tip: 'プレゼント選びの時に「この人の好みは？」がすぐわかります。'
+  },
+  oshi: {
+    title: '推し活',
+    desc: '推しのアーティスト・キャラクター・スポーツチーム等を記録します。',
+    examples: ['Snow Man', '鬼滅の刃', '阪神タイガース', 'BTS'],
+    tip: '推しのグッズやコンサートチケットはプレゼントの鉄板。知っているだけで「わかってる！」と思ってもらえます。'
+  },
+  food: {
+    title: '食の好み',
+    desc: '好きな食べ物と苦手な食べ物を記録します。',
+    examples: ['好き：寿司, カレー, チョコ', '苦手：パクチー, 辛いもの, 生牡蠣'],
+    tip: '食事に誘う時、お土産を選ぶ時、ギフトを贈る時。苦手なものを贈ってしまう失敗がなくなります。AIコンシェルジュも苦手を除外して提案します。'
+  },
+  family: {
+    title: '家族構成',
+    desc: 'その人の家族の名前と続柄を記録します。',
+    examples: ['奥さん：花子', '長男：太郎（高校生）', '愛犬：ポチ'],
+    tip: '家族の話ができると距離が一気に縮まります。「お子さん、もう高校生でしたよね」の一言が信頼になります。'
+  },
+  personality: {
+    title: '個性',
+    desc: 'その人の性格や特徴を記録します。',
+    examples: ['気配り上手', '豪快', 'サプライズ好き', '照れ屋'],
+    tip: 'AIコンシェルジュがギフト提案する時に参考にします。豪快な人には体験ギフト、繊細な人には丁寧な手仕事の品。'
+  },
+  memo: {
+    title: 'メモ',
+    desc: '何でも自由に書けるスペースです。検索にもヒットします。',
+    examples: ['前回会った時にイタリア旅行の話をしていた', '犬アレルギーあり', '左利き'],
+    tip: '会話の中で聞いた些細なことをメモしておくと、次に会った時に「覚えてくれてたんだ」と喜ばれます。AWAIの検索でも引っかかるので、あとで見つけやすいです。'
+  },
+  counter: {
+    title: 'カウンター',
+    desc: '大切な人との記録を数えます。名前は自由に決められます。',
+    examples: ['一緒に食事した', '会った', '電話した', '旅行に行った'],
+    tip: '2人だけが意味を知っているものを数える。50回目が自動で新しい記念日になります。ボタンを押すだけ。日付も自動で記録されます。'
+  },
+  itemTitle: {
+    title: 'タイトル',
+    desc: 'アイテムの名前を入力します。',
+    examples: ['ヴィンテージのワイングラス', '松阪牛のカタログギフト', '名入れ万年筆'],
+    tip: '気になった商品をとりあえず登録しておくだけでOK。後から写真やURLを追加できます。'
+  },
+  placeTitle: {
+    title: '場所の名前',
+    desc: '行きたい場所やお店の名前を入力します。',
+    examples: ['京都の古い喫茶店', 'あの人が好きだった寿司屋', '来月オープンのイタリアン'],
+    tip: '誰かと「今度あそこ行こう」と言った場所を忘れないうちに。「誰と行きたい」を設定すると、その人のカードからもこの場所が見えます。'
+  }
+};
+
+function showHelp(key) {
+  const h = HELP_TEXTS[key];
+  if (!h) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'help-popup';
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+  overlay.innerHTML = `<div class="help-popup-inner">
+    <h3>❓ ${h.title}</h3>
+    <p>${h.desc}</p>
+    ${h.examples.length?`<div class="help-example"><strong>例：</strong><br>${h.examples.join('　/　')}</div>`:''}
+    ${h.tip?`<p style="margin-top:10px;">💡 ${h.tip}</p>`:''}
+    <div style="text-align:center;margin-top:14px;"><button onclick="this.closest('.help-popup').remove()" style="background:none;border:1px solid var(--border);border-radius:10px;padding:8px 24px;font-size:13px;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">閉じる</button></div>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+
+function helpBtn(key) {
+  return `<span class="help-btn" onclick="event.stopPropagation();showHelp('${key}')">？</span>`;
+}
+
 // ===== Counters =====
 function toggleHidden(personId) {
   const p = data.people.find(x=>x.id===personId);
@@ -4553,9 +4679,59 @@ function obFinish() {
   localStorage.setItem(OB_KEY, '1');
   document.getElementById('onboardingOverlay').style.display = 'none';
   loadData();
+  createSampleData();
   render();
   checkReminders();
   showAnnPopup();
+}
+
+function createSampleData() {
+  // サンプルデータがなければ作成
+  if (data.people.some(p=>p.id==='sample_person')) return;
+
+  // サンプル太郎（大切な人）
+  data.people.push({
+    id: 'sample_person', nickname: 'サンプル太郎', fullName: '見本 太郎',
+    type: 'individual', gender: 'male', avatar: null, relation: '友人',
+    companyLink: null, position: null,
+    anniversaries: [{name:'🎂 誕生日', date:'06-15', dateType:'monthday', repeat:'yearly', reminders:[30]}],
+    sizes: {tops:'L', bottoms:'32', shoes:'26.5', ring:null},
+    smoking: null, drinking: 'ビール（エビス）',
+    interests: ['ゴルフ', '旅行', 'ワイン'],
+    brands: ['無印良品', 'ユニクロ'],
+    oshi: [],
+    foodLike: ['寿司', 'カレー', 'チョコレート'],
+    foodDislike: ['パクチー'],
+    family: [{name:'花子（奥さん）', note:'料理好き'}, {name:'太一（長男）', note:'高校2年'}],
+    personality: ['気配り上手', '話し上手'],
+    memo: 'これはサンプルです。編集や削除して、自分の大切な人を登録してください。\n\n各項目の？ボタンを押すと使い方のヒントが見れます。',
+    counters: [{name:'一緒に食事した', count:3, logs:['2026-03-15','2026-02-20','2026-01-10']}],
+    isSample: true,
+    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+  });
+
+  // サンプルアイテム
+  data.wish.push({
+    id: 'sample_item', title: 'サンプル：ヴィンテージのワイングラス',
+    purpose: 'gift', giftTarget: 'サンプル太郎',
+    url: '', amount: '5000', tags: ['ギフト', 'ワイン'],
+    rating: 4, memo: 'これはサンプルです。自由に編集・削除してください。',
+    isSample: true,
+    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+  });
+
+  // サンプル場所
+  data.place.push({
+    id: 'sample_place', title: 'サンプル：京都の隠れ家カフェ',
+    placeCategory: '🍽 食事', person: 'サンプル太郎',
+    address: '京都市東山区', url: '',
+    rating: 5, memo: 'これはサンプルです。行きたい場所を登録してみてください。',
+    tags: ['カフェ', '京都'],
+    isSample: true,
+    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+  });
+
+  saveData();
 }
 
 // ===== Data Export / Import =====

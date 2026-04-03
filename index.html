@@ -2626,7 +2626,11 @@ function switchTab(tab) {
 }
 
 function jumpToPerson(id) {
+  const person = data.people.find(x=>x.id===id);
   switchTab('people');
+  // 記憶の人の場合は記憶フィルターに切り替え
+  if (person?.isMemory) currentLabel = 'memory';
+  else if (person?.hidden) currentLabel = null; // 非表示でも表示する
   openPersonId = id;
   render();
   setTimeout(() => {

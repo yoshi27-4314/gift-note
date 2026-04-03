@@ -1026,7 +1026,7 @@ function openPlaceModal(id) {
   html += `<div class="form-group"><label>メモ</label><textarea id="fMemo" placeholder="営業時間、予算感、おすすめメニューなど">${esc(item?.memo||'')}</textarea></div>`;
 
   // Photo
-  html += photoInputHTML('fImg');
+  html += photoInputHTML('fImg', item?.img);
 
   html += `<div class="form-btns"><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button><button class="btn btn-primary" onclick="savePlaceItem()">保存</button></div>`;
   modal.innerHTML = html;
@@ -1154,16 +1154,14 @@ function savePlaceItem() {
     saveData(); closeModal(); render();
   }
 
-  if (editingId) {
-    const existing = data.place.find(i=>i.id===editingId);
-    if (!fileInput?.files?.length) { doSave(existing?.img||null); return; }
-  }
+  const removeFlag = document.getElementById('fImgRemove')?.value === '1';
+  if (removeFlag) { doSave(null); return; }
   if (fileInput&&fileInput.files&&fileInput.files[0]) {
     const reader = new FileReader();
     reader.onload = e => doSave(e.target.result);
     reader.readAsDataURL(fileInput.files[0]);
   } else {
-    doSave(null);
+    doSave(editingId ? (data.place.find(i=>i.id===editingId)?.img||null) : null);
   }
 }
 
@@ -1325,11 +1323,12 @@ function markVisited(id) {
     <div class="form-group"><label>写真を追加</label>
       <input type="file" id="visitCamera" accept="image/*" capture="environment" style="display:none;" onchange="previewPhoto(this,'visitPhotoPreview')">
       <input type="file" id="visitFile" accept="image/*" style="display:none;" onchange="previewPhoto(this,'visitPhotoPreview')">
+      <input type="hidden" id="visitPhotoRemove" value="">
       <div style="display:flex;gap:8px;">
         <div style="font-size:13px;color:var(--accent);cursor:pointer;padding:6px 14px;border:1px solid var(--border);border-radius:10px;" onclick="document.getElementById('visitCamera').click()">📷 カメラ</div>
         <div style="font-size:13px;color:var(--accent);cursor:pointer;padding:6px 14px;border:1px solid var(--border);border-radius:10px;" onclick="document.getElementById('visitFile').click()">📁 ファイル</div>
       </div>
-      <div id="visitPhotoPreview"></div>
+      <div id="visitPhotoPreview">${item.img?`<div style="position:relative;display:inline-block;width:100%;"><img src="${item.img}" style="width:100%;max-height:160px;object-fit:cover;border-radius:12px;margin-top:6px;"><div style="position:absolute;top:10px;right:4px;background:rgba(0,0,0,0.6);color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;" onclick="removePhoto('visitPhoto')">✕</div></div>`:''}</div>
     </div>
     <div class="form-btns">
       <button class="btn btn-secondary" onclick="closeModal()">キャンセル</button>
@@ -1349,8 +1348,12 @@ function saveVisited(id) {
   const camera = document.getElementById('visitCamera');
   const file = document.getElementById('visitFile');
   const photoInput = (file?.files?.length ? file : camera?.files?.length ? camera : null);
+  const removeFlag = document.getElementById('visitPhotoRemove')?.value === '1';
 
-  if (photoInput?.files?.[0]) {
+  if (removeFlag) {
+    item.img = null;
+    saveData(); closeModal(); render();
+  } else if (photoInput?.files?.[0]) {
     const reader = new FileReader();
     reader.onload = e => { item.img = e.target.result; saveData(); closeModal(); render(); };
     reader.readAsDataURL(photoInput.files[0]);
@@ -1785,8 +1788,7 @@ function openGroupModal(id) {
   }
   html += `</div><input type="hidden" id="gMembers" value="${selectedIds.join(',')}"></div>`;
   // Group photo
-  html += photoInputHTML('gImg');
-  if (g?.img) html += `<div style="margin-top:-8px;margin-bottom:12px;"><img src="${g.img}" style="width:100%;max-height:120px;object-fit:cover;border-radius:12px;"></div>`;
+  html += photoInputHTML('gImg', g?.img);
   html += `<div class="form-btns"><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button><button class="btn btn-primary" onclick="saveGroup()">保存</button></div>`;
   modal.innerHTML = html;
   openModal();
@@ -1816,6 +1818,7 @@ function saveGroup() {
   const memberIds = document.getElementById('gMembers').value.split(',').filter(Boolean);
   const fileInput = getPhotoData('gImg');
   const existingImg = editingId ? (data.groups.find(x=>x.id===editingId)?.img||null) : null;
+  const removeFlag = document.getElementById('gImgRemove')?.value === '1';
 
   function doSaveGroup(imgData) {
     const group = {
@@ -1837,6 +1840,7 @@ function saveGroup() {
     saveData(); closeModal(); render();
   }
 
+  if (removeFlag) { doSaveGroup(null); return; }
   if (fileInput&&fileInput.files&&fileInput.files[0]) {
     const reader = new FileReader();
     reader.onload = e => doSaveGroup(e.target.result);
@@ -2488,10 +2492,7 @@ function openItemModal(id) {
     html += `<div class="form-group"><label>URL</label><input type="url" id="fUrl" placeholder="https://..." value="${esc(item?.url||'')}"></div>`;
   }
   html += `<div class="form-group"><label>メモ</label><textarea id="fMemo" placeholder="自由にメモ">${esc(item?.memo||'')}</textarea></div>`;
-  html += photoInputHTML('fImg');
-  if (isEdit && item?.img) {
-    html += `<!-- existing photo handled in JS -->`;
-  }
+  html += photoInputHTML('fImg', item?.img);
   html += `<div class="form-btns"><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button><button class="btn btn-primary" onclick="saveItem()">保存</button></div>`;
   modal.innerHTML = html;
   openModal();
@@ -2505,25 +2506,43 @@ function setItemPurpose(purpose, el) {
   if (targetGroup) targetGroup.style.display = purpose==='gift' ? '' : 'none';
 }
 
-function photoInputHTML(inputId) {
+function photoInputHTML(inputId, existingImg) {
+  let preview = '';
+  if (existingImg) {
+    preview = `<div style="position:relative;display:inline-block;width:100%;"><img src="${existingImg}" style="width:100%;max-height:160px;object-fit:cover;border-radius:12px;margin-top:6px;"><div style="position:absolute;top:10px;right:4px;background:rgba(0,0,0,0.6);color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;" onclick="removePhoto('${inputId}')">✕</div></div>`;
+  }
   return `<div class="form-group"><label>写真</label>
     <input type="file" id="${inputId}Camera" accept="image/*" capture="environment" style="display:none;" onchange="previewPhoto(this,'${inputId}Preview')">
     <input type="file" id="${inputId}File" accept="image/*" style="display:none;" onchange="previewPhoto(this,'${inputId}Preview')">
+    <input type="hidden" id="${inputId}Remove" value="">
     <div style="display:flex;gap:8px;margin-bottom:6px;">
       <div style="font-size:13px;color:var(--accent);cursor:pointer;padding:6px 14px;border:1px solid var(--border);border-radius:10px;" onclick="document.getElementById('${inputId}Camera').click()">📷 カメラ</div>
       <div style="font-size:13px;color:var(--accent);cursor:pointer;padding:6px 14px;border:1px solid var(--border);border-radius:10px;" onclick="document.getElementById('${inputId}File').click()">📁 ファイル</div>
     </div>
-    <div id="${inputId}Preview"></div>
+    <div id="${inputId}Preview">${preview}</div>
   </div>`;
 }
 
 function previewPhoto(input, previewId) {
   if (!input.files||!input.files[0]) return;
+  const inputId = previewId.replace('Preview','');
+  const removeEl = document.getElementById(inputId+'Remove');
+  if (removeEl) removeEl.value = '';
   const reader = new FileReader();
   reader.onload = e => {
-    document.getElementById(previewId).innerHTML = `<img src="${e.target.result}" style="width:100%;max-height:160px;object-fit:cover;border-radius:12px;margin-top:6px;">`;
+    document.getElementById(previewId).innerHTML = `<div style="position:relative;display:inline-block;width:100%;"><img src="${e.target.result}" style="width:100%;max-height:160px;object-fit:cover;border-radius:12px;margin-top:6px;"><div style="position:absolute;top:10px;right:4px;background:rgba(0,0,0,0.6);color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;" onclick="removePhoto('${inputId}')">✕</div></div>`;
   };
   reader.readAsDataURL(input.files[0]);
+}
+
+function removePhoto(inputId) {
+  document.getElementById(inputId+'Preview').innerHTML = '';
+  const removeEl = document.getElementById(inputId+'Remove');
+  if (removeEl) removeEl.value = '1';
+  const camera = document.getElementById(inputId+'Camera');
+  const file = document.getElementById(inputId+'File');
+  if (camera) camera.value = '';
+  if (file) file.value = '';
 }
 
 function getPhotoData(inputId) {
@@ -2563,14 +2582,16 @@ function openPeopleModal(id) {
   html += `<div id="individualFields" style="display:${isCorp?'none':''}">`;
   // Avatar photo
   html += `<div class="form-group" style="text-align:center;">
-    <div id="pAvatarPreview" style="width:72px;height:72px;border-radius:50%;background:var(--accent-light);margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:32px;overflow:hidden;cursor:pointer;" onclick="document.getElementById('pAvatarFile').click()">
+    <div id="pAvatarPreview" style="width:72px;height:72px;border-radius:50%;background:var(--accent-light);margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:32px;overflow:hidden;cursor:pointer;position:relative;" onclick="document.getElementById('pAvatarFile').click()">
       ${p?.avatar ? `<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;">` : personIcon(p||{}).emoji}
     </div>
     <input type="file" id="pAvatarCamera" accept="image/*" capture="environment" style="display:none;" onchange="previewAvatar(this)">
     <input type="file" id="pAvatarFile" accept="image/*" style="display:none;" onchange="previewAvatar(this)">
+    <input type="hidden" id="pAvatarRemove" value="">
     <div style="display:flex;gap:8px;justify-content:center;">
       <div style="font-size:12px;color:var(--accent);cursor:pointer;padding:4px 12px;border:1px solid var(--border);border-radius:10px;" onclick="document.getElementById('pAvatarCamera').click()">📷 カメラ</div>
       <div style="font-size:12px;color:var(--accent);cursor:pointer;padding:4px 12px;border:1px solid var(--border);border-radius:10px;" onclick="document.getElementById('pAvatarFile').click()">📁 ファイル</div>
+      ${p?.avatar ? `<div style="font-size:12px;color:#c97070;cursor:pointer;padding:4px 12px;border:1px solid #c97070;border-radius:10px;" onclick="removeAvatar(event)">✕ 削除</div>` : ''}
     </div>
   </div>`;
   html += `<div class="form-group"><label>呼び名 *</label><input id="pNickname" placeholder="例：さとうさん、みーちゃん、部長" value="${esc(p?.nickname||'')}"><div class="form-hint">自分がその人をどう呼んでいるか</div></div>`;
@@ -2597,10 +2618,11 @@ function openPeopleModal(id) {
   html += `<div class="form-group"><label>正式名称</label><input id="pCorpName" placeholder="例：ABC商事 株式会社" value="${esc(isCorp?(p?.corpFullName||p?.nickname||''):'')}"></div>`;
   // Corporate photo (business card etc.)
   html += `<div class="form-group"><label>📷 写真（名刺など）</label>
-    <div id="pCorpPhotoPreview" style="margin-bottom:8px;">${p?.corpPhoto?`<img src="${p.corpPhoto}" style="width:100%;max-height:200px;object-fit:contain;border-radius:12px;border:1px solid var(--border);">`:''}
+    <div id="pCorpPhotoPreview" style="margin-bottom:8px;">${p?.corpPhoto?`<div style="position:relative;display:inline-block;width:100%;"><img src="${p.corpPhoto}" style="width:100%;max-height:200px;object-fit:contain;border-radius:12px;border:1px solid var(--border);"><div style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.6);color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;" onclick="removeCorpPhoto()">✕</div></div>`:''}
     </div>
     <input type="file" id="pCorpPhotoCamera" accept="image/*" capture="environment" style="display:none;" onchange="previewCorpPhoto(this)">
     <input type="file" id="pCorpPhotoFile" accept="image/*" style="display:none;" onchange="previewCorpPhoto(this)">
+    <input type="hidden" id="pCorpPhotoRemove" value="">
     <div style="display:flex;gap:8px;">
       <div style="font-size:12px;color:var(--accent);cursor:pointer;padding:4px 12px;border:1px solid var(--border);border-radius:10px;" onclick="document.getElementById('pCorpPhotoCamera').click()">📷 カメラ</div>
       <div style="font-size:12px;color:var(--accent);cursor:pointer;padding:4px 12px;border:1px solid var(--border);border-radius:10px;" onclick="document.getElementById('pCorpPhotoFile').click()">📁 ファイル</div>
@@ -2759,19 +2781,42 @@ function selectGender(g, el) {
 }
 function previewAvatar(input) {
   if (!input.files||!input.files[0]) return;
+  const removeEl = document.getElementById('pAvatarRemove');
+  if (removeEl) removeEl.value = '';
   const reader = new FileReader();
   reader.onload = e => {
     document.getElementById('pAvatarPreview').innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;">`;
   };
   reader.readAsDataURL(input.files[0]);
 }
+function removeAvatar(e) {
+  e.stopPropagation();
+  document.getElementById('pAvatarPreview').innerHTML = personIcon({}).emoji||'👤';
+  document.getElementById('pAvatarRemove').value = '1';
+  const camera = document.getElementById('pAvatarCamera');
+  const file = document.getElementById('pAvatarFile');
+  if (camera) camera.value = '';
+  if (file) file.value = '';
+  // Hide the delete button
+  e.target.closest('div[style*="color:#c97070"]')?.remove();
+}
 function previewCorpPhoto(input) {
   if (!input.files||!input.files[0]) return;
+  const removeEl = document.getElementById('pCorpPhotoRemove');
+  if (removeEl) removeEl.value = '';
   const reader = new FileReader();
   reader.onload = e => {
-    document.getElementById('pCorpPhotoPreview').innerHTML = `<img src="${e.target.result}" style="width:100%;max-height:200px;object-fit:contain;border-radius:12px;border:1px solid var(--border);">`;
+    document.getElementById('pCorpPhotoPreview').innerHTML = `<div style="position:relative;display:inline-block;width:100%;"><img src="${e.target.result}" style="width:100%;max-height:200px;object-fit:contain;border-radius:12px;border:1px solid var(--border);"><div style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.6);color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;" onclick="removeCorpPhoto()">✕</div></div>`;
   };
   reader.readAsDataURL(input.files[0]);
+}
+function removeCorpPhoto() {
+  document.getElementById('pCorpPhotoPreview').innerHTML = '';
+  document.getElementById('pCorpPhotoRemove').value = '1';
+  const camera = document.getElementById('pCorpPhotoCamera');
+  const file = document.getElementById('pCorpPhotoFile');
+  if (camera) camera.value = '';
+  if (file) file.value = '';
 }
 function addFamilyRow() {
   const c = document.getElementById('familyContainer');
@@ -2826,16 +2871,22 @@ function savePerson() {
     if (!corpNickname) { alert('呼び名を入力してください'); return; }
   }
   // Handle avatar
+  const avatarRemoved = document.getElementById('pAvatarRemove')?.value === '1';
   const existingAvatar = editingId ? (data.people.find(x=>x.id===editingId)?.avatar||null) : null;
-  let avatarData = existingAvatar;
-  const avatarImg = document.querySelector('#pAvatarPreview img');
-  if (avatarImg && avatarImg.src.startsWith('data:')) avatarData = avatarImg.src;
+  let avatarData = avatarRemoved ? null : existingAvatar;
+  if (!avatarRemoved) {
+    const avatarImg = document.querySelector('#pAvatarPreview img');
+    if (avatarImg && avatarImg.src.startsWith('data:')) avatarData = avatarImg.src;
+  }
 
   // Handle corporate photo
+  const corpPhotoRemoved = document.getElementById('pCorpPhotoRemove')?.value === '1';
   const existingCorpPhoto = editingId ? (data.people.find(x=>x.id===editingId)?.corpPhoto||null) : null;
-  let corpPhotoData = existingCorpPhoto;
-  const corpPhotoImg = document.querySelector('#pCorpPhotoPreview img');
-  if (corpPhotoImg && corpPhotoImg.src.startsWith('data:')) corpPhotoData = corpPhotoImg.src;
+  let corpPhotoData = corpPhotoRemoved ? null : existingCorpPhoto;
+  if (!corpPhotoRemoved) {
+    const corpPhotoImg = document.querySelector('#pCorpPhotoPreview img');
+    if (corpPhotoImg && corpPhotoImg.src.startsWith('data:')) corpPhotoData = corpPhotoImg.src;
+  }
 
   const person = {
     id: editingId || genId(),
@@ -2941,11 +2992,8 @@ function saveItem() {
     }
   }
 
-  if (editingId) {
-    const existing = data[currentTab].find(i=>i.id===editingId);
-    if (editPhotoAction==='keep') { doSave(existing?.img||null); return; }
-    if (editPhotoAction==='remove') { doSave(null); return; }
-  }
+  const removeFlag = document.getElementById('fImgRemove')?.value === '1';
+  if (removeFlag) { doSave(null); return; }
   if (fileInput&&fileInput.files&&fileInput.files[0]) {
     const reader = new FileReader();
     reader.onload = e => doSave(e.target.result);

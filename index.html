@@ -1564,10 +1564,26 @@ function renderPersonCard(p) {
     html += renderCounterSection();
   }
 
+  // Section collapse helper
+  const secId = () => 'sec_'+p.id+'_'+(Math.random()*1e6|0);
+  function collapsibleSection(icon, title, count, threshold, contentFn) {
+    const id = secId();
+    const collapsed = count >= threshold;
+    let h = `<div class="person-section"><div class="person-section-title" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;" onclick="event.stopPropagation();const b=document.getElementById('${id}');const t=this.querySelector('.sec-toggle');if(b.style.display==='none'){b.style.display='';t.textContent='▼';}else{b.style.display='none';t.textContent='▶';}">
+      <span>${icon} ${title}${count?' ('+count+')':''}</span>
+      <span class="sec-toggle" style="font-size:12px;color:var(--sub);">${collapsed?'▶':'▼'}</span>
+    </div>`;
+    h += `<div id="${id}" style="display:${collapsed?'none':''};">`;
+    h += contentFn();
+    h += '</div></div>';
+    return h;
+  }
+
   // Anniversaries
   const validAnns = (p.anniversaries||[]).filter(a => a.date);
   if (validAnns.length) {
-    html += `<div class="person-section"><div class="person-section-title" style="display:flex;align-items:center;justify-content:space-between;">📅 記念日 <div><span style="font-size:10px;padding:2px 8px;border-radius:8px;border:1px solid var(--border);cursor:pointer;background:var(--card);margin-right:4px;" onclick="event.stopPropagation();scrollToAnnSection()">📅 一覧へ</span><span style="font-size:10px;padding:2px 8px;border-radius:8px;border:1px solid var(--border);cursor:pointer;background:var(--card);" onclick="toggleElapsedMode()">${elapsedMode==='days'?'📆 日数':'📅 年数'} ↔</span></div></div>`;
+    html += collapsibleSection('📅', '記念日', validAnns.length, 3, () => {
+      let ah = `<div style="display:flex;gap:4px;margin-bottom:8px;justify-content:flex-end;"><span style="font-size:10px;padding:2px 8px;border-radius:8px;border:1px solid var(--border);cursor:pointer;background:var(--card);" onclick="event.stopPropagation();scrollToAnnSection()">📅 一覧へ</span><span style="font-size:10px;padding:2px 8px;border-radius:8px;border:1px solid var(--border);cursor:pointer;background:var(--card);" onclick="event.stopPropagation();toggleElapsedMode()">${elapsedMode==='days'?'📆 日数':'📅 年数'} ↔</span></div>`;
     validAnns.forEach(a => {
       const days = daysUntil(a.date, a.dateType);
       const badge = days!==null ? (days===0?'🎉 今日！':'あと'+days+'日') : '';
@@ -1591,7 +1607,8 @@ function renderPersonCard(p) {
         ${a.reminders&&a.reminders.length?`<div style="font-size:12px;color:var(--sub);margin-top:4px;">🔔 ${a.reminders.join(', ')}日前にリマインド</div>`:''}
       </div>`;
     });
-    html += '</div>';
+      return ah;
+    });
   }
   // Sizes
   const sizes = p.sizes||{};
@@ -1613,38 +1630,44 @@ function renderPersonCard(p) {
   }
   // Interests
   if (p.interests&&p.interests.length) {
-    html += `<div class="person-section"><div class="person-section-title">💖 好きなもの・趣味</div>
-    <div class="interest-tags">${p.interests.map(t=>`<span class="interest-tag">${esc(t)}</span>`).join('')}</div></div>`;
+    html += collapsibleSection('💖', '好きなもの・趣味', p.interests.length, 5, () =>
+      `<div class="interest-tags">${p.interests.map(t=>`<span class="interest-tag">${esc(t)}</span>`).join('')}</div>`);
   }
   // Brands
   if (p.brands&&p.brands.length) {
-    html += `<div class="person-section"><div class="person-section-title">🎨 ブランド・色</div>
-    <div class="interest-tags">${p.brands.map(t=>`<span class="interest-tag">${esc(t)}</span>`).join('')}</div></div>`;
+    html += collapsibleSection('🎨', 'ブランド・色', p.brands.length, 5, () =>
+      `<div class="interest-tags">${p.brands.map(t=>`<span class="interest-tag">${esc(t)}</span>`).join('')}</div>`);
   }
   // Oshi
   if (p.oshi&&p.oshi.length) {
-    html += `<div class="person-section"><div class="person-section-title">🌟 推し活</div>
-    <div class="interest-tags">${p.oshi.map(t=>`<span class="interest-tag" style="background:#fff0f5;border-color:#f0c0d0;color:#c06080;">${esc(t)}</span>`).join('')}</div></div>`;
+    html += collapsibleSection('🌟', '推し活', p.oshi.length, 5, () =>
+      `<div class="interest-tags">${p.oshi.map(t=>`<span class="interest-tag" style="background:#fff0f5;border-color:#f0c0d0;color:#c06080;">${esc(t)}</span>`).join('')}</div>`);
   }
   // Food
-  if ((p.foodLike&&p.foodLike.length)||(p.foodDislike&&p.foodDislike.length)) {
-    html += '<div class="person-section"><div class="person-section-title">🍽 食の好み</div><div class="interest-tags">';
-    (p.foodLike||[]).forEach(f => { html += `<span class="food-like">☺ ${esc(f)}</span>`; });
-    (p.foodDislike||[]).forEach(f => { html += `<span class="food-dislike">✗ ${esc(f)}</span>`; });
-    html += '</div></div>';
+  const foodCount = (p.foodLike?.length||0) + (p.foodDislike?.length||0);
+  if (foodCount) {
+    html += collapsibleSection('🍽', '食の好み', foodCount, 5, () => {
+      let fh = '<div class="interest-tags">';
+      (p.foodLike||[]).forEach(f => { fh += `<span class="food-like">☺ ${esc(f)}</span>`; });
+      (p.foodDislike||[]).forEach(f => { fh += `<span class="food-dislike">✗ ${esc(f)}</span>`; });
+      fh += '</div>';
+      return fh;
+    });
   }
   // Family
   if (p.family&&p.family.length) {
-    html += '<div class="person-section"><div class="person-section-title">👨‍👩‍👧 家族構成</div>';
-    p.family.forEach(f => {
-      html += `<div class="family-member"><div class="family-icon">👤</div><span>${esc(f.name)}</span><span class="family-note">${esc(f.note||'')}</span></div>`;
+    html += collapsibleSection('👨‍👩‍👧', '家族構成', p.family.length, 3, () => {
+      let fh = '';
+      p.family.forEach(f => {
+        fh += `<div class="family-member"><div class="family-icon">👤</div><span>${esc(f.name)}</span><span class="family-note">${esc(f.note||'')}</span></div>`;
+      });
+      return fh;
     });
-    html += '</div>';
   }
   // Personality
   if (p.personality&&p.personality.length) {
-    html += `<div class="person-section"><div class="person-section-title">✨ 個性</div>
-    <div class="interest-tags">${p.personality.map(t=>`<span class="personality-tag">${esc(t)}</span>`).join('')}</div></div>`;
+    html += collapsibleSection('✨', '個性', p.personality.length, 5, () =>
+      `<div class="interest-tags">${p.personality.map(t=>`<span class="personality-tag">${esc(t)}</span>`).join('')}</div>`);
   }
   // Memo
   if (p.memo) {
@@ -1667,11 +1690,13 @@ function renderPersonCard(p) {
     const catColors = {gave:'#fdeee9', received:'#e9f0fd', wish:'#f5f0ed', wantgive:'#fdf0ed', place:'#edf7fa'};
     const catTextColors = {gave:'#d48a7a', received:'#7a9ad4', wish:'#9e8e88', wantgive:'#e8a598', place:'#7ec8d9'};
     const catToTab = {gave:'gave', received:'received', wish:'wish', wantgive:'wish', place:'place'};
-    html += '<div class="person-section"><div class="person-section-title">📋 この人との記録</div>';
-    allHistory.sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,10).forEach(h => {
-      html += `<div class="history-item" onclick="event.stopPropagation();jumpToItem('${catToTab[h.cat]}','${h.id}')" style="cursor:pointer;"><span class="history-dir" style="background:${catColors[h.cat]};color:${catTextColors[h.cat]};">${catLabels[h.cat]}</span><span style="flex:1;">${esc(h.title)}</span><span class="history-date">${h.date||''}</span><span style="color:var(--accent);font-size:12px;margin-left:4px;">→</span></div>`;
+    html += collapsibleSection('📋', 'この人との記録', allHistory.length, 5, () => {
+      let rh = '';
+      allHistory.sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,10).forEach(h => {
+        rh += `<div class="history-item" onclick="event.stopPropagation();jumpToItem('${catToTab[h.cat]}','${h.id}')" style="cursor:pointer;"><span class="history-dir" style="background:${catColors[h.cat]};color:${catTextColors[h.cat]};">${catLabels[h.cat]}</span><span style="flex:1;">${esc(h.title)}</span><span class="history-date">${h.date||''}</span><span style="color:var(--accent);font-size:12px;margin-left:4px;">→</span></div>`;
+      });
+      return rh;
     });
-    html += '</div>';
   }
 
   // カウンターなし → 下部にさりげなく追加ボタン

@@ -633,7 +633,7 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 
 <script>
 // ===== Constants =====
-const APP_VERSION = '1.6';
+const APP_VERSION = '1.7';
 const STORAGE_KEY = 'awai_data';
 const SEASON_KEY = 'awai_season';
 const ANN_POPUP_KEY = 'awai_ann_popup_date';
@@ -2097,17 +2097,72 @@ function renderAnnSection() {
 }
 
 // ===== Update notification =====
+const UPDATE_CHECK_KEY = 'awai_last_update_check';
+const VERSION_URL = 'https://yoshi27-4314.github.io/gift-note/version.json';
+const CHECK_HOURS = [9, 19]; // 朝9時・夜7時にチェック
+
 function checkAppUpdate() {
+  // 起動時：前回ローカルバージョンと違えば即バナー（デプロイ直後対応）
   const lastVersion = localStorage.getItem(VERSION_KEY);
   if (lastVersion && lastVersion !== APP_VERSION) {
-    const banner = document.getElementById('updateBanner');
-    banner.innerHTML = `<div class="update-banner" onclick="location.reload()">
-      <span class="update-icon">🆕</span>
-      <span class="update-text">新しいバージョン(v${APP_VERSION})に更新されました。タップして反映してください。</span>
-      <span class="update-close" onclick="event.stopPropagation();this.parentElement.remove();">✕</span>
-    </div>`;
+    showUpdateBanner(APP_VERSION);
   }
   localStorage.setItem(VERSION_KEY, APP_VERSION);
+  // 定期チェック開始
+  scheduleUpdateCheck();
+}
+
+function shouldCheckNow() {
+  const now = new Date();
+  const hour = now.getHours();
+  const today = now.toISOString().split('T')[0];
+  const lastCheck = localStorage.getItem(UPDATE_CHECK_KEY) || '';
+  // チェック時間帯（9時台 or 19時台）かつ、今日のその時間帯でまだチェックしていない
+  for (const h of CHECK_HOURS) {
+    if (hour === h) {
+      const checkKey = today + '-' + h;
+      if (lastCheck !== checkKey) return checkKey;
+    }
+  }
+  return null;
+}
+
+async function fetchVersionCheck() {
+  try {
+    const res = await fetch(VERSION_URL + '?t=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) return;
+    const json = await res.json();
+    if (json.version && json.version !== APP_VERSION) {
+      showUpdateBanner(json.version);
+    }
+  } catch(e) { /* ネットワークエラーは無視 */ }
+}
+
+function showUpdateBanner(newVersion) {
+  const banner = document.getElementById('updateBanner');
+  if (!banner) return;
+  banner.innerHTML = `<div class="update-banner" onclick="location.reload()">
+    <span class="update-icon">🆕</span>
+    <span class="update-text">新しいバージョン(v${newVersion})があります。タップして更新してください。</span>
+    <span class="update-close" onclick="event.stopPropagation();this.parentElement.remove();">✕</span>
+  </div>`;
+}
+
+function scheduleUpdateCheck() {
+  // 5分ごとに「チェック時間帯か？」を確認（軽量な判定のみ）
+  setInterval(() => {
+    const checkKey = shouldCheckNow();
+    if (checkKey) {
+      localStorage.setItem(UPDATE_CHECK_KEY, checkKey);
+      fetchVersionCheck();
+    }
+  }, 5 * 60 * 1000);
+  // 起動時にもチェック時間帯なら即チェック
+  const checkKey = shouldCheckNow();
+  if (checkKey) {
+    localStorage.setItem(UPDATE_CHECK_KEY, checkKey);
+    fetchVersionCheck();
+  }
 }
 
 function render() {

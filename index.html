@@ -2627,8 +2627,10 @@ function showToast(msg) {
 }
 function savePerson() {
   if (_saving) return;
-  const nickname = document.getElementById('pNickname').value.trim();
-  if (!nickname) { alert('呼び名を入力してください'); return; }
+  const personType = document.getElementById('pType').value;
+  const isCorp = personType === 'corporate';
+  const nickname = isCorp ? '' : document.getElementById('pNickname').value.trim();
+  if (!isCorp && !nickname) { alert('呼び名を入力してください'); return; }
 
   // Collect anniversaries
   const annRows = document.querySelectorAll('.ann-row');
@@ -2658,8 +2660,6 @@ function savePerson() {
     if (el.value.trim()) family.push({name:el.value.trim(), note:famNotes[i]?.value.trim()||''});
   });
 
-  const personType = document.getElementById('pType').value;
-  const isCorp = personType === 'corporate';
   if (isCorp) {
     const corpNickname = document.getElementById('pCorpNickname').value.trim();
     if (!corpNickname) { alert('呼び名を入力してください'); return; }

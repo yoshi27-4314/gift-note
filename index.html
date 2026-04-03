@@ -3156,6 +3156,14 @@ function openSettings() {
       </div>
       <div class="form-hint" style="text-align:center;">紹介した人数: <strong id="referralCount">0</strong>人</div>
     </div>
+    <div class="form-group"><label>💾 データ管理</label>
+      <div class="form-hint" style="margin-bottom:8px;">大切なデータを守るため、定期的にバックアップしてください</div>
+      <div style="display:flex;gap:8px;">
+        <button class="card-btn" onclick="exportData()" style="font-size:14px;padding:8px 16px;">📥 バックアップ</button>
+        <button class="card-btn" onclick="document.getElementById('importFileInput').click()" style="font-size:14px;padding:8px 16px;">📤 復元</button>
+        <input type="file" id="importFileInput" accept=".json" style="display:none;" onchange="importData(event)">
+      </div>
+    </div>
     <div class="form-group"><label>コンシェルジュ（Gemini API Key）</label>
       <input id="setGeminiKey" type="password" placeholder="AIzaSy..." value="${localStorage.getItem(GEMINI_KEY_STORAGE)||''}">
       <div class="form-hint">Google AI Studioで無料発行 → 個人Gmailで作成推奨</div></div>
@@ -3432,6 +3440,70 @@ function saveMyProfile() {
   localStorage.setItem(MY_PROFILE_KEY, JSON.stringify(profile));
   closeModal();
   showToast('プロフィールを保存しました ✓');
+}
+
+// ===== Data Export / Import =====
+function exportData() {
+  try {
+    const exportObj = {
+      awai_data: JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'),
+      awai_my_profile: JSON.parse(localStorage.getItem('awai_my_profile') || 'null'),
+      awai_season: localStorage.getItem(SEASON_KEY),
+      awai_fontsize: localStorage.getItem(FONTSIZE_KEY),
+      awai_pin: localStorage.getItem(PIN_KEY),
+      awai_lock_method: localStorage.getItem(LOCK_METHOD_KEY),
+      awai_elapsed_mode: localStorage.getItem('awai_elapsed_mode'),
+      export_date: new Date().toISOString(),
+      version: APP_VERSION
+    };
+    const json = JSON.stringify(exportObj, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const dateStr = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = 'awai_backup_' + dateStr + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('バックアップを保存しました ✓');
+  } catch(e) {
+    console.error('Export error:', e);
+    alert('バックアップに失敗しました: ' + e.message);
+  }
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const imported = JSON.parse(e.target.result);
+      if (!imported.awai_data) {
+        alert('AWAIのバックアップファイルではありません');
+        return;
+      }
+      if (!confirm('現在のデータを上書きします。よろしいですか？')) return;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(imported.awai_data));
+      if (imported.awai_my_profile) localStorage.setItem('awai_my_profile', JSON.stringify(imported.awai_my_profile));
+      if (imported.awai_season) localStorage.setItem(SEASON_KEY, imported.awai_season);
+      if (imported.awai_fontsize) localStorage.setItem(FONTSIZE_KEY, imported.awai_fontsize);
+      if (imported.awai_pin) localStorage.setItem(PIN_KEY, imported.awai_pin);
+      if (imported.awai_lock_method) localStorage.setItem(LOCK_METHOD_KEY, imported.awai_lock_method);
+      if (imported.awai_elapsed_mode) localStorage.setItem('awai_elapsed_mode', imported.awai_elapsed_mode);
+      loadData();
+      renderList();
+      showToast('データを復元しました ✓');
+      document.getElementById('settingsModalOverlay').classList.remove('open');
+    } catch(err) {
+      console.error('Import error:', err);
+      alert('ファイルの読み込みに失敗しました: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
 }
 
 function saveSettings() {

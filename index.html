@@ -1638,20 +1638,11 @@ function renderPersonCard(p) {
   });
   data.place.forEach(item => { if (nameMatch(item.person) || (item.memo && p.nickname && item.memo.includes(p.nickname))) allHistory.push({...item, cat:'place'}); });
 
-  if (allHistory.length) {
-    const catLabels = {gave:'🎁 あげた', received:'🎀 もらった', wish:'💭 気になる', wantgive:'🎁 あげたい', place:'📍 行きたい'};
-    const catColors = {gave:'#fdeee9', received:'#e9f0fd', wish:'#f5f0ed', wantgive:'#fdf0ed', place:'#edf7fa'};
-    const catTextColors = {gave:'#d48a7a', received:'#7a9ad4', wish:'#9e8e88', wantgive:'#e8a598', place:'#7ec8d9'};
-    const catToTab = {gave:'gave', received:'received', wish:'wish', wantgive:'wish', place:'place'};
-    html += '<div class="person-section"><div class="person-section-title">📋 この人との記録</div>';
-    allHistory.sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,10).forEach(h => {
-      html += `<div class="history-item" onclick="event.stopPropagation();jumpToItem('${catToTab[h.cat]}','${h.id}')" style="cursor:pointer;"><span class="history-dir" style="background:${catColors[h.cat]};color:${catTextColors[h.cat]};">${catLabels[h.cat]}</span><span style="flex:1;">${esc(h.title)}</span><span class="history-date">${h.date||''}</span><span style="color:var(--accent);font-size:12px;margin-left:4px;">→</span></div>`;
-    });
-    html += '</div>';
-  }
-  // Counters
+  // Counters (上部に配置・折りたたみ)
   const counters = p.counters||[];
-  html += '<div class="person-section"><div class="person-section-title">🔢 カウンター</div>';
+  const counterCount = counters.reduce((s,c)=>s+(c.count||0),0);
+  html += `<div class="person-section"><div class="person-section-title" style="cursor:pointer;" onclick="event.stopPropagation();toggleCounterSection('${p.id}')">🔢 カウンター${counterCount?' ('+counterCount+')':''} <span id="counterToggle_${p.id}" style="font-size:12px;color:var(--sub);">▶</span></div>`;
+  html += `<div id="counterBody_${p.id}" style="display:none;">`;
   if (!counters.length) {
     html += `<div style="font-size:13px;color:var(--sub);padding:8px 0;">カウンターを追加して、大切な記録を数えましょう</div>`;
     html += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
@@ -1671,7 +1662,19 @@ function renderPersonCard(p) {
     html += `<div id="counterLog_${p.id}_${ci}" style="display:none;padding:4px 0 8px;font-size:12px;color:var(--sub);"></div>`;
   });
   html += `<div class="add-btn" style="margin-top:8px;" onclick="event.stopPropagation();promptAddCounter('${p.id}')">＋ カウンターを追加</div>`;
-  html += '</div>';
+  html += '</div></div>';
+
+  if (allHistory.length) {
+    const catLabels = {gave:'🎁 あげた', received:'🎀 もらった', wish:'💭 気になる', wantgive:'🎁 あげたい', place:'📍 行きたい'};
+    const catColors = {gave:'#fdeee9', received:'#e9f0fd', wish:'#f5f0ed', wantgive:'#fdf0ed', place:'#edf7fa'};
+    const catTextColors = {gave:'#d48a7a', received:'#7a9ad4', wish:'#9e8e88', wantgive:'#e8a598', place:'#7ec8d9'};
+    const catToTab = {gave:'gave', received:'received', wish:'wish', wantgive:'wish', place:'place'};
+    html += '<div class="person-section"><div class="person-section-title">📋 この人との記録</div>';
+    allHistory.sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,10).forEach(h => {
+      html += `<div class="history-item" onclick="event.stopPropagation();jumpToItem('${catToTab[h.cat]}','${h.id}')" style="cursor:pointer;"><span class="history-dir" style="background:${catColors[h.cat]};color:${catTextColors[h.cat]};">${catLabels[h.cat]}</span><span style="flex:1;">${esc(h.title)}</span><span class="history-date">${h.date||''}</span><span style="color:var(--accent);font-size:12px;margin-left:4px;">→</span></div>`;
+    });
+    html += '</div>';
+  }
 
   html += `<hr style="border:none;border-top:1px solid var(--border);margin:20px 0 16px;">
   <div class="person-actions">
@@ -3810,6 +3813,19 @@ function registerFromQR() {
 }
 
 // ===== Counters =====
+function toggleCounterSection(personId) {
+  const body = document.getElementById('counterBody_' + personId);
+  const toggle = document.getElementById('counterToggle_' + personId);
+  if (!body) return;
+  if (body.style.display === 'none') {
+    body.style.display = '';
+    if (toggle) toggle.textContent = '▼';
+  } else {
+    body.style.display = 'none';
+    if (toggle) toggle.textContent = '▶';
+  }
+}
+
 function addCounter(personId, name) {
   const p = data.people.find(x=>x.id===personId);
   if (!p) return;
@@ -4240,7 +4256,7 @@ function checkBackupReminder() {
 function showBackupBanner(msg) {
   const banner = document.getElementById('backupBanner');
   if (!banner) return;
-  banner.innerHTML = `<div class="update-banner" style="background:linear-gradient(135deg,#fff3e0,#ffe0b2);border-color:#ffb74d;" onclick="openSettings()">
+  banner.innerHTML = `<div class="update-banner" style="background:linear-gradient(135deg,#fff3e0,#ffe0b2);border-color:#ffb74d;" onclick="exportData()">
     <span class="update-icon">💾</span>
     <span class="update-text" style="color:#e65100;">${msg}。タップしてバックアップしてください。</span>
     <span class="update-close" style="color:#ffb74d;" onclick="event.stopPropagation();this.parentElement.remove();">✕</span>

@@ -1446,8 +1446,8 @@ function renderPersonCard(p) {
   // Corporate members (people linked to this company)
   if (isCorp) {
     const members = data.people.filter(x => x.type!=='corporate' && x.companyLink && (x.companyLink===p.nickname || (p.corpNickname && x.companyLink===p.corpNickname) || (p.corpFullName && x.companyLink===p.corpFullName)));
+    html += '<div class="person-section"><div class="person-section-title">👥 所属メンバー</div>';
     if (members.length) {
-      html += '<div class="person-section"><div class="person-section-title">👥 所属メンバー</div>';
       members.forEach(m => {
         const icon = personIcon(m);
         html += `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;" onclick="event.stopPropagation();jumpToPerson('${m.id}')">
@@ -1456,10 +1456,13 @@ function renderPersonCard(p) {
             <div style="font-size:14px;font-weight:600;color:var(--accent);text-decoration:underline;">${esc(m.nickname)}</div>
             ${m.position?`<div style="font-size:12px;color:var(--sub);">${esc(m.position)}</div>`:''}
           </div>
+          <span style="font-size:14px;color:#c97070;cursor:pointer;padding:4px 8px;" onclick="event.stopPropagation();unlinkMember('${m.id}','${p.id}')">✕</span>
         </div>`;
       });
-      html += '</div>';
+    } else {
+      html += '<div style="font-size:13px;color:var(--sub);padding:4px 0;">まだメンバーがいません</div>';
     }
+    html += `<div class="add-btn" onclick="event.stopPropagation();openAddMemberModal('${p.id}','${esc(p.nickname)}')">＋ メンバーを追加</div></div>`;
   }
   // Corporate seasonal gifts
   if (p.chugen||p.seibo) {
@@ -1999,6 +2002,64 @@ function showAnnPopup() {
 function closeAnnPopup() {
   const el = document.getElementById('annPopupOverlay');
   if (el) el.remove();
+}
+
+function openAddMemberModal(corpId, corpName) {
+  const corp = data.people.find(x=>x.id===corpId);
+  if (!corp) return;
+  const modal = document.getElementById('modal');
+  const alreadyLinked = data.people.filter(x => x.type!=='corporate' && x.companyLink && (x.companyLink===corp.nickname || (corp.corpNickname && x.companyLink===corp.corpNickname) || (corp.corpFullName && x.companyLink===corp.corpFullName)));
+  const linkedIds = alreadyLinked.map(m=>m.id);
+  const candidates = data.people.filter(x => x.type!=='corporate' && !linkedIds.includes(x.id));
+
+  let html = `<h2>👥 ${esc(corp.nickname)} にメンバーを追加</h2>`;
+  if (!candidates.length) {
+    html += '<div style="padding:12px;color:var(--sub);text-align:center;">追加できる個人がいません<br>先に個人を登録してください</div>';
+  } else {
+    html += '<div style="max-height:60dvh;overflow-y:auto;">';
+    candidates.forEach(c => {
+      const icon = personIcon(c);
+      html += `<div style="display:flex;align-items:center;gap:10px;padding:10px 8px;border-bottom:1px solid var(--border);cursor:pointer;" onclick="linkMember('${c.id}','${corpId}')">
+        <div style="width:36px;height:36px;border-radius:50%;background:${icon.bg};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">${icon.emoji}</div>
+        <div style="flex:1;">
+          <div style="font-size:15px;font-weight:600;">${esc(c.nickname)}</div>
+          ${c.relation?`<div style="font-size:12px;color:var(--sub);">${esc(c.relation)}</div>`:''}
+        </div>
+        <span style="font-size:13px;color:var(--accent);">追加 →</span>
+      </div>`;
+    });
+    html += '</div>';
+  }
+  html += `<div class="form-btns"><button class="btn btn-secondary" onclick="closeModal()">閉じる</button></div>`;
+  modal.innerHTML = html;
+  openModal();
+}
+
+function linkMember(personId, corpId) {
+  const person = data.people.find(x=>x.id===personId);
+  const corp = data.people.find(x=>x.id===corpId);
+  if (!person || !corp) return;
+  person.companyLink = corp.nickname;
+  saveData();
+  closeModal();
+  openPersonId = corpId;
+  render();
+  showToast(person.nickname + ' を追加しました ✓');
+  setTimeout(() => {
+    const detail = document.getElementById('personDetail');
+    if (detail) detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 150);
+}
+
+function unlinkMember(personId, corpId) {
+  const person = data.people.find(x=>x.id===personId);
+  if (!person) return;
+  if (!confirm(person.nickname + ' を所属メンバーから外しますか？')) return;
+  person.companyLink = null;
+  saveData();
+  openPersonId = corpId;
+  render();
+  showToast(person.nickname + ' を外しました');
 }
 
 function scrollToAnnSection() {

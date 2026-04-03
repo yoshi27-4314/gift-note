@@ -3291,6 +3291,13 @@ function openSettings() {
         <div class="fsz-btn" data-sz="large" style="flex:1;padding:12px;text-align:center;border-radius:12px;border:2px solid ${currentSize==='large'?'var(--accent)':'var(--border)'};cursor:pointer;font-size:17px;" onclick="setFontSize('large')">大きめ</div>
         <div class="fsz-btn" data-sz="xlarge" style="flex:1;padding:12px;text-align:center;border-radius:12px;border:2px solid ${currentSize==='xlarge'?'var(--accent)':'var(--border)'};cursor:pointer;font-size:20px;" onclick="setFontSize('xlarge')">特大</div>
       </div></div>
+    <div class="form-group"><label>🤍 プロフィール交換</label>
+      <div class="form-hint" style="margin-bottom:8px;">QRコードで大切な人と情報を交換できます</div>
+      <div style="display:flex;gap:8px;">
+        <button class="card-btn" onclick="document.getElementById('settingsModalOverlay').classList.remove('open');openProfileShareScreen()" style="font-size:14px;padding:8px 16px;">📤 QRを表示</button>
+        <button class="card-btn" onclick="document.getElementById('settingsModalOverlay').classList.remove('open');openQRScanner()" style="font-size:14px;padding:8px 16px;">📷 QR読み取り</button>
+      </div>
+    </div>
     <div class="form-group"><label>👤 マイプロフィール</label>
       <div class="form-hint" style="margin-bottom:8px;">自分の情報を登録しておくとコンシェルジュAIが活用します</div>
       <button class="card-btn" onclick="document.getElementById('settingsModalOverlay').classList.remove('open');openMyProfile()" style="font-size:14px;padding:8px 20px;">✏️ プロフィールを編集</button>
@@ -3546,6 +3553,9 @@ function openMyProfile() {
   // Memo
   html += `<div class="form-group"><label>📝 メモ</label><textarea id="myMemo" placeholder="自由にメモ">${esc(p.memo||'')}</textarea></div>`;
 
+  html += `<div class="form-group" style="text-align:center;padding-top:8px;">
+    <button class="card-btn" onclick="event.stopPropagation();openProfileShareScreen()" style="font-size:14px;padding:10px 24px;background:var(--accent-light);border-color:var(--accent);">🤍 プロフィールをQRで共有</button>
+  </div>`;
   html += `<div class="form-btns"><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button><button class="btn btn-primary" onclick="saveMyProfile()">保存</button></div>`;
   modal.innerHTML = html;
   openModal();
@@ -3606,6 +3616,197 @@ function saveMyProfile() {
   localStorage.setItem(MY_PROFILE_KEY, JSON.stringify(profile));
   closeModal();
   showToast('プロフィールを保存しました ✓');
+}
+
+// ===== QR Profile Exchange =====
+function openProfileShareScreen() {
+  const p = getMyProfile();
+  if (!p.name) { alert('先にマイプロフィールの名前を保存してください'); return; }
+  closeModal();
+  const modal = document.getElementById('modal');
+  const sz = p.sizes||{};
+  const hasSizes = sz.tops||sz.bottoms||sz.shoes||sz.ring;
+
+  let html = `<h2>🤍 プロフィール共有</h2>`;
+  html += `<p style="font-size:13px;color:var(--sub);text-align:center;margin-bottom:16px;">共有する情報を選んでください</p>`;
+  html += `<div style="padding:0 4px;">`;
+  html += `<label style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--border);"><input type="checkbox" id="qsName" checked disabled><span>名前（${esc(p.name)}）</span><span style="font-size:11px;color:var(--sub);margin-left:auto;">必須</span></label>`;
+
+  const birthday = (p.anniversaries||[]).find(a=>a.name&&a.name.includes('誕生日'));
+  if (birthday?.date) {
+    html += `<label style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--border);"><input type="checkbox" id="qsBirthday" checked><span>誕生日（${birthday.date}）</span></label>`;
+  }
+  if (p.interests?.length) {
+    html += `<label style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--border);"><input type="checkbox" id="qsInterests" checked><span>好きなもの（${p.interests.join(', ')}）</span></label>`;
+  }
+  if (p.foodLike?.length || p.foodDislike?.length) {
+    html += `<label style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--border);"><input type="checkbox" id="qsFood" checked><span>食の好み</span></label>`;
+  }
+  if (p.brands?.length) {
+    html += `<label style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--border);"><input type="checkbox" id="qsBrands"><span>ブランド（${p.brands.join(', ')}）</span></label>`;
+  }
+  if (hasSizes) {
+    html += `<label style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--border);"><input type="checkbox" id="qsSizes"><span>サイズ</span></label>`;
+  }
+  if (p.smoking || p.drinking) {
+    html += `<label style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--border);"><input type="checkbox" id="qsHabits"><span>嗜好品</span></label>`;
+  }
+  html += `</div>`;
+  html += `<div style="text-align:center;margin-top:20px;">
+    <button class="btn btn-primary" onclick="generateProfileQR()" style="padding:14px 32px;">QRコードを表示</button>
+  </div>`;
+  html += `<div id="profileQRResult" style="text-align:center;margin-top:16px;"></div>`;
+  html += `<div class="form-btns" style="margin-top:16px;"><button class="btn btn-secondary" onclick="closeModal()">閉じる</button></div>`;
+  modal.innerHTML = html;
+  openModal();
+}
+
+function generateProfileQR() {
+  const p = getMyProfile();
+  const shareData = { n: p.name };
+
+  const birthday = (p.anniversaries||[]).find(a=>a.name&&a.name.includes('誕生日'));
+  if (document.getElementById('qsBirthday')?.checked && birthday?.date) shareData.b = birthday.date;
+  if (document.getElementById('qsInterests')?.checked && p.interests?.length) shareData.i = p.interests;
+  if (document.getElementById('qsFood')?.checked) {
+    if (p.foodLike?.length) shareData.fl = p.foodLike;
+    if (p.foodDislike?.length) shareData.fd = p.foodDislike;
+  }
+  if (document.getElementById('qsBrands')?.checked && p.brands?.length) shareData.br = p.brands;
+  if (document.getElementById('qsSizes')?.checked) {
+    const sz = p.sizes||{};
+    const sizes = {};
+    if (sz.tops) sizes.t = sz.tops;
+    if (sz.bottoms) sizes.bo = sz.bottoms;
+    if (sz.shoes) sizes.s = sz.shoes;
+    if (sz.ring) sizes.r = sz.ring;
+    if (Object.keys(sizes).length) shareData.sz = sizes;
+  }
+  if (document.getElementById('qsHabits')?.checked) {
+    if (p.smoking) shareData.sm = p.smoking;
+    if (p.drinking) shareData.dr = p.drinking;
+  }
+
+  const json = JSON.stringify(shareData);
+  const area = document.getElementById('profileQRResult');
+  try {
+    const qr = qrcode(0, 'M');
+    qr.addData(json);
+    qr.make();
+    area.innerHTML = qr.createSvgTag(4, 0);
+    area.querySelector('svg').style.maxWidth = '200px';
+    area.querySelector('svg').style.margin = '0 auto';
+    area.querySelector('svg').style.display = 'block';
+    area.innerHTML += `<div style="font-size:12px;color:var(--sub);margin-top:12px;">相手のAWAIで「QR読み取り」を押してもらってください</div>`;
+  } catch(e) {
+    // Data too large for QR
+    area.innerHTML = '<div style="color:#c97070;font-size:13px;">データが多すぎてQRに収まりません。共有項目を減らしてください。</div>';
+  }
+}
+
+function openQRScanner() {
+  const modal = document.getElementById('modal');
+  let html = `<h2>🤍 QR読み取り</h2>`;
+  html += `<p style="font-size:13px;color:var(--sub);text-align:center;margin-bottom:16px;">相手のQRコードをカメラで読み取ります</p>`;
+  html += `<div style="text-align:center;">
+    <input type="file" id="qrScanInput" accept="image/*" capture="environment" style="display:none;" onchange="processQRImage(this)">
+    <button class="btn btn-primary" onclick="document.getElementById('qrScanInput').click()" style="padding:14px 32px;">📷 カメラで読み取る</button>
+  </div>`;
+  html += `<div style="text-align:center;margin-top:12px;">
+    <div class="form-hint">または、QRコードのデータを貼り付け：</div>
+    <textarea id="qrManualInput" placeholder='QRコードの内容を貼り付け' style="margin-top:8px;width:100%;height:60px;font-size:13px;"></textarea>
+    <button class="card-btn" onclick="processQRManual()" style="margin-top:8px;">読み込む</button>
+  </div>`;
+  html += `<div id="qrScanResult" style="margin-top:16px;"></div>`;
+  html += `<div class="form-btns" style="margin-top:16px;"><button class="btn btn-secondary" onclick="closeModal()">閉じる</button></div>`;
+  modal.innerHTML = html;
+  openModal();
+}
+
+function processQRImage(input) {
+  if (!input.files||!input.files[0]) return;
+  // Use canvas to decode - simple approach: rely on manual paste for now
+  const area = document.getElementById('qrScanResult');
+  area.innerHTML = `<div style="font-size:13px;color:var(--sub);text-align:center;">
+    カメラで撮影した場合は、QRリーダーアプリで読み取った結果を下の欄に貼り付けてください。
+  </div>`;
+}
+
+function processQRManual() {
+  const raw = document.getElementById('qrManualInput')?.value.trim();
+  if (!raw) return;
+  try {
+    const d = JSON.parse(raw);
+    if (!d.n) { alert('AWAIのプロフィールデータではありません'); return; }
+    showQRRegistration(d);
+  } catch(e) {
+    alert('データの読み込みに失敗しました');
+  }
+}
+
+function showQRRegistration(d) {
+  const area = document.getElementById('qrScanResult');
+  let info = `<div style="font-size:15px;font-weight:600;margin-bottom:8px;">${esc(d.n)} さんの情報を受け取りました</div>`;
+  if (d.b) info += `<div style="font-size:13px;color:var(--sub);">誕生日：${d.b}</div>`;
+  if (d.i) info += `<div style="font-size:13px;color:var(--sub);">好きなもの：${d.i.join(', ')}</div>`;
+  if (d.fl) info += `<div style="font-size:13px;color:var(--sub);">好きな食べ物：${d.fl.join(', ')}</div>`;
+  if (d.fd) info += `<div style="font-size:13px;color:var(--sub);">苦手な食べ物：${d.fd.join(', ')}</div>`;
+
+  info += `<div style="margin-top:16px;"><label style="font-size:14px;font-weight:600;">あなたはこの人を何と呼びますか？</label>
+    <input id="qrNickname" placeholder="${esc(d.n)}" style="width:100%;margin-top:8px;padding:12px;border:1px solid var(--border);border-radius:12px;font-size:15px;">
+    </div>`;
+  info += `<div style="text-align:center;margin-top:16px;">
+    <button class="btn btn-primary" onclick="registerFromQR()" style="padding:14px 32px;">登録する</button>
+  </div>`;
+
+  area.innerHTML = info;
+  area._qrData = d;
+}
+
+function registerFromQR() {
+  const area = document.getElementById('qrScanResult');
+  const d = area._qrData;
+  if (!d) return;
+  const nickname = document.getElementById('qrNickname').value.trim();
+  if (!nickname) { alert('呼び名を入力してください'); return; }
+
+  const person = {
+    id: genId(), nickname, type: 'individual', gender: 'unset',
+    avatar: null, fullName: d.n !== nickname ? d.n : null,
+    relation: null, companyLink: null, position: null,
+    anniversaries: [], sizes: {},
+    smoking: d.sm||null, drinking: d.dr||null,
+    interests: d.i||[], brands: d.br||[],
+    foodLike: d.fl||[], foodDislike: d.fd||[],
+    personality: [], family: [], oshi: [],
+    corpPhoto: null, memo: null
+  };
+
+  if (d.b) {
+    const parts = d.b.split('-').map(Number);
+    person.anniversaries = [{
+      name: '🎂 誕生日',
+      date: d.b,
+      dateType: parts.length >= 3 ? 'full' : 'monthday',
+      repeat: 'yearly',
+      reminders: [30]
+    }];
+  }
+
+  if (d.sz) {
+    person.sizes = {
+      tops: d.sz.t||null, bottoms: d.sz.bo||null,
+      shoes: d.sz.s||null, ring: d.sz.r||null
+    };
+  }
+
+  data.people.push(person);
+  saveData();
+  closeModal();
+  currentTab = 'people';
+  currentLabel = null;
+  render();
+  showToast(nickname + 'さんを登録しました ✓');
 }
 
 // ===== Counters =====

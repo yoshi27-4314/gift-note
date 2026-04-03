@@ -855,6 +855,8 @@ function formatElapsed(days) {
 
 // ===== Search =====
 function matchesSearch(item, tab) {
+  // 検索時、大切な人タブでは非表示の人を除外（非表示フィルター以外）
+  if (searchQuery && tab === 'people' && item.hidden && currentLabel !== 'hidden') return false;
   if (!searchQuery) return true;
   const q = searchQuery.toLowerCase();
   const fields = [item.title, item.nickname, item.name, item.description, item.person, item.memo, item.fullName, item.relation,
@@ -1579,20 +1581,27 @@ function renderPersonCard(p) {
     return h;
   }
 
-  // Anniversaries
-  const validAnns = (p.anniversaries||[]).filter(a => a.date);
+  // Anniversaries (あと何日が近い順にソート)
+  const validAnns = (p.anniversaries||[]).filter(a => a.date).map((a,i) => ({...a, _idx:i, _days: daysUntil(a.date, a.dateType)}));
+  validAnns.sort((a,b) => {
+    if (a._days===null && b._days===null) return 0;
+    if (a._days===null) return 1;
+    if (b._days===null) return -1;
+    return a._days - b._days;
+  });
   if (validAnns.length) {
     html += collapsibleSection('📅', '記念日', validAnns.length, 3, () => {
       let ah = `<div style="display:flex;gap:4px;margin-bottom:8px;justify-content:flex-end;"><span style="font-size:10px;padding:2px 8px;border-radius:8px;border:1px solid var(--border);cursor:pointer;background:var(--card);" onclick="event.stopPropagation();scrollToAnnSection()">📅 一覧へ</span><span style="font-size:10px;padding:2px 8px;border-radius:8px;border:1px solid var(--border);cursor:pointer;background:var(--card);" onclick="event.stopPropagation();toggleElapsedMode()">${elapsedMode==='days'?'📆 日数':'📅 年数'} ↔</span></div>`;
     validAnns.forEach(a => {
-      const days = daysUntil(a.date, a.dateType);
+      const days = a._days;
       const badge = days!==null ? (days===0?'🎉 今日！':'あと'+days+'日') : '';
       const elapsed = daysSince(a.date, a.dateType);
       const elapsedStr = elapsed!==null ? formatElapsed(elapsed) : '';
       const emoji = a.name.match(/[\p{Emoji}]/u)?a.name.match(/[\p{Emoji}]/u)[0]:'📅';
       const label = a.name.replace(/[\p{Emoji}]/gu,'').trim();
+      const remOn = a.reminders && a.reminders.length > 0;
 
-      html += `<div style="background:var(--bg);border-radius:12px;padding:10px 12px;margin-bottom:8px;">
+      ah += `<div style="background:var(--bg);border-radius:12px;padding:10px 12px;margin-bottom:8px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
           <div style="display:flex;align-items:center;gap:6px;">
             <span style="font-size:18px;">${emoji}</span>
@@ -1604,7 +1613,13 @@ function renderPersonCard(p) {
           ${formatAnnDate(a.date,a.dateType)}${a.dateType==='month'?' <span style="font-size:12px;color:var(--sub);">（月のみ）</span>':''}
         </div>
         ${elapsedStr?`<div style="font-size:14px;font-weight:600;color:var(--accent);margin-top:4px;">${elapsedStr}</div>`:''}
-        ${a.reminders&&a.reminders.length?`<div style="font-size:12px;color:var(--sub);margin-top:4px;">🔔 ${a.reminders.join(', ')}日前にリマインド</div>`:''}
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;">
+          <span style="font-size:12px;color:var(--sub);">🔔 ${remOn?a.reminders.join(', ')+'日前にリマインド':'リマインドOFF'}</span>
+          <label style="font-size:11px;color:var(--sub);display:flex;align-items:center;gap:4px;cursor:pointer;" onclick="event.stopPropagation();">
+            <input type="checkbox" ${remOn?'checked':''} onchange="event.stopPropagation();toggleAnnReminder('${p.id}',${a._idx},this.checked)">
+            <span>${remOn?'ON':'OFF'}</span>
+          </label>
+        </div>
       </div>`;
     });
       return ah;
@@ -1718,6 +1733,7 @@ function renderPersonCard(p) {
     ${!p.isMemory?`<button class="card-btn" onclick="event.stopPropagation();openAiSuggest('${p.id}')" style="background:var(--pickup);border-color:var(--pickup-border);">💡 コンシェルジュ</button>`:''}
     ${!p.isMemory?`<button class="card-btn" onclick="event.stopPropagation();moveToMemory('${p.id}')" style="background:#f5f0eb;border-color:#c5c0ba;">🤍 記憶に移す</button>`:''}
     ${p.isMemory?`<button class="card-btn" onclick="event.stopPropagation();restoreFromMemory('${p.id}')" style="background:#f0f8ff;border-color:#90caf9;">↩ 戻す</button>`:''}
+    <button class="card-btn" onclick="event.stopPropagation();toggleHidden('${p.id}')" style="background:${p.hidden?'#e8f5e9':'#f5f5f5'};border-color:${p.hidden?'#a5d6a7':'#ccc'};">${p.hidden?'👁 表示する':'👁‍🗨 非表示'}</button>
     <button class="card-btn delete" onclick="event.stopPropagation();deleteItem('people','${p.id}')">🗑 削除</button>
   </div></div>`;
   return html;
@@ -2505,11 +2521,22 @@ function render() {
       cardList.innerHTML = `<div class="empty-msg">${msg}<br>下の ＋ ボタンから追加できます</div>`;
       return;
     }
-    const sortedPeople = [...filteredPeople].sort((a,b) => {
+    const visiblePeople = filteredPeople.filter(p=>!p.hidden);
+    const hiddenPeople = filteredPeople.filter(p=>p.hidden);
+    const sortedPeople = [...visiblePeople].sort((a,b) => {
       if (a.pinned&&!b.pinned) return -1; if (!a.pinned&&b.pinned) return 1;
       return (a.nickname||'').localeCompare(b.nickname||'', 'ja');
     });
-    cardList.innerHTML = sortedPeople.map(p => renderPersonListItem(p)).join('');
+    let peopleHtml = sortedPeople.map(p => renderPersonListItem(p)).join('');
+    if (hiddenPeople.length) {
+      const hid = 'hiddenPeople_'+Math.random().toString(36).slice(2);
+      peopleHtml += `<div style="margin-top:12px;padding:8px 12px;cursor:pointer;color:var(--sub);font-size:13px;text-align:center;border:1px dashed var(--border);border-radius:12px;" onclick="const b=document.getElementById('${hid}');const t=this;if(b.style.display==='none'){b.style.display='';t.textContent='▲ 非表示を閉じる (${hiddenPeople.length}人)';}else{b.style.display='none';t.textContent='▼ 非表示を表示 (${hiddenPeople.length}人)';}">▼ 非表示を表示 (${hiddenPeople.length}人)</div>`;
+      peopleHtml += `<div id="${hid}" style="display:none;">`;
+      const sortedHidden = [...hiddenPeople].sort((a,b) => (a.nickname||'').localeCompare(b.nickname||'', 'ja'));
+      peopleHtml += sortedHidden.map(p => renderPersonListItem(p)).join('');
+      peopleHtml += '</div>';
+    }
+    cardList.innerHTML = peopleHtml;
     // If a person detail is open, show it
     if (openPersonId) {
       const person = data.people.find(x=>x.id===openPersonId);
@@ -3923,6 +3950,32 @@ function registerFromQR() {
 }
 
 // ===== Counters =====
+function toggleHidden(personId) {
+  const p = data.people.find(x=>x.id===personId);
+  if (!p) return;
+  p.hidden = !p.hidden;
+  saveData();
+  openPersonId = null;
+  render();
+  showToast(p.hidden ? '非表示にしました' : '表示に戻しました');
+}
+
+function toggleAnnReminder(personId, annIdx, checked) {
+  const p = data.people.find(x=>x.id===personId);
+  if (!p || !p.anniversaries || !p.anniversaries[annIdx]) return;
+  if (checked) {
+    p.anniversaries[annIdx].reminders = [30];
+  } else {
+    p.anniversaries[annIdx].reminders = [];
+  }
+  saveData();
+  render();
+  if (openPersonId) setTimeout(() => {
+    const detail = document.getElementById('personDetail');
+    if (detail) detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 100);
+}
+
 function toggleCounterSection(personId) {
   const body = document.getElementById('counterBody_' + personId);
   const toggle = document.getElementById('counterToggle_' + personId);

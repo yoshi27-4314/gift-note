@@ -1428,6 +1428,7 @@ function renderItemCard(item, tab, rank) {
 function renderPersonCard(p) {
   let html = '<div class="person-card">';
   const isCorp = p.type==='corporate';
+  html += `<div style="padding:8px 16px 0;"><span style="font-size:12px;color:var(--accent);cursor:pointer;" onclick="event.stopPropagation();openPersonId=null;render();window.scrollTo({top:0,behavior:'smooth'});">← 一覧に戻る</span></div>`;
   html += `<div class="person-header">
     <div class="person-avatar${isCorp?' biz-avatar':''}" style="overflow:hidden;background:${p.avatar?'':personIcon(p).bg};">${p.avatar?`<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;">`:(personIcon(p).emoji)}</div>
     <div><div class="person-nickname">${esc(p.nickname||'名前なし')}</div>
@@ -1469,9 +1470,10 @@ function renderPersonCard(p) {
     html += '</div>';
   }
   // Anniversaries
-  if (p.anniversaries&&p.anniversaries.length) {
+  const validAnns = (p.anniversaries||[]).filter(a => a.date);
+  if (validAnns.length) {
     html += `<div class="person-section"><div class="person-section-title" style="display:flex;align-items:center;justify-content:space-between;">📅 記念日 <div><span style="font-size:10px;padding:2px 8px;border-radius:8px;border:1px solid var(--border);cursor:pointer;background:var(--card);margin-right:4px;" onclick="event.stopPropagation();scrollToAnnSection()">📅 一覧へ</span><span style="font-size:10px;padding:2px 8px;border-radius:8px;border:1px solid var(--border);cursor:pointer;background:var(--card);" onclick="toggleElapsedMode()">${elapsedMode==='days'?'📆 日数':'📅 年数'} ↔</span></div></div>`;
-    p.anniversaries.forEach(a => {
+    validAnns.forEach(a => {
       const days = daysUntil(a.date, a.dateType);
       const badge = days!==null ? (days===0?'🎉 今日！':'あと'+days+'日') : '';
       const elapsed = daysSince(a.date, a.dateType);

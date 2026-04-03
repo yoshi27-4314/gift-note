@@ -2319,6 +2319,8 @@ function checkAppUpdate() {
   scheduleUpdateCheck();
   // バックアップリマインドチェック
   checkBackupReminder();
+  // 緊急バックアップがあれば復元案内
+  checkEmergencyBackup();
 }
 
 function shouldCheckNow() {
@@ -2376,6 +2378,14 @@ function scheduleUpdateCheck() {
 
 function render() {
   const cardList = document.getElementById('cardList');
+  if (isDummyMode) {
+    cardList.innerHTML = '<div class="empty-msg">データがありません<br>下の ＋ ボタンから追加できます</div>';
+    document.getElementById('reminderZone').innerHTML = '';
+    document.getElementById('pickupZone').innerHTML = '';
+    document.getElementById('annSection').innerHTML = '';
+    document.getElementById('labelBar').innerHTML = '';
+    return;
+  }
   renderLabelBar();
   renderReminders();
   renderPickup();
@@ -3548,13 +3558,6 @@ function openSettings() {
           <button class="card-btn" onclick="document.getElementById('settingsModalOverlay').classList.remove('open');openPinSetup()" style="font-size:14px;padding:8px 16px;">${localStorage.getItem(PIN_KEY)?'パスコード変更':'パスコード設定'}</button>
           ${localStorage.getItem(PIN_KEY)?`<button class="card-btn delete" onclick="removePinLock();document.getElementById('settingsModalOverlay').classList.remove('open');openSettings()" style="font-size:14px;padding:8px 16px;">解除</button>`:''}
         </div>
-        ${localStorage.getItem(PIN_KEY)?`<div style="margin-top:8px;">
-          <div class="form-hint">🔒 偽装モード：別のパスコードで空のアプリを表示します</div>
-          <div style="display:flex;gap:8px;margin-top:4px;">
-            <button class="card-btn" onclick="document.getElementById('settingsModalOverlay').classList.remove('open');setupDummyPin()" style="font-size:14px;padding:8px 16px;">${localStorage.getItem(DUMMY_PIN_KEY)?'偽装PIN変更':'偽装PINを設定'}</button>
-            ${localStorage.getItem(DUMMY_PIN_KEY)?`<button class="card-btn delete" onclick="localStorage.removeItem('${DUMMY_PIN_KEY}');document.getElementById('settingsModalOverlay').classList.remove('open');openSettings()" style="font-size:14px;padding:8px 16px;">解除</button>`:''}
-          </div>
-        </div>`:''}
       </div>
       <div id="lockBioSection" style="display:${localStorage.getItem(LOCK_METHOD_KEY)==='biometric'?'':'none'};">
         <div class="form-hint">Face ID / Touch ID / 画面ロックで認証します</div>
@@ -3564,6 +3567,13 @@ function openSettings() {
         </div>
       </div>
     </div>
+    ${localStorage.getItem(PIN_KEY)?`<div class="form-group"><label>🔒 偽装モード</label>
+      <div class="form-hint" style="margin-bottom:8px;">ダミーのパスコードを設定すると、そのコードで開いた時に空のアプリが表示されます</div>
+      <div style="display:flex;gap:8px;">
+        <button class="card-btn" onclick="document.getElementById('settingsModalOverlay').classList.remove('open');setupDummyPin()" style="font-size:14px;padding:8px 16px;">${localStorage.getItem(DUMMY_PIN_KEY)?'ダミーPIN変更':'ダミーPIN設定'}</button>
+        ${localStorage.getItem(DUMMY_PIN_KEY)?`<button class="card-btn delete" onclick="removeDummyPin()" style="font-size:14px;padding:8px 16px;">解除</button>`:''}
+      </div>
+    </div>`:''}
     <div class="form-group"><label>📲 AWAIを友達に紹介する</label>
       <div id="qrArea" style="text-align:center;padding:12px 0;"></div>
       <div style="text-align:center;margin-bottom:8px;">
@@ -4830,12 +4840,6 @@ const LOCK_METHOD_KEY = 'awai_lock_method'; // 'pin' or 'biometric'
 let pinBuffer = '';
 let pinMode = 'unlock'; // unlock, set, confirm
 let pinTemp = '';
-let pinFailCount = 0;
-let pinLockUntil = 0;
-const PIN_FAIL_KEY = 'awai_pin_fail_count';
-const PIN_LOCK_KEY = 'awai_pin_lock_until';
-const EMERGENCY_BACKUP_KEY = 'awai_emergency_backup';
-const DUMMY_PIN_KEY = 'awai_dummy_pin';
 
 function initPin() {
   const lockMethod = localStorage.getItem(LOCK_METHOD_KEY) || 'pin';
@@ -4968,56 +4972,55 @@ function updatePinDots() {
   }
 }
 
+const DUMMY_PIN_KEY = 'awai_dummy_pin';
+const PIN_FAIL_KEY = 'awai_pin_fails';
+const PIN_LOCK_KEY = 'awai_pin_locked_until';
+
 function checkPin() {
   const savedPin = localStorage.getItem(PIN_KEY);
+  const dummyPin = localStorage.getItem(DUMMY_PIN_KEY);
   if (pinMode === 'unlock') {
-    // Check lock timeout
-    const lockUntil = parseInt(localStorage.getItem(PIN_LOCK_KEY)||'0');
-    if (lockUntil > Date.now()) {
-      const mins = Math.ceil((lockUntil - Date.now()) / 60000);
-      document.getElementById('pinError').textContent = 'あと' + mins + '分お待ちください';
+    // Check lock
+    const lockedUntil = localStorage.getItem(PIN_LOCK_KEY);
+    if (lockedUntil && Date.now() < parseInt(lockedUntil)) {
+      const mins = Math.ceil((parseInt(lockedUntil) - Date.now()) / 60000);
+      document.getElementById('pinError').textContent = 'ロック中です。あと約' + mins + '分';
       pinBuffer = '';
       updatePinDots();
       return;
     }
-
-    const dummyPin = localStorage.getItem(DUMMY_PIN_KEY);
+    // Dummy PIN → show empty app
     if (dummyPin && pinBuffer === dummyPin) {
-      // ダミーPIN → 空のアプリを表示
-      pinFailCount = 0;
-      localStorage.removeItem(PIN_FAIL_KEY);
-      localStorage.removeItem(PIN_LOCK_KEY);
+      localStorage.setItem(PIN_FAIL_KEY, '0');
       document.getElementById('pinOverlay').classList.add('hidden');
-      // データを一時的に空にして表示
-      data = { wish:[], received:[], gave:[], place:[], people:[], groups:[], labels:{wish:[],gift:[],place:[]} };
-      render();
+      showDummyMode();
       return;
     }
+    // Normal PIN
     if (pinBuffer === savedPin) {
-      // 成功 → リセット
-      pinFailCount = 0;
-      localStorage.removeItem(PIN_FAIL_KEY);
-      localStorage.removeItem(PIN_LOCK_KEY);
+      localStorage.setItem(PIN_FAIL_KEY, '0');
       document.getElementById('pinOverlay').classList.add('hidden');
+      hideDummyMode();
       setTimeout(() => showAnnPopup(), 500);
     } else {
-      pinFailCount = parseInt(localStorage.getItem(PIN_FAIL_KEY)||'0') + 1;
-      localStorage.setItem(PIN_FAIL_KEY, pinFailCount);
-
-      if (pinFailCount >= 10) {
-        // 10回間違え → 緊急バックアップ保存 → レスキュー画面
-        localStorage.setItem(EMERGENCY_BACKUP_KEY, localStorage.getItem(STORAGE_KEY)||'{}');
+      let fails = parseInt(localStorage.getItem(PIN_FAIL_KEY)||'0') + 1;
+      localStorage.setItem(PIN_FAIL_KEY, String(fails));
+      if (fails >= 10) {
+        // 10回間違え → 緊急バックアップ＋レスキュー画面
+        saveEmergencyBackup();
         showRescueScreen();
-      } else if (pinFailCount >= 5) {
+      } else if (fails >= 5) {
         // 5回間違え → 30分ロック
-        const lockTime = Date.now() + 30 * 60 * 1000;
-        localStorage.setItem(PIN_LOCK_KEY, lockTime);
-        document.getElementById('pinError').textContent = '5回間違えました。30分後にもう一度お試しください';
+        const lockUntil = Date.now() + 30 * 60 * 1000;
+        localStorage.setItem(PIN_LOCK_KEY, String(lockUntil));
+        document.getElementById('pinError').textContent = '5回間違えました。30分後にお試しください';
+        pinBuffer = '';
+        updatePinDots();
       } else {
-        document.getElementById('pinError').textContent = 'パスコードが違います（' + pinFailCount + '/5）';
+        document.getElementById('pinError').textContent = 'パスコードが違います（' + fails + '/5）';
+        pinBuffer = '';
+        updatePinDots();
       }
-      pinBuffer = '';
-      updatePinDots();
     }
   } else if (pinMode === 'set') {
     pinTemp = pinBuffer;
@@ -5039,6 +5042,128 @@ function checkPin() {
       document.getElementById('pinMessage').textContent = '新しいパスコードを入力';
     }
   }
+}
+
+// ===== Dummy Mode (偽装モード) =====
+let isDummyMode = false;
+
+function showDummyMode() {
+  isDummyMode = true;
+  // Hide all data, show empty app
+  document.getElementById('cardList').innerHTML = '<div class="empty-msg">👤 大切な人を追加しましょう<br>下の ＋ ボタンから追加できます</div>';
+  document.getElementById('reminderZone').innerHTML = '';
+  document.getElementById('pickupZone').innerHTML = '';
+  document.getElementById('annSection').innerHTML = '';
+}
+
+function hideDummyMode() {
+  isDummyMode = false;
+}
+
+// ===== Emergency Backup & Rescue =====
+function saveEmergencyBackup() {
+  try {
+    const backup = {
+      awai_data: JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'),
+      awai_my_profile: JSON.parse(localStorage.getItem('awai_my_profile') || 'null'),
+      awai_season: localStorage.getItem(SEASON_KEY),
+      awai_fontsize: localStorage.getItem(FONTSIZE_KEY),
+      emergency_date: new Date().toISOString(),
+      version: APP_VERSION
+    };
+    localStorage.setItem('awai_emergency_backup', JSON.stringify(backup));
+  } catch(e) { console.error('Emergency backup failed:', e); }
+}
+
+function showRescueScreen() {
+  const overlay = document.getElementById('pinOverlay');
+  overlay.innerHTML = `<div style="max-width:400px;margin:0 auto;padding:32px 24px;text-align:center;">
+    <div style="font-size:36px;margin-bottom:16px;">🤍</div>
+    <h2 style="font-size:20px;font-weight:600;margin-bottom:16px;font-family:'Shippori Mincho',serif;">パスコードを忘れても<br>大丈夫です。</h2>
+    <p style="font-size:14px;color:var(--sub);line-height:1.8;margin-bottom:24px;">あなたのデータは安全に<br>保護されています。</p>
+    <div style="background:var(--accent-light);border-radius:14px;padding:20px 16px;text-align:left;margin-bottom:24px;">
+      <div style="font-size:14px;font-weight:600;margin-bottom:12px;">復元の手順：</div>
+      <div style="font-size:13px;line-height:2;color:var(--text);">
+        ① 下の「リセットして復元する」をタップ<br>
+        ② AWAIが新しく開きます<br>
+        ③ 「緊急バックアップが見つかりました」と<br>　 表示されるので「復元する」をタップ<br>
+        ④ これだけで元通りです
+      </div>
+    </div>
+    <button onclick="executeRescueReset()" style="width:100%;padding:16px;font-size:16px;background:var(--accent);color:#fff;border:none;border-radius:14px;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;margin-bottom:12px;">リセットして復元する</button>
+    <p style="font-size:13px;color:var(--sub);margin-top:16px;">まだ試したいパスコードがある方は<br>30分後にもう一度お試しください。</p>
+    <button onclick="closeRescueScreen()" style="background:none;border:1px solid var(--border);border-radius:12px;padding:10px 24px;font-size:13px;cursor:pointer;color:var(--sub);font-family:'Zen Maru Gothic',sans-serif;margin-top:8px;">戻る</button>
+  </div>`;
+}
+
+function closeRescueScreen() {
+  location.reload();
+}
+
+function executeRescueReset() {
+  if (!confirm('パスコードをリセットします。\n緊急バックアップから復元できます。')) return;
+  // Remove PIN but keep emergency backup
+  localStorage.removeItem(PIN_KEY);
+  localStorage.removeItem(DUMMY_PIN_KEY);
+  localStorage.removeItem(LOCK_METHOD_KEY);
+  localStorage.removeItem('awai_bio_cred');
+  localStorage.removeItem(PIN_FAIL_KEY);
+  localStorage.removeItem(PIN_LOCK_KEY);
+  location.reload();
+}
+
+function checkEmergencyBackup() {
+  const backup = localStorage.getItem('awai_emergency_backup');
+  if (!backup) return;
+  // Only show if current data is empty or very small
+  const currentData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+  const hasData = (currentData.people?.length||0) + (currentData.wish?.length||0) + (currentData.place?.length||0);
+  if (hasData > 2) {
+    // Already has data, don't overwrite
+    localStorage.removeItem('awai_emergency_backup');
+    return;
+  }
+  const overlay = document.createElement('div');
+  overlay.id = 'emergencyRestoreOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:600;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = `<div style="background:#fff;border-radius:16px;padding:28px 24px;width:90%;max-width:360px;text-align:center;">
+    <div style="font-size:28px;margin-bottom:12px;">🤍</div>
+    <div style="font-size:17px;font-weight:600;margin-bottom:8px;">緊急バックアップが<br>見つかりました</div>
+    <div style="font-size:13px;color:var(--sub);margin-bottom:20px;line-height:1.6;">パスコードリセット前のデータを<br>復元できます。</div>
+    <button onclick="restoreEmergencyBackup()" style="width:100%;padding:14px;font-size:15px;background:var(--accent);color:#fff;border:none;border-radius:12px;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;margin-bottom:10px;">復元する</button>
+    <button onclick="document.getElementById('emergencyRestoreOverlay').remove();localStorage.removeItem('awai_emergency_backup');" style="width:100%;padding:12px;font-size:13px;background:none;border:1px solid var(--border);border-radius:12px;cursor:pointer;color:var(--sub);font-family:'Zen Maru Gothic',sans-serif;">復元しない（データを破棄）</button>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+
+function restoreEmergencyBackup() {
+  try {
+    const backup = JSON.parse(localStorage.getItem('awai_emergency_backup'));
+    if (backup.awai_data) localStorage.setItem(STORAGE_KEY, JSON.stringify(backup.awai_data));
+    if (backup.awai_my_profile) localStorage.setItem('awai_my_profile', JSON.stringify(backup.awai_my_profile));
+    if (backup.awai_season) localStorage.setItem(SEASON_KEY, backup.awai_season);
+    if (backup.awai_fontsize) localStorage.setItem(FONTSIZE_KEY, backup.awai_fontsize);
+    localStorage.removeItem('awai_emergency_backup');
+    showToast('データを復元しました ✓');
+    setTimeout(() => location.reload(), 500);
+  } catch(e) {
+    alert('復元に失敗しました: ' + e.message);
+  }
+}
+
+function setupDummyPin() {
+  const pin = prompt('ダミーPINを4桁で入力してください\n（通常PINとは別の番号にしてください）');
+  if (!pin || pin.length !== 4 || !/^\d{4}$/.test(pin)) { alert('4桁の数字を入力してください'); return; }
+  if (pin === localStorage.getItem(PIN_KEY)) { alert('通常のパスコードと同じ番号は設定できません'); return; }
+  localStorage.setItem(DUMMY_PIN_KEY, pin);
+  showToast('ダミーPINを設定しました');
+  openSettings();
+}
+
+function removeDummyPin() {
+  if (!confirm('ダミーPINを解除しますか？')) return;
+  localStorage.removeItem(DUMMY_PIN_KEY);
+  openSettings();
 }
 
 function openPinSetup() {
@@ -5064,130 +5189,6 @@ async function setupBiometricFromSettings() {
     document.getElementById('settingsModalOverlay').classList.remove('open');
     openSettings();
   }
-}
-
-function setupDummyPin() {
-  const overlay = document.createElement('div');
-  overlay.id = 'dummyPinOverlay';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:500;display:flex;align-items:center;justify-content:center;';
-  overlay.innerHTML = `<div style="background:#fff;border-radius:16px;padding:24px;width:85%;max-width:320px;text-align:center;">
-    <div style="font-size:16px;font-weight:600;margin-bottom:8px;">🔒 偽装PIN設定</div>
-    <div style="font-size:13px;color:var(--sub);margin-bottom:16px;line-height:1.6;">この番号で開くと<br>空のアプリが表示されます<br>通常のパスコードとは別の番号にしてください</div>
-    <input type="password" id="dummyPinInput" maxlength="4" inputmode="numeric" pattern="[0-9]*" placeholder="4桁" style="width:120px;text-align:center;font-size:24px;letter-spacing:12px;padding:12px;border:1px solid var(--border);border-radius:12px;margin-bottom:8px;">
-    <div id="dummyPinError" style="font-size:13px;color:#c97070;min-height:20px;"></div>
-    <div style="display:flex;gap:8px;justify-content:center;margin-top:8px;">
-      <button onclick="document.getElementById('dummyPinOverlay').remove()" style="background:none;border:1px solid var(--border);border-radius:10px;padding:10px 20px;font-size:14px;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">キャンセル</button>
-      <button onclick="saveDummyPin()" style="background:var(--accent);border:none;border-radius:10px;padding:10px 20px;font-size:14px;cursor:pointer;color:#fff;font-family:'Zen Maru Gothic',sans-serif;">設定する</button>
-    </div>
-  </div>`;
-  document.body.appendChild(overlay);
-  setTimeout(() => document.getElementById('dummyPinInput')?.focus(), 100);
-}
-
-function saveDummyPin() {
-  const input = document.getElementById('dummyPinInput');
-  const val = input.value.trim();
-  if (val.length !== 4 || !/^\d{4}$/.test(val)) {
-    document.getElementById('dummyPinError').textContent = '4桁の数字を入力してください';
-    return;
-  }
-  if (val === localStorage.getItem(PIN_KEY)) {
-    document.getElementById('dummyPinError').textContent = '通常のパスコードと同じにはできません';
-    return;
-  }
-  localStorage.setItem(DUMMY_PIN_KEY, val);
-  document.getElementById('dummyPinOverlay')?.remove();
-  showToast('偽装PINを設定しました');
-  openSettings();
-}
-
-function showRescueScreen() {
-  const overlay = document.getElementById('pinOverlay');
-  overlay.innerHTML = `<div style="padding:32px 24px;max-width:400px;margin:0 auto;text-align:center;">
-    <div style="font-size:32px;margin-bottom:16px;">🕊️</div>
-    <h2 style="font-size:20px;font-weight:600;margin-bottom:16px;color:var(--text);">パスコードを忘れても<br>大丈夫です。</h2>
-    <p style="font-size:14px;color:var(--sub);line-height:1.8;margin-bottom:24px;">
-      あなたのデータは安全に保存されています。<br>
-      以下の手順で元に戻せます。
-    </p>
-    <div style="text-align:left;background:var(--bg);border-radius:14px;padding:20px;margin-bottom:24px;">
-      <div style="font-size:14px;line-height:2;color:var(--text);">
-        <strong>① リセットする</strong><br>
-        　下のボタンを押します<br>
-        <strong>② アプリが開きます</strong><br>
-        　最初の画面に戻ります<br>
-        <strong>③ 設定を開く</strong><br>
-        　右上の⚙️をタップ<br>
-        <strong>④ データを戻す</strong><br>
-        　「ファイルからデータを戻す」<br>
-        　をタップしてファイルを選ぶ<br>
-        <strong>⑤ 完了</strong><br>
-        　これだけで元通りです
-      </div>
-    </div>
-    <button onclick="executeRescueReset()" style="background:var(--accent);border:none;border-radius:14px;padding:16px 32px;font-size:16px;color:#fff;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;width:100%;margin-bottom:12px;">リセットして復元する</button>
-    <p style="font-size:12px;color:var(--sub);margin-top:8px;">
-      バックアップファイルがなくても<br>直前のデータを自動保存しています。<br>リセット後に自動で復元を案内します。
-    </p>
-    <div style="margin-top:24px;">
-      <span onclick="cancelRescue()" style="font-size:13px;color:var(--sub);cursor:pointer;text-decoration:underline;">もう少し思い出してみる（30分後に再挑戦）</span>
-    </div>
-  </div>`;
-}
-
-function executeRescueReset() {
-  // PINとロック情報をクリア、データは緊急バックアップに残っている
-  localStorage.removeItem(PIN_KEY);
-  localStorage.removeItem(LOCK_METHOD_KEY);
-  localStorage.removeItem('awai_bio_cred');
-  localStorage.removeItem(PIN_FAIL_KEY);
-  localStorage.removeItem(PIN_LOCK_KEY);
-  localStorage.removeItem(STORAGE_KEY);
-  localStorage.removeItem('awai_onboarding_done');
-  location.reload();
-}
-
-function cancelRescue() {
-  const lockTime = Date.now() + 30 * 60 * 1000;
-  localStorage.setItem(PIN_LOCK_KEY, lockTime);
-  location.reload();
-}
-
-function checkEmergencyBackup() {
-  const backup = localStorage.getItem(EMERGENCY_BACKUP_KEY);
-  if (!backup) return;
-  // 緊急バックアップがある＋メインデータが空 → 復元を案内
-  const current = localStorage.getItem(STORAGE_KEY);
-  const hasData = current && current !== '{}' && JSON.parse(current).people?.length > 0;
-  if (hasData) {
-    localStorage.removeItem(EMERGENCY_BACKUP_KEY);
-    return;
-  }
-  // 復元案内
-  const overlay = document.createElement('div');
-  overlay.id = 'emergencyRestoreOverlay';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:600;display:flex;align-items:center;justify-content:center;';
-  overlay.innerHTML = `<div style="background:#fff;border-radius:16px;padding:24px;width:90%;max-width:360px;text-align:center;">
-    <div style="font-size:28px;margin-bottom:12px;">🕊️</div>
-    <div style="font-size:16px;font-weight:600;margin-bottom:12px;">直前のデータが見つかりました</div>
-    <div style="font-size:14px;color:var(--sub);line-height:1.6;margin-bottom:20px;">パスコードリセット前のデータを<br>自動で保存してあります。<br>復元しますか？</div>
-    <button onclick="restoreEmergencyBackup()" style="background:var(--accent);border:none;border-radius:12px;padding:14px 32px;font-size:15px;color:#fff;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;width:100%;margin-bottom:10px;">復元する</button>
-    <div><span onclick="document.getElementById('emergencyRestoreOverlay').remove();localStorage.removeItem('${EMERGENCY_BACKUP_KEY}');" style="font-size:13px;color:var(--sub);cursor:pointer;">新しく始める</span></div>
-  </div>`;
-  document.body.appendChild(overlay);
-}
-
-function restoreEmergencyBackup() {
-  const backup = localStorage.getItem(EMERGENCY_BACKUP_KEY);
-  if (backup) {
-    localStorage.setItem(STORAGE_KEY, backup);
-    localStorage.removeItem(EMERGENCY_BACKUP_KEY);
-    localStorage.setItem('awai_onboarding_done', '1');
-    loadData();
-    render();
-    showToast('データを復元しました ✓');
-  }
-  document.getElementById('emergencyRestoreOverlay')?.remove();
 }
 
 function removeBiometric() {
@@ -5268,9 +5269,6 @@ if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().t
 
   render();
   checkAppUpdate();
-
-  // 緊急バックアップの復元チェック
-  checkEmergencyBackup();
 
   // Onboarding check (初回起動 or 既存データなし)
   if (!localStorage.getItem(OB_KEY) && !data.people.length && !data.wish.length) {

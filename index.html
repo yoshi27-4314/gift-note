@@ -1445,7 +1445,7 @@ function renderPersonCard(p) {
   }
   // Corporate members (people linked to this company)
   if (isCorp) {
-    const members = data.people.filter(x => x.type!=='corporate' && (x.companyLink===p.nickname || x.companyLink===p.corpNickname || x.companyLink===p.corpFullName));
+    const members = data.people.filter(x => x.type!=='corporate' && x.companyLink && (x.companyLink===p.nickname || (p.corpNickname && x.companyLink===p.corpNickname) || (p.corpFullName && x.companyLink===p.corpFullName)));
     if (members.length) {
       html += '<div class="person-section"><div class="person-section-title">👥 所属メンバー</div>';
       members.forEach(m => {

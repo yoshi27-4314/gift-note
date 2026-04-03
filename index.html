@@ -4064,6 +4064,16 @@ function openMemoryModal(id) {
     </div>
   </div>`;
 
+  // Anniversaries (記念日を複数追加可能)
+  const memAnns = p?.anniversaries||[];
+  html += `<div class="form-group"><label>📅 大切な日</label><div id="memAnnContainer">`;
+  if (memAnns.length) {
+    memAnns.forEach((a,i) => { html += annRowHTML(a, 800+i); });
+  } else {
+    html += annRowHTML({name:'', date:'', dateType:'monthday', reminders:[]}, 800);
+  }
+  html += `</div><div class="add-btn" onclick="addMemAnnRow()">＋ 大切な日を追加</div></div>`;
+
   // Message
   html += `<div class="form-group"><label>ひとこと（任意）</label><input id="mMessage" placeholder="その人・その子への言葉" value="${esc(p?.memoryMessage||'')}"></div>`;
 
@@ -4084,6 +4094,14 @@ function selectMemoryType(type, el) {
   // Update memo placeholder
   const memo = document.getElementById('mMemo');
   if (memo) memo.placeholder = type==='pet' ? 'メモ欄に種類・色・好きだったものなど覚えていることを書いておくと安心です' : '好きだったもの・口癖・思い出など';
+}
+
+let memAnnCounter = 800;
+function addMemAnnRow() {
+  memAnnCounter++;
+  const c = document.getElementById('memAnnContainer');
+  if (!c) return;
+  c.insertAdjacentHTML('beforeend', annRowHTML({name:'',date:'',dateType:'monthday',reminders:[]}, memAnnCounter));
 }
 
 function selectMemDateFormat(fmt, el) {
@@ -4154,19 +4172,43 @@ function saveMemory() {
     memo: document.getElementById('mMemo').value.trim()||null
   };
 
+  // Collect anniversaries from memAnnContainer
+  const memAnnRows = document.getElementById('memAnnContainer')?.querySelectorAll('.ann-row')||[];
+  const anniversaries = [];
+  memAnnRows.forEach(row => {
+    const name = row.querySelector('.ann-name').value.trim();
+    const dateTypeChips = row.querySelectorAll('.date-type-chips')[0];
+    const activeChip = dateTypeChips?.querySelector('.date-type-chip.active');
+    const dt = activeChip ? (activeChip.textContent.includes('年月日')?'full':activeChip.textContent.includes('月日')?'monthday':'month') : 'monthday';
+    const yr = row.querySelector('.ann-year')?.value||'';
+    const mo = row.querySelector('.ann-month')?.value||'';
+    const dy = row.querySelector('.ann-day')?.value||'';
+    let date = '';
+    if (dt==='full' && yr && mo) date = `${yr}-${String(mo).padStart(2,'0')}-${String(dy||1).padStart(2,'0')}`;
+    else if (dt==='monthday' && mo) date = `${String(mo).padStart(2,'0')}-${String(dy||1).padStart(2,'0')}`;
+    else if (dt==='month' && mo) date = `${String(mo).padStart(2,'0')}`;
+    const repeat = row.querySelector('.ann-repeat')?.value||'yearly';
+    const reminders = row.querySelector('.ann-reminders').value.split(/[,、\s]+/).map(Number).filter(n=>!isNaN(n));
+    if (name||date) anniversaries.push({name:name||'大切な日',date,dateType:dt,repeat,reminders});
+  });
+  person.anniversaries = anniversaries;
+
   if (editingId) {
     const idx = data.people.findIndex(i=>i.id===editingId);
     if (idx>=0) {
       // Preserve existing fields not in this form
       const existing = data.people[idx];
-      person.anniversaries = existing.anniversaries||[];
+      person.gender = existing.gender||'unset';
+      person.relation = existing.relation||null;
       person.interests = existing.interests||[];
       person.brands = existing.brands||[];
       person.foodLike = existing.foodLike||[];
       person.foodDislike = existing.foodDislike||[];
       person.family = existing.family||[];
       person.sizes = existing.sizes||{};
+      person.counters = existing.counters||[];
       person.pinned = existing.pinned;
+      person.companyLink = existing.companyLink||null;
       data.people[idx] = person;
     }
   } else {

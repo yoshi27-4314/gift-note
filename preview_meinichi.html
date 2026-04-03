@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>命日ポップアップ プレビュー</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Zen Maru Gothic', sans-serif;
+  background: #f5f0eb;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 記念日ポップアップ（比較用） */
+.ann-popup-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 300;
+  display: flex; align-items: center; justify-content: center;
+  animation: fadeIn 0.3s;
+}
+
+/* 命日ポップアップ（新デザイン） */
+.memory-popup-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.25);
+  z-index: 300;
+  display: flex; align-items: center; justify-content: center;
+  animation: fadeIn 0.5s;
+}
+.memory-popup {
+  background: #f9f8f6;
+  border-radius: 20px;
+  width: 90%; max-width: 360px;
+  padding: 32px 24px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+  text-align: center;
+}
+.memory-popup .memory-icon {
+  font-size: 28px;
+  margin-bottom: 16px;
+  opacity: 0.7;
+}
+.memory-popup .memory-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #5a5550;
+  margin-bottom: 12px;
+}
+.memory-popup .memory-message {
+  font-size: 15px;
+  color: #7a7570;
+  line-height: 1.8;
+  margin-bottom: 8px;
+}
+.memory-popup .memory-date {
+  font-size: 12px;
+  color: #a5a09a;
+  margin-bottom: 20px;
+}
+.memory-popup .memory-btn {
+  background: none;
+  border: 1px solid #c5c0ba;
+  border-radius: 12px;
+  padding: 10px 32px;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-size: 14px;
+  color: #7a7570;
+  cursor: pointer;
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* 比較用ラベル */
+.preview-label {
+  position: fixed;
+  top: 12px; left: 50%;
+  transform: translateX(-50%);
+  background: #5a5550;
+  color: #fff;
+  padding: 8px 20px;
+  border-radius: 10px;
+  font-size: 13px;
+  z-index: 400;
+}
+.switch-btns {
+  position: fixed;
+  bottom: 20px; left: 50%;
+  transform: translateX(-50%);
+  display: flex; gap: 8px;
+  z-index: 400;
+}
+.switch-btn {
+  padding: 10px 20px;
+  border-radius: 12px;
+  border: none;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+  background: #5a5550;
+  color: #fff;
+}
+.switch-btn.active {
+  background: #c49a6c;
+}
+</style>
+</head>
+<body>
+
+<div class="preview-label" id="label">命日ポップアップ</div>
+
+<!-- 命日ポップアップ -->
+<div class="memory-popup-overlay" id="memoryPopup">
+  <div class="memory-popup">
+    <div class="memory-icon">🕯️</div>
+    <div class="memory-name">お父さん</div>
+    <div class="memory-message">お父さんがいた日々を、<br>少しだけ思い出してみませんか。</div>
+    <div class="memory-date">3回目の命日</div>
+    <button class="memory-btn" onclick="this.closest('.memory-popup-overlay').style.display='none'">そっと閉じる</button>
+  </div>
+</div>
+
+<!-- 記念日ポップアップ（比較用） -->
+<div class="ann-popup-overlay" id="annPopup" style="display:none;">
+  <div style="background:#fff;border-radius:20px;width:90%;max-width:400px;padding:24px 20px;box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+    <h2 style="text-align:center;font-size:20px;margin-bottom:16px;">📅 記念日リマインド</h2>
+    <div style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:14px;background:#f5f0eb;margin-bottom:8px;">
+      <div style="font-size:24px;">🎂</div>
+      <div style="flex:1;">
+        <div style="font-size:15px;font-weight:600;">さとうさん</div>
+        <div style="font-size:13px;color:#8a8580;">誕生日 05-15</div>
+      </div>
+      <span style="font-size:12px;padding:3px 10px;border-radius:10px;background:#c49a6c22;color:#c49a6c;">あと12日</span>
+    </div>
+    <div style="text-align:center;margin-top:14px;"><button style="background:none;border:1px solid #d5d0ca;border-radius:12px;padding:10px 32px;font-family:'Zen Maru Gothic',sans-serif;font-size:14px;color:#5a5550;cursor:pointer;">閉じる</button></div>
+  </div>
+</div>
+
+<div class="switch-btns">
+  <button class="switch-btn active" id="btnMemory" onclick="show('memory')">命日</button>
+  <button class="switch-btn" id="btnAnn" onclick="show('ann')">記念日（比較）</button>
+</div>
+
+<script>
+function show(type) {
+  document.getElementById('memoryPopup').style.display = type === 'memory' ? 'flex' : 'none';
+  document.getElementById('annPopup').style.display = type === 'ann' ? 'flex' : 'none';
+  document.getElementById('btnMemory').classList.toggle('active', type === 'memory');
+  document.getElementById('btnAnn').classList.toggle('active', type === 'ann');
+  document.getElementById('label').textContent = type === 'memory' ? '命日ポップアップ' : '記念日ポップアップ（既存）';
+}
+</script>
+</body>
+</html>

@@ -2264,20 +2264,33 @@ function renderPersonCard(p) {
 // ===== Person list item (LINE-style) =====
 function renderPersonListItem(p) {
   const isCorp = p.type==='corporate';
-  const updatedAt = p.updatedAt || p.createdAt || '';
-  const dateStr = updatedAt ? updatedAt.split('T')[0] : '';
 
-  // Preview text: nearest anniversary or relation
-  let preview = p.relation || '';
-  let annBadge = '';
+  // 次の記念日を探す（最も近いもの）
+  let nearestAnn = null, nearestDays = Infinity;
   (p.anniversaries||[]).forEach(a => {
     const days = daysUntil(a.date, a.dateType);
-    if (days !== null && days <= 30) {
-      annBadge = days === 0 ? '🎉今日！' : 'あと' + days + '日';
-    }
+    if (days !== null && days < nearestDays) { nearestDays = days; nearestAnn = a; }
   });
+
+  // Preview text
+  let preview = p.relation || '';
   if (!preview && p.interests?.length) preview = p.interests.slice(0,3).join(', ');
   if (!preview) preview = isCorp ? (p.industry||'会社') : '友だち';
+
+  // カウントダウン表示
+  let countdownHtml = '';
+  if (nearestAnn && nearestDays <= 365) {
+    const annName = (nearestAnn.name||'').replace(/[\p{Emoji}]/gu,'').trim() || '記念日';
+    if (nearestDays === 0) {
+      countdownHtml = `<div style="font-size:12px;color:var(--accent);font-weight:600;">🎉 ${annName} 今日！</div>`;
+    } else if (nearestDays <= 7) {
+      countdownHtml = `<div style="font-size:12px;color:#c97070;font-weight:600;">${annName}<br>あと${nearestDays}日</div>`;
+    } else if (nearestDays <= 30) {
+      countdownHtml = `<div style="font-size:12px;color:var(--accent);font-weight:500;">${annName}<br>あと${nearestDays}日</div>`;
+    } else {
+      countdownHtml = `<div style="font-size:11px;color:var(--sub);">${annName}<br>あと${nearestDays}日</div>`;
+    }
+  }
 
   const isOpen = openPersonId === p.id;
 
@@ -2288,8 +2301,7 @@ function renderPersonListItem(p) {
       <div class="list-preview">${esc(preview)}</div>
     </div>
     <div class="list-meta">
-      <div class="list-date">${dateStr}</div>
-      ${annBadge?`<div class="list-badge-wrap"><span class="list-ann-badge">${annBadge}</span></div>`:''}
+      ${countdownHtml}
     </div>
   </div>`;
 }

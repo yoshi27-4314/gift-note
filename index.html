@@ -1749,6 +1749,10 @@ function renderPersonCard(p) {
       </label>
     </div>
     </div></div>`;
+  // Concierge button (between name and anniversaries)
+  if (!p.isMemory) {
+    html += `<div style="padding:8px 16px;"><button class="card-btn" onclick="event.stopPropagation();openAiSuggest('${p.id}')" style="background:var(--pickup);border-color:var(--pickup-border);font-size:14px;padding:10px 20px;width:100%;">💡 コンシェルジュに相談</button></div>`;
+  }
   // Corporate photo (business card etc.)
   if (p.corpPhoto) {
     html += `<div class="person-section"><div class="person-section-title">📷 写真</div><img src="${p.corpPhoto}" style="width:100%;max-height:250px;object-fit:contain;border-radius:12px;"></div>`;
@@ -1969,7 +1973,6 @@ function renderPersonCard(p) {
   <div class="person-actions">
     <button class="card-btn" onclick="event.stopPropagation();sharePerson('${p.id}')" style="background:#e3f2fd;border-color:#90caf9;">📤 共有</button>
     <button class="card-btn" onclick="event.stopPropagation();editItem('people','${p.id}')">✏️ 編集</button>
-    ${!p.isMemory?`<button class="card-btn" onclick="event.stopPropagation();openAiSuggest('${p.id}')" style="background:var(--pickup);border-color:var(--pickup-border);">💡 コンシェルジュ</button>`:''}
     ${!p.isMemory?`<button class="card-btn" onclick="event.stopPropagation();moveToMemory('${p.id}')" style="background:#f5f0eb;border-color:#c5c0ba;">🤍 記憶に移す</button>`:''}
     ${p.isMemory?`<button class="card-btn" onclick="event.stopPropagation();restoreFromMemory('${p.id}')" style="background:#f0f8ff;border-color:#90caf9;">↩ 戻す</button>`:''}
     <button class="card-btn delete" onclick="event.stopPropagation();deleteItem('people','${p.id}')">🗑 削除</button>

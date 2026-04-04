@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AWAI × パートナー連携デモ</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&family=Shippori+Mincho:wght@400;600&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Zen Maru Gothic',sans-serif; background:#fdf8f3; color:#4a3f3a; max-width:480px; margin:0 auto; padding:20px; }
+h1 { font-family:'Shippori Mincho',serif; text-align:center; font-size:24px; margin:20px 0 8px; }
+.subtitle { text-align:center; color:#7a6e68; font-size:14px; margin-bottom:32px; }
+.section { margin-bottom:32px; }
+.section-title { font-size:13px; color:#e8a598; font-weight:600; margin-bottom:12px; letter-spacing:1px; }
+.flow { display:flex; flex-direction:column; gap:0; }
+.flow-step { background:#fff; border:1px solid #ede3dd; border-radius:16px; padding:16px; position:relative; }
+.flow-arrow { text-align:center; font-size:20px; color:#e8a598; padding:8px 0; }
+.phone { background:#1a1a1a; border-radius:24px; padding:12px; max-width:260px; margin:0 auto; }
+.phone-screen { background:#fdf8f3; border-radius:16px; padding:16px; min-height:300px; }
+.reminder-card { background:#fff; border-radius:14px; padding:14px; border:1px solid #ede3dd; margin-bottom:10px; }
+.reminder-badge { background:#fff0f0; color:#c97070; font-size:12px; padding:3px 10px; border-radius:10px; font-weight:600; }
+.gift-btn { width:100%; padding:12px; background:linear-gradient(135deg,#e8f2fc,#daeaf8); border:1px solid #bdd8f0; border-radius:12px; color:#4a7aaa; font-size:14px; font-weight:600; cursor:pointer; margin-top:8px; text-align:center; }
+.partner-card { display:flex; align-items:center; gap:12px; background:#fff; border:1px solid #ede3dd; border-radius:14px; padding:14px; margin-bottom:8px; }
+.partner-icon { font-size:28px; }
+.partner-name { font-weight:600; font-size:15px; }
+.partner-desc { font-size:12px; color:#7a6e68; }
+.partner-arrow { margin-left:auto; color:#e8a598; font-size:16px; }
+.metric { display:flex; justify-content:space-around; margin:16px 0; }
+.metric-item { text-align:center; }
+.metric-num { font-size:28px; font-weight:700; color:#e8a598; }
+.metric-label { font-size:11px; color:#7a6e68; margin-top:4px; }
+.highlight { background:linear-gradient(135deg,#fff4e6,#ffecd2); border:1px solid #f0c080; border-radius:14px; padding:16px; margin:16px 0; }
+.highlight-title { font-weight:700; font-size:15px; margin-bottom:8px; }
+.footer { text-align:center; margin-top:40px; padding-top:20px; border-top:1px solid #ede3dd; }
+.footer-logo { font-family:'Shippori Mincho',serif; font-size:20px; color:#e8a598; }
+</style>
+</head>
+<body>
+
+<h1>AWAI × パートナー連携</h1>
+<p class="subtitle">記念日の入口から、最適なギフト・体験へ</p>
+
+<!-- STEP 1 -->
+<div class="section">
+<div class="section-title">STEP 1 — AWAIが記念日を検知</div>
+<div class="phone">
+<div class="phone-screen">
+  <div style="font-size:12px;color:#e8a598;margin-bottom:8px;">📅 記念日リマインド</div>
+  <div class="reminder-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <div style="font-weight:600;">さとうさん</div>
+        <div style="font-size:12px;color:#7a6e68;">🎂 誕生日 4月15日</div>
+      </div>
+      <span class="reminder-badge">あと3日</span>
+    </div>
+    <div class="gift-btn">🎁 ギフトを探す</div>
+  </div>
+  <div class="reminder-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <div style="font-weight:600;">たなかさん</div>
+        <div style="font-size:12px;color:#7a6e68;">💍 結婚記念日 4月20日</div>
+      </div>
+      <span class="reminder-badge">あと8日</span>
+    </div>
+    <div class="gift-btn">🎁 ギフトを探す</div>
+  </div>
+</div>
+</div>
+</div>
+
+<div class="flow-arrow">▼</div>
+
+<!-- STEP 2 -->
+<div class="section">
+<div class="section-title">STEP 2 — パートナーサイトへ送客</div>
+<div style="font-size:13px;color:#7a6e68;margin-bottom:12px;">ユーザーの持つ情報を活かして最適なパートナーを提案</div>
+
+<div style="background:#f5f0eb;border-radius:12px;padding:12px;margin-bottom:12px;">
+  <div style="font-size:12px;color:#7a6e68;">さとうさんのプロフィール</div>
+  <div style="font-size:13px;margin-top:4px;">好き: ワイン, 旅行, 花</div>
+  <div style="font-size:13px;">サイズ: 服M, 靴25.5</div>
+  <div style="font-size:13px;">苦手: パクチー</div>
+</div>
+
+<div class="partner-card">
+  <span class="partner-icon">🎁</span>
+  <div><div class="partner-name">PIARY（ピアリー）</div><div class="partner-desc">ギフト・内祝い</div></div>
+  <span class="partner-arrow">→</span>
+</div>
+<div class="partner-card">
+  <span class="partner-icon">✈️</span>
+  <div><div class="partner-name">ケーツーリスト</div><div class="partner-desc">旅行・体験</div></div>
+  <span class="partner-arrow">→</span>
+</div>
+<div class="partner-card">
+  <span class="partner-icon">💐</span>
+  <div><div class="partner-name">ヒカリカ</div><div class="partner-desc">お花・フラワーギフト</div></div>
+  <span class="partner-arrow">→</span>
+</div>
+</div>
+
+<div class="flow-arrow">▼</div>
+
+<!-- STEP 3 -->
+<div class="section">
+<div class="section-title">STEP 3 — 購入 → 手数料</div>
+<div class="highlight">
+  <div class="highlight-title">パートナーのメリット</div>
+  <div style="font-size:13px;line-height:1.8;">
+    ✓ 購買意図が確定したユーザーが来る<br>
+    ✓ 相手のプロフィール（好み・サイズ）付き<br>
+    ✓ 記念日のタイミングで自然に送客<br>
+    ✓ 集客コストゼロ
+  </div>
+</div>
+</div>
+
+<!-- METRICS -->
+<div class="section">
+<div class="section-title">将来の送客イメージ（例）</div>
+<div class="metric">
+  <div class="metric-item"><div class="metric-num">1,200</div><div class="metric-label">月間リマインド数</div></div>
+  <div class="metric-item"><div class="metric-num">360</div><div class="metric-label">送客クリック</div></div>
+  <div class="metric-item"><div class="metric-num">36</div><div class="metric-label">月間購入</div></div>
+</div>
+<div style="font-size:12px;color:#7a6e68;text-align:center;">※ユーザー1万人想定 / CVR 10%</div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <div class="footer-logo">AWAI</div>
+  <div style="font-size:12px;color:#7a6e68;margin-top:4px;">大切な人を喜ばせたい。忘れない。</div>
+  <div style="font-size:11px;color:#b0a8a0;margin-top:8px;">© 2026 First Eight Group</div>
+</div>
+
+</body>
+</html>

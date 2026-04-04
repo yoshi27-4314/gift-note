@@ -2126,13 +2126,20 @@ function renderGroupCard(g) {
     });
     html += '</div>';
   }
-  html += `<hr style="border:none;border-top:1px solid var(--border);margin:20px 0 16px;">
-  <div class="card-actions">
-    <button class="card-btn" onclick="event.stopPropagation();togglePin('groups','${g.id}')">${g.pinned?'📌 固定中':'📌 固定'}</button>
-    <button class="card-btn" onclick="event.stopPropagation();shareGroup('${g.id}')" style="background:#e3f2fd;border-color:#90caf9;">📤 共有</button>
-    <button class="card-btn" onclick="event.stopPropagation();editGroup('${g.id}')">✏️ 編集</button>
-    <button class="card-btn" onclick="event.stopPropagation();openGroupAiSuggest('${g.id}')" style="background:var(--pickup);border-color:var(--pickup-border);">💡 コンシェルジュ</button>
-    <button class="card-btn delete" onclick="event.stopPropagation();deleteItem('groups','${g.id}')">🗑 削除</button>
+  // Checkboxes (right-aligned)
+  html += `<div style="display:flex;gap:12px;justify-content:flex-end;padding:8px 0 4px;">
+    <label style="font-size:11px;color:var(--sub);display:flex;align-items:center;gap:4px;cursor:pointer;" onclick="event.stopPropagation();">
+      <input type="checkbox" ${g.pinned?'checked':''} onchange="event.stopPropagation();togglePin('groups','${g.id}')">
+      <span>${g.pinned?'📌 固定中':'📌 固定'}</span>
+    </label>
+  </div>`;
+  // Concierge button
+  html += `<div style="padding:4px 0 8px;"><button onclick="event.stopPropagation();openGroupAiSuggest('${g.id}')" style="width:100%;padding:10px 20px;border-radius:14px;border:1px solid var(--pickup-border);background:var(--pickup);color:var(--text);font-size:14px;font-weight:500;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">💡 コンシェルジュに相談</button></div>`;
+  // Action buttons (grid)
+  html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:8px;">
+    <button onclick="event.stopPropagation();shareGroup('${g.id}')" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border-radius:14px;border:1px solid #bdd8f0;background:linear-gradient(135deg,#e8f2fc,#daeaf8);color:#4a7aaa;font-size:13px;font-weight:500;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">📤 共有</button>
+    <button onclick="event.stopPropagation();editGroup('${g.id}')" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border-radius:14px;border:1px solid var(--border);background:linear-gradient(135deg,#faf8f6,#f3eeea);color:var(--text);font-size:13px;font-weight:500;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">✏️ 編集</button>
+    <button onclick="event.stopPropagation();deleteItem('groups','${g.id}')" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border-radius:14px;border:1px solid #e8c0c0;background:linear-gradient(135deg,#fdf0f0,#f8e4e4);color:#c07070;font-size:13px;font-weight:500;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">🗑 削除</button>
   </div></div>`;
   return html;
 }

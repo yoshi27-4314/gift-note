@@ -2860,25 +2860,20 @@ function render() {
     return;
   }
 
-  // For wish tab with label filter, search across wish+received+gave
-  if (currentTab === 'wish' && currentLabel !== null) {
+  // For wish tab with category filter, search across wish+received+gave
+  if (currentTab === 'wish' && currentLabel !== null && typeof currentLabel === 'string') {
     const tabIcons = {wish:'✨', received:'🎀', gave:'🎁'};
-    const labelName = (getLabels(currentTab)[currentLabel]?.name||'').toLowerCase();
     const allFiltered = [];
     ['wish','received','gave'].forEach(tab => {
       (data[tab]||[]).forEach(item => {
         if (!matchesSearch(item, tab)) return;
-        // Match by labelIdx OR text contains label name
-        const byIdx = item.labelIdx === currentLabel;
-        const text = [item.title, item.memo, ...(item.tags||[])].filter(Boolean).join(' ').toLowerCase();
-        const byText = labelName && text.includes(labelName);
-        if (byIdx || byText) {
+        if (item.itemCategory === currentLabel) {
           allFiltered.push({...item, _tab:tab, _icon:tabIcons[tab]});
         }
       });
     });
     if (!allFiltered.length) {
-      cardList.innerHTML = `<div class="empty-msg">「${esc(getLabels(currentTab)[currentLabel]?.name||'')}」に関連するアイテムはありません</div>`;
+      cardList.innerHTML = `<div class="empty-msg">「${esc(currentLabel)}」のアイテムはまだありません</div>`;
       return;
     }
     allFiltered.sort((a,b) => {
@@ -2937,7 +2932,7 @@ function render() {
       return ln && text.includes(ln);
     });
     if (!filtered.length) {
-      cardList.innerHTML = `<div class="empty-msg">「${esc(getLabels(currentTab)[currentLabel]?.name||'')}」に関連するアイテムはありません</div>`;
+      cardList.innerHTML = `<div class="empty-msg">「${esc(currentLabel)}」のアイテムはまだありません</div>`;
       return;
     }
     renderItems(filtered, cardList);
@@ -3239,9 +3234,7 @@ function filterPersonSuggest(query) {
 }
 
 function selectItemCatByIdx(el, ci) {
-  alert('カテゴリ選択: idx=' + ci + ' value=' + _itemCatData[ci]);
   selectItemCategory(el, _itemCatData[ci]);
-  alert('fItemCategory.value = ' + document.getElementById('fItemCategory')?.value);
 }
 
 function selectItemCategory(el, cat) {
@@ -4019,7 +4012,6 @@ function saveItem() {
       person: document.getElementById('fPerson')?.value.trim()||(document.getElementById('fGiftTarget')?.value.trim())||null,
       labelIdx,
       itemCategory: document.getElementById('fItemCategory')?.value||null,
-      _debug_cat: 'CAT=' + (document.getElementById('fItemCategory')?.value||'EMPTY'),
       occasion: document.getElementById('fOccasion')?.value.trim()||null,
       amount: document.getElementById('fAmount')?.value||null,
       date: document.getElementById('fDate')?.value||null,
@@ -4045,8 +4037,6 @@ function saveItem() {
       data[currentTab].push(item);
     }
     saveData(); closeModal(); render();
-    // DEBUG: カテゴリ確認（確認後に削除）
-    alert('保存カテゴリ: [' + (item.itemCategory||'なし') + '] debug: ' + item._debug_cat);
     // Pickup toast
     if (tags.length && currentTab!=='people') {
       const matches = findMatchingPeople(tags);

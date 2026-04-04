@@ -595,6 +595,7 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
       <p style="text-align:center;color:var(--sub);font-size:15px;line-height:1.8;margin-bottom:40px;">大切な人を喜ばせたい。忘れない。</p>
       <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;" onclick="obNext('install')">はじめる</button>
       <p style="text-align:center;margin-top:16px;font-size:11px;color:var(--sub);">続けることで<a href="privacy.html" target="_blank" style="color:var(--accent);">プライバシーポリシー</a>に同意したものとみなします</p>
+      <p style="text-align:center;margin-top:24px;"><a href="#" onclick="event.preventDefault();showLoginScreen()" style="color:var(--accent);font-size:13px;">すでにアカウントをお持ちの方はログイン</a></p>
     </div>
     <!-- Step Install: ホーム画面に追加 -->
     <div id="obStepinstall" class="ob-step" style="display:none;">
@@ -805,6 +806,82 @@ async function sbSave() {
     if (error) console.error('Save error:', error);
   } catch(e) { console.error('sbSave error:', e); }
   _sbSyncing = false;
+}
+
+// ===== Email Auth =====
+async function registerEmail() {
+  const email = document.getElementById('regEmail')?.value?.trim();
+  const password = document.getElementById('regPassword')?.value;
+  if (!email || !password) { alert('メールアドレスとパスワードを入力してください'); return; }
+  if (password.length < 6) { alert('パスワードは6文字以上にしてください'); return; }
+  try {
+    const { data: res, error } = await _sb.auth.updateUser({ email, password });
+    if (error) { alert('登録エラー: ' + error.message); return; }
+    _sbUser = res.user;
+    showToast('メールアドレスを登録しました');
+    // 設定画面を再描画
+    openSettings();
+  } catch(e) { alert('登録に失敗しました: ' + e.message); }
+}
+
+function showLoginScreen() {
+  const overlay = document.createElement('div');
+  overlay.id = 'loginOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:var(--bg);z-index:100000;overflow-y:auto;';
+  overlay.innerHTML = `
+    <div style="max-width:400px;margin:0 auto;padding:60px 24px;min-height:100dvh;display:flex;flex-direction:column;justify-content:center;">
+      <div style="text-align:center;margin-bottom:32px;font-size:48px;">🕊️</div>
+      <h2 style="text-align:center;font-family:'Shippori Mincho',serif;font-size:22px;margin-bottom:24px;">ログイン</h2>
+      <div class="form-group">
+        <input type="email" id="loginEmail" placeholder="メールアドレス" style="width:100%;padding:14px 16px;font-size:16px;border:1px solid var(--border);border-radius:12px;margin-bottom:12px;">
+        <input type="password" id="loginPassword" placeholder="パスワード" style="width:100%;padding:14px 16px;font-size:16px;border:1px solid var(--border);border-radius:12px;">
+      </div>
+      <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;margin-top:16px;" onclick="doLogin()">ログイン</button>
+      <p style="text-align:center;margin-top:16px;"><a href="#" onclick="event.preventDefault();showResetPassword()" style="color:var(--accent);font-size:13px;">パスワードを忘れた方</a></p>
+      <p style="text-align:center;margin-top:24px;"><a href="#" onclick="event.preventDefault();document.getElementById('loginOverlay').remove()" style="color:var(--sub);font-size:13px;">戻る</a></p>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+async function doLogin() {
+  const email = document.getElementById('loginEmail')?.value?.trim();
+  const password = document.getElementById('loginPassword')?.value;
+  if (!email || !password) { alert('メールアドレスとパスワードを入力してください'); return; }
+  try {
+    const { data: res, error } = await _sb.auth.signInWithPassword({ email, password });
+    if (error) { alert('ログインエラー: ' + error.message); return; }
+    _sbUser = res.user;
+    await sbLoad();
+    render();
+    document.getElementById('loginOverlay')?.remove();
+    document.getElementById('onboardingOverlay').style.display = 'none';
+    localStorage.setItem(OB_KEY, '1');
+    showToast('ログインしました');
+  } catch(e) { alert('ログインに失敗しました: ' + e.message); }
+}
+
+function showResetPassword() {
+  const email = document.getElementById('loginEmail')?.value?.trim() || '';
+  const input = prompt('パスワードリセット用のメールアドレスを入力してください', email);
+  if (!input) return;
+  resetPassword(input);
+}
+
+async function resetPassword(email) {
+  try {
+    const { error } = await _sb.auth.resetPasswordForEmail(email);
+    if (error) { alert('エラー: ' + error.message); return; }
+    showToast('リセットメールを送信しました');
+  } catch(e) { alert('送信に失敗しました: ' + e.message); }
+}
+
+async function logoutAccount() {
+  if (!confirm('ログアウトしますか？\nローカルデータも削除されます。')) return;
+  try {
+    await _sb.auth.signOut();
+    localStorage.clear();
+    location.reload();
+  } catch(e) { alert('ログアウトに失敗しました: ' + e.message); }
 }
 
 // ===== Constants =====
@@ -3313,15 +3390,94 @@ function compressImage(file, maxWidth, quality) {
   });
 }
 
+// Generic rectangular crop state
+let _rectCropImg=null,_rectCropX=0,_rectCropY=0,_rectCropScale=1,_rectCropDrag=false,_rectCropSX=0,_rectCropSY=0,_rectCropTargetId='',_rectCropInputId='';
+
 function previewPhoto(input, previewId) {
   if (!input.files||!input.files[0]) return;
   const inputId = previewId.replace('Preview','');
   const removeEl = document.getElementById(inputId+'Remove');
   if (removeEl) removeEl.value = '';
+  _rectCropTargetId = previewId;
+  _rectCropInputId = inputId;
   compressImage(input.files[0]).then(dataUrl => {
     input.dataset.compressed = dataUrl;
-    document.getElementById(previewId).innerHTML = `<div style="position:relative;display:inline-block;width:100%;"><img src="${dataUrl}" style="width:100%;max-height:160px;object-fit:cover;border-radius:12px;margin-top:6px;"><div style="position:absolute;top:10px;right:4px;background:rgba(0,0,0,0.6);color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;" onclick="removePhoto('${inputId}')">✕</div></div>`;
+    showRectCrop(dataUrl, previewId, inputId);
   });
+}
+
+function showRectCrop(dataUrl, previewId, inputId) {
+  _rectCropImg = new Image();
+  _rectCropImg.onload = function() {
+    _rectCropX=0; _rectCropY=0; _rectCropScale=1; _rectCropDrag=false;
+    const container = document.getElementById(previewId);
+    if (!container) return;
+    container.innerHTML = `
+      <div id="rectCropBox" style="width:100%;height:200px;overflow:hidden;border-radius:12px;border:2px solid var(--accent);position:relative;touch-action:none;margin-top:6px;">
+        <img id="rectCropImage" src="${dataUrl}" style="position:absolute;pointer-events:none;">
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+        <span style="font-size:14px;">−</span>
+        <input type="range" id="rectCropZoom" min="50" max="300" value="100" style="flex:1;" oninput="setRectCropScale(this.value/100)">
+        <span style="font-size:14px;">＋</span>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px;justify-content:center;">
+        <button class="card-btn" onclick="applyRectCrop()" style="padding:8px 24px;background:var(--accent-light);border-color:var(--accent);color:var(--accent);">✓ 決定</button>
+        <button class="card-btn" onclick="cancelRectCrop('${inputId}')" style="padding:8px 24px;">✕ キャンセル</button>
+      </div>`;
+    const box = document.getElementById('rectCropBox');
+    updateRectCrop(box);
+    box.onmousedown = e=>{_rectCropDrag=true;_rectCropSX=e.clientX-_rectCropX;_rectCropSY=e.clientY-_rectCropY;};
+    box.onmousemove = e=>{if(!_rectCropDrag)return;_rectCropX=e.clientX-_rectCropSX;_rectCropY=e.clientY-_rectCropSY;updateRectCrop(box);};
+    box.onmouseup = ()=>{_rectCropDrag=false;};
+    box.ontouchstart = e=>{e.preventDefault();const t=e.touches[0];_rectCropDrag=true;_rectCropSX=t.clientX-_rectCropX;_rectCropSY=t.clientY-_rectCropY;};
+    box.ontouchmove = e=>{e.preventDefault();if(!_rectCropDrag)return;const t=e.touches[0];_rectCropX=t.clientX-_rectCropSX;_rectCropY=t.clientY-_rectCropSY;updateRectCrop(box);};
+    box.ontouchend = ()=>{_rectCropDrag=false;};
+  };
+  _rectCropImg.src = dataUrl;
+}
+
+function updateRectCrop(box) {
+  const img = document.getElementById('rectCropImage');
+  if (!img||!_rectCropImg||!box) return;
+  const bw = box.clientWidth, bh = box.clientHeight;
+  const aspect = _rectCropImg.width/_rectCropImg.height;
+  let w,h;
+  if (aspect > bw/bh) { h=bh*_rectCropScale; w=h*aspect; } else { w=bw*_rectCropScale; h=w/aspect; }
+  img.style.width=w+'px'; img.style.height=h+'px';
+  img.style.left=((bw-w)/2+_rectCropX)+'px'; img.style.top=((bh-h)/2+_rectCropY)+'px';
+}
+
+function setRectCropScale(s) { _rectCropScale=s; const box=document.getElementById('rectCropBox'); if(box)updateRectCrop(box); }
+
+function applyRectCrop() {
+  const box = document.getElementById('rectCropBox');
+  if (!box||!_rectCropImg) return;
+  const bw=box.clientWidth, bh=box.clientHeight;
+  const aspect=_rectCropImg.width/_rectCropImg.height;
+  let w,h;
+  if(aspect>bw/bh){h=bh*_rectCropScale;w=h*aspect;}else{w=bw*_rectCropScale;h=w/aspect;}
+  const sx=(bw-w)/2+_rectCropX, sy=(bh-h)/2+_rectCropY;
+  const srcX=(-sx/w)*_rectCropImg.width, srcY=(-sy/h)*_rectCropImg.height;
+  const srcW=(bw/w)*_rectCropImg.width, srcH=(bh/h)*_rectCropImg.height;
+  const canvas=document.createElement('canvas');
+  canvas.width=Math.min(srcW,800); canvas.height=Math.min(srcH,800*(bh/bw));
+  const ctx=canvas.getContext('2d');
+  ctx.drawImage(_rectCropImg, srcX,srcY,srcW,srcH, 0,0,canvas.width,canvas.height);
+  const result=canvas.toDataURL('image/jpeg',0.85);
+  const previewId=_rectCropTargetId, inputId=_rectCropInputId;
+  const container=document.getElementById(previewId);
+  container.innerHTML=`<div style="position:relative;display:inline-block;width:100%;"><img src="${result}" style="width:100%;max-height:160px;object-fit:cover;border-radius:12px;margin-top:6px;"><div style="position:absolute;top:10px;right:4px;background:rgba(0,0,0,0.6);color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;" onclick="removePhoto('${inputId}')">✕</div></div>`;
+  const fileInput=document.getElementById(inputId+'File')||document.getElementById(inputId+'Camera');
+  if(fileInput)fileInput.dataset.compressed=result;
+}
+
+function cancelRectCrop(inputId) {
+  const previewId=_rectCropTargetId;
+  document.getElementById(previewId).innerHTML='';
+  const camera=document.getElementById(inputId+'Camera');
+  const file=document.getElementById(inputId+'File');
+  if(camera)camera.value=''; if(file)file.value='';
 }
 
 function removePhoto(inputId) {
@@ -3837,9 +3993,11 @@ function previewCorpPhoto(input) {
   if (!input.files||!input.files[0]) return;
   const removeEl = document.getElementById('pCorpPhotoRemove');
   if (removeEl) removeEl.value = '';
+  _rectCropTargetId = 'pCorpPhotoPreview';
+  _rectCropInputId = 'pCorpPhoto';
   compressImage(input.files[0]).then(dataUrl => {
     input.dataset.compressed = dataUrl;
-    document.getElementById('pCorpPhotoPreview').innerHTML = `<div style="position:relative;display:inline-block;width:100%;"><img src="${dataUrl}" style="width:100%;max-height:200px;object-fit:contain;border-radius:12px;border:1px solid var(--border);"><div style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.6);color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;" onclick="removeCorpPhoto()">✕</div></div>`;
+    showRectCrop(dataUrl, 'pCorpPhotoPreview', 'pCorpPhoto');
   });
 }
 function removeCorpPhoto() {
@@ -4286,6 +4444,10 @@ function loadFontSize() {
 function openSettings() {
   const modal = document.getElementById('settingsModal');
   const currentSize = localStorage.getItem(FONTSIZE_KEY) || 'normal';
+  const emailLinked = _sbUser && _sbUser.email;
+  const emailSectionHtml = emailLinked
+    ? '<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:12px;"><span style="color:#6bab8a;font-size:18px;">✅</span><span style="font-size:14px;color:var(--text);">' + _sbUser.email + '</span></div><button class="card-btn delete" onclick="logoutAccount()" style="font-size:13px;padding:6px 14px;margin-top:8px;">ログアウト</button>'
+    : '<input type="email" id="regEmail" placeholder="メールアドレス" style="width:100%;padding:10px 14px;font-size:14px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;"><input type="password" id="regPassword" placeholder="パスワード（6文字以上）" style="width:100%;padding:10px 14px;font-size:14px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;"><button class="card-btn" onclick="registerEmail()" style="font-size:14px;padding:8px 20px;">登録</button>';
   modal.innerHTML = `<h2>⚙️ 設定</h2>
     <div class="form-group"><label>文字サイズ</label>
       <div style="display:flex;gap:8px;margin-top:4px;">
@@ -4337,6 +4499,10 @@ function openSettings() {
         <button class="card-btn" onclick="shareApp()" style="font-size:14px;padding:8px 20px;">🔗 URLをシェア</button>
       </div>
       <div class="form-hint" style="text-align:center;">紹介した人数: <strong id="referralCount">0</strong>人</div>
+    </div>
+    <div class="form-group"><label>📧 メールアドレス登録</label>
+      <div class="form-hint" style="margin-bottom:8px;">メールアドレスを登録すると、端末を変えてもデータを引き継げます</div>
+      <div id="emailAuthSection">${emailSectionHtml}</div>
     </div>
     <div class="form-group"><label>💾 データ管理</label>
       <div class="form-hint" style="margin-bottom:8px;">大切なデータを守るため、定期的にバックアップしてください</div>
@@ -4497,10 +4663,12 @@ function openDevMemoEdit(idx) {
 
 function previewDevImg(input) {
   if (!input.files || !input.files[0]) return;
-  const preview = document.getElementById('devImgPreview');
   document.getElementById('devImgRemove').value = '';
+  _rectCropTargetId = 'devImgPreview';
+  _rectCropInputId = 'devImg';
   compressImage(input.files[0]).then(dataUrl => {
-    preview.innerHTML = `<img src="${dataUrl}" style="max-width:100%;border-radius:10px;">`;
+    input.dataset.compressed = dataUrl;
+    showRectCrop(dataUrl, 'devImgPreview', 'devImg');
   });
 }
 

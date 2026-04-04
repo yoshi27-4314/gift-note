@@ -3829,12 +3829,237 @@ function openSettings() {
     <div class="form-group"><label>コンシェルジュ（Gemini API Key）</label>
       <input id="setGeminiKey" type="password" placeholder="AIzaSy..." value="${localStorage.getItem(GEMINI_KEY_STORAGE)||''}">
       <div class="form-hint">Google AI Studioで無料発行 → 個人Gmailで作成推奨</div></div>
+    <div style="text-align:center;margin-top:16px;margin-bottom:16px;">
+      <span id="settingsVersionTap" style="font-size:12px;color:var(--sub);cursor:default;user-select:none;padding:8px 16px;" onclick="devModeTap()">AWAI v${APP_VERSION}</span>
+    </div>
     <div class="form-btns">
       <button class="btn btn-secondary" onclick="document.getElementById('settingsModalOverlay').classList.remove('open')">閉じる</button>
       <button class="btn btn-primary" onclick="saveSettings()">設定を保存</button>
     </div>`;
   document.getElementById('settingsModalOverlay').classList.add('open');
   setTimeout(showQR, 100);
+}
+
+// ===== Developer Memo =====
+const DEV_MEMO_KEY = 'awai_dev_memos';
+const DEV_WEBHOOK_KEY = 'awai_dev_webhook';
+const DEV_WEBHOOK_DEFAULT = 'https://chat.googleapis.com/v1/spaces/AAQAXCYwhPo/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=dQLnS3Scb2xvLZXNXdsllhGCBDIftkU1Q_BXv2ey4Ic';
+let _devTapCount = 0;
+let _devTapTimer = null;
+
+function sendDevNotify(memo, senderName) {
+  const webhookUrl = localStorage.getItem(DEV_WEBHOOK_KEY) || DEV_WEBHOOK_DEFAULT;
+  if (!webhookUrl) return;
+  const priority = memo.priority === 'high' ? '🔴高' : memo.priority === 'medium' ? '🟡中' : '⚪低';
+  const card = {
+    cards: [{
+      header: { title: '🛠 ' + (memo.title || '無題'), subtitle: senderName + ' · ' + priority },
+      sections: [{
+        widgets: [
+          ...(memo.text ? [{ textParagraph: { text: memo.text } }] : []),
+          { textParagraph: { text: '<font color="#999999">' + new Date().toLocaleString('ja-JP') + '</font>' } }
+        ]
+      }]
+    }]
+  };
+  fetch(webhookUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+    body: JSON.stringify(card)
+  }).catch(() => {});
+}
+
+function testDevWebhook() {
+  const url = document.getElementById('devWebhookUrl').value.trim();
+  if (!url) { alert('Webhook URLを入力してください'); return; }
+  localStorage.setItem(DEV_WEBHOOK_KEY, url);
+  sendDevNotify({ title: 'テスト通知', text: 'AWAI開発者メモからのテスト送信です。この通知が届いていれば正常です。', priority: 'low' }, 'AWAI System');
+  showToast('テスト通知を送信しました');
+}
+
+function devModeTap() {
+  _devTapCount++;
+  clearTimeout(_devTapTimer);
+  if (_devTapCount >= 3) {
+    _devTapCount = 0;
+    document.getElementById('settingsModalOverlay').classList.remove('open');
+    openDevMemo();
+    return;
+  }
+  _devTapTimer = setTimeout(() => { _devTapCount = 0; }, 1500);
+}
+
+function getDevMemos() {
+  try { return JSON.parse(localStorage.getItem(DEV_MEMO_KEY)) || []; } catch(e) { return []; }
+}
+
+function saveDevMemos(memos) {
+  try { localStorage.setItem(DEV_MEMO_KEY, JSON.stringify(memos)); } catch(e) { alert('保存に失敗しました'); }
+}
+
+function openDevMemo() {
+  const modal = document.getElementById('modal');
+  const memos = getDevMemos();
+  let html = `<h2>🛠 開発者メモ</h2>`;
+  const webhookUrl = localStorage.getItem(DEV_WEBHOOK_KEY) || '';
+  html += `<div style="background:#f0f8ff;border:1px solid #90caf9;border-radius:12px;padding:12px;margin-bottom:16px;">
+    <div style="font-size:12px;color:#5a7a9a;margin-bottom:6px;">📡 Google Chat通知（管理者用）</div>
+    <input id="devWebhookUrl" type="url" placeholder="Google Chat Webhook URLを貼り付け" value="${esc(webhookUrl)}" style="width:100%;font-size:12px;padding:8px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;">
+    <div style="display:flex;gap:6px;">
+      <button class="card-btn" onclick="localStorage.setItem('${DEV_WEBHOOK_KEY}',document.getElementById('devWebhookUrl').value.trim());showToast('Webhook URLを保存しました')" style="font-size:12px;">💾 保存</button>
+      <button class="card-btn" onclick="testDevWebhook()" style="font-size:12px;">🔔 テスト送信</button>
+    </div>
+  </div>`;
+  html += `<div style="display:flex;gap:8px;margin-bottom:16px;">
+    <button class="btn btn-primary" onclick="openDevMemoEdit()" style="flex:1;padding:10px;">＋ 新規メモ</button>
+  </div>`;
+
+  if (!memos.length) {
+    html += `<div class="empty-msg">メモはまだありません</div>`;
+  } else {
+    memos.slice().reverse().forEach((m, ri) => {
+      const i = memos.length - 1 - ri;
+      const date = new Date(m.createdAt);
+      const dateStr = date.toLocaleDateString('ja-JP', {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+      const priority = m.priority === 'high' ? '🔴' : m.priority === 'medium' ? '🟡' : '⚪';
+      const statusIcon = m.done ? '✅' : '⬜';
+      html += `<div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span style="font-size:12px;color:var(--sub);">${dateStr}${m.sender ? ' · ' + esc(m.sender) : ''}</span>
+          <span style="font-size:12px;">${priority} ${statusIcon}</span>
+        </div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:4px;">${esc(m.title||'無題')}</div>
+        ${m.text ? `<div style="font-size:13px;color:var(--text);white-space:pre-wrap;margin-bottom:6px;">${esc(m.text)}</div>` : ''}
+        ${m.img ? `<div style="margin-bottom:8px;"><img src="${m.img}" style="max-width:100%;border-radius:10px;cursor:pointer;" onclick="window.open(this.src,'_blank')"></div>` : ''}
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="card-btn" onclick="toggleDevMemoDone(${i})" style="font-size:12px;">${m.done?'⬜ 未完了に':'✅ 完了'}</button>
+          <button class="card-btn" onclick="openDevMemoEdit(${i})" style="font-size:12px;">✏️ 編集</button>
+          <button class="card-btn delete" onclick="deleteDevMemo(${i})" style="font-size:12px;">🗑 削除</button>
+        </div>
+      </div>`;
+    });
+  }
+
+  html += `<div class="form-btns" style="margin-top:16px;"><button class="btn btn-secondary" onclick="closeModal()">閉じる</button></div>`;
+  modal.innerHTML = html;
+  openModal();
+}
+
+function openDevMemoEdit(idx) {
+  const memos = getDevMemos();
+  const isEdit = idx !== undefined && idx !== null;
+  const m = isEdit ? memos[idx] : null;
+  const modal = document.getElementById('modal');
+
+  const savedSender = localStorage.getItem('awai_dev_sender') || (getMyProfile().name || '');
+  let html = `<h2>🛠 ${isEdit ? 'メモを編集' : '新規メモ'}</h2>`;
+  html += `<div class="form-group"><label>あなたの名前</label><input id="devSender" placeholder="例：浅野" value="${esc(m?.sender || savedSender)}"></div>`;
+  html += `<div class="form-group"><label>タイトル</label><input id="devTitle" placeholder="例：行きたい場所の閉じたボタン位置がずれる" value="${esc(m?.title||'')}"></div>`;
+  html += `<div class="form-group"><label>内容</label><textarea id="devText" rows="5" placeholder="詳細や修正方針を書く">${esc(m?.text||'')}</textarea></div>`;
+
+  // Priority
+  const p = m?.priority || 'low';
+  html += `<div class="form-group"><label>優先度</label>
+    <div style="display:flex;gap:6px;margin-top:4px;">
+      <div class="date-type-chip ${p==='high'?'active':''}" onclick="document.getElementById('devPriority').value='high';this.parentElement.querySelectorAll('.date-type-chip').forEach(c=>c.classList.remove('active'));this.classList.add('active');" style="flex:1;text-align:center;">🔴 高</div>
+      <div class="date-type-chip ${p==='medium'?'active':''}" onclick="document.getElementById('devPriority').value='medium';this.parentElement.querySelectorAll('.date-type-chip').forEach(c=>c.classList.remove('active'));this.classList.add('active');" style="flex:1;text-align:center;">🟡 中</div>
+      <div class="date-type-chip ${p==='low'?'active':''}" onclick="document.getElementById('devPriority').value='low';this.parentElement.querySelectorAll('.date-type-chip').forEach(c=>c.classList.remove('active'));this.classList.add('active');" style="flex:1;text-align:center;">⚪ 低</div>
+    </div><input type="hidden" id="devPriority" value="${p}">
+  </div>`;
+
+  // Screenshot
+  html += `<div class="form-group"><label>📷 スクリーンショット</label>
+    <div style="display:flex;gap:8px;margin-top:6px;">
+      <input type="file" id="devImgCamera" accept="image/*" capture="environment" style="display:none;" onchange="previewDevImg(this)">
+      <input type="file" id="devImgFile" accept="image/*" style="display:none;" onchange="previewDevImg(this)">
+      <button class="card-btn" onclick="document.getElementById('devImgCamera').click()" style="font-size:13px;">📷 カメラ</button>
+      <button class="card-btn" onclick="document.getElementById('devImgFile').click()" style="font-size:13px;">📁 ファイル</button>
+      ${m?.img ? `<button class="card-btn delete" onclick="document.getElementById('devImgPreview').innerHTML='';document.getElementById('devImgRemove').value='1'" style="font-size:13px;">✕ 削除</button>` : ''}
+    </div>
+    <input type="hidden" id="devImgRemove" value="">
+    <div id="devImgPreview" style="margin-top:8px;">${m?.img ? `<img src="${m.img}" style="max-width:100%;border-radius:10px;">` : ''}</div>
+  </div>`;
+
+  html += `<input type="hidden" id="devEditIdx" value="${isEdit ? idx : ''}">`;
+  html += `<div class="form-btns">
+    <button class="btn btn-secondary" onclick="openDevMemo()">戻る</button>
+    <button class="btn btn-primary" onclick="saveDevMemo()">保存</button>
+  </div>`;
+  modal.innerHTML = html;
+}
+
+function previewDevImg(input) {
+  if (!input.files || !input.files[0]) return;
+  const preview = document.getElementById('devImgPreview');
+  document.getElementById('devImgRemove').value = '';
+  compressImage(input.files[0]).then(dataUrl => {
+    preview.innerHTML = `<img src="${dataUrl}" style="max-width:100%;border-radius:10px;">`;
+  });
+}
+
+function saveDevMemo() {
+  const title = document.getElementById('devTitle').value.trim();
+  const text = document.getElementById('devText').value.trim();
+  if (!title && !text) { alert('タイトルまたは内容を入力してください'); return; }
+
+  const memos = getDevMemos();
+  const idxStr = document.getElementById('devEditIdx').value;
+  const isEdit = idxStr !== '';
+  const idx = isEdit ? parseInt(idxStr) : -1;
+
+  const removeImg = document.getElementById('devImgRemove')?.value === '1';
+  const previewImg = document.querySelector('#devImgPreview img');
+  let img = null;
+  if (removeImg) {
+    img = null;
+  } else if (previewImg && previewImg.src.startsWith('data:')) {
+    img = previewImg.src;
+  } else if (isEdit && memos[idx]?.img) {
+    img = memos[idx].img;
+  }
+
+  const sender = document.getElementById('devSender').value.trim() || '匿名';
+  localStorage.setItem('awai_dev_sender', sender);
+
+  const memo = {
+    title,
+    text,
+    sender,
+    priority: document.getElementById('devPriority').value || 'low',
+    img,
+    done: isEdit ? (memos[idx]?.done || false) : false,
+    createdAt: isEdit ? memos[idx].createdAt : new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  if (isEdit) {
+    memos[idx] = memo;
+  } else {
+    memos.push(memo);
+  }
+  saveDevMemos(memos);
+  sendDevNotify(memo, sender);
+  openDevMemo();
+  const hasWebhook = !!localStorage.getItem(DEV_WEBHOOK_KEY);
+  showToast(isEdit ? 'メモを更新しました' + (hasWebhook?' 📡':'') : 'メモを追加しました' + (hasWebhook?' 📡':''));
+}
+
+function toggleDevMemoDone(idx) {
+  const memos = getDevMemos();
+  if (memos[idx]) {
+    memos[idx].done = !memos[idx].done;
+    saveDevMemos(memos);
+    openDevMemo();
+  }
+}
+
+function deleteDevMemo(idx) {
+  if (!confirm('このメモを削除しますか？')) return;
+  const memos = getDevMemos();
+  memos.splice(idx, 1);
+  saveDevMemos(memos);
+  openDevMemo();
+  showToast('メモを削除しました');
 }
 
 // ===== Referral =====

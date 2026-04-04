@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AWAI デザイン提案</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&family=Shippori+Mincho:wght@400;600&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Zen Maru Gothic',sans-serif; background:#f5f5f5; color:#333; }
+.container { max-width:800px; margin:0 auto; padding:20px; }
+h1 { font-family:'Shippori Mincho',serif; text-align:center; font-size:24px; margin:20px 0; color:#4a3f3a; }
+.proposal-section { margin-bottom:40px; }
+.proposal-title { font-size:18px; font-weight:700; color:#e8a598; margin-bottom:8px; }
+.proposal-desc { font-size:14px; color:#666; margin-bottom:16px; line-height:1.8; }
+.compare { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.compare-item { background:#fff; border-radius:16px; overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,0.08); }
+.compare-label { padding:8px 16px; font-size:12px; font-weight:700; text-align:center; }
+.compare-label.before { background:#f0e8e8; color:#a08080; }
+.compare-label.after { background:#e8f0e8; color:#60a060; }
+.phone { background:#1a1a1a; border-radius:20px; padding:8px; margin:12px auto; max-width:280px; }
+.screen { background:#fdf8f3; border-radius:14px; min-height:400px; overflow:hidden; position:relative; }
+
+/* Mockup styles */
+.m-header { text-align:center; padding:16px 16px 8px; }
+.m-title { font-family:'Shippori Mincho',serif; font-size:22px; font-weight:600; letter-spacing:2px; color:#4a3f3a; }
+.m-subtitle { font-size:10px; color:#7a6e68; margin-top:2px; }
+.m-search { margin:0 12px 8px; padding:10px 14px 10px 32px; background:#ede3dd; border-radius:16px; font-size:12px; color:#7a6e68; }
+.m-tabs-top { display:flex; gap:4px; padding:4px 12px; flex-wrap:wrap; justify-content:center; }
+.m-tab-top { padding:5px 10px; border-radius:14px; font-size:10px; background:#fff; border:1px solid #ede3dd; color:#7a6e68; }
+.m-tab-top.active { background:#e8a598; color:#fff; border-color:#e8a598; }
+.m-card { background:#fff; border-radius:14px; margin:8px 12px; padding:14px; box-shadow:0 1px 6px rgba(0,0,0,0.06); }
+.m-card-title { font-size:14px; font-weight:600; }
+.m-card-sub { font-size:11px; color:#7a6e68; margin-top:2px; }
+
+/* New design mockup */
+.m-tabs-bottom { position:absolute; bottom:0; left:0; right:0; display:flex; background:#fff; border-top:1px solid #f0e8e4; padding:6px 0 10px; }
+.m-tab-bottom { flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; font-size:9px; color:#b0a8a0; }
+.m-tab-bottom.active { color:#e8a598; }
+.m-tab-bottom .icon { font-size:20px; }
+.m-card-new { background:#fff; border-radius:16px; margin:10px 14px; padding:16px; box-shadow:0 2px 12px rgba(180,140,120,0.1); }
+.m-card-new .title { font-size:15px; font-weight:600; margin-bottom:4px; }
+.m-card-new .sub { font-size:11px; color:#7a6e68; }
+.m-avatar { width:48px; height:48px; border-radius:50%; background:#fdf0ed; display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; }
+.m-list-item { display:flex; align-items:center; gap:12px; padding:12px 14px; }
+.m-list-name { font-size:15px; font-weight:500; }
+.m-list-preview { font-size:11px; color:#7a6e68; }
+.m-badge { font-size:10px; color:#e8a598; font-weight:600; margin-left:auto; }
+.m-fab { position:absolute; bottom:64px; right:16px; width:52px; height:52px; border-radius:50%; background:#e8a598; color:#fff; font-size:24px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 16px rgba(232,165,152,0.4); }
+.m-search-new { margin:0 14px 10px; padding:12px 16px 12px 36px; background:#f5f0ed; border-radius:20px; font-size:13px; color:#7a6e68; border:none; }
+
+.design-note { background:#fff8f0; border-left:3px solid #e8a598; padding:12px 16px; margin:16px 0; border-radius:0 12px 12px 0; font-size:13px; line-height:1.8; }
+
+.principle { display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; margin:16px 0; }
+.principle-item { background:#fff; border-radius:14px; padding:16px; text-align:center; box-shadow:0 2px 8px rgba(0,0,0,0.06); }
+.principle-item .emoji { font-size:28px; margin-bottom:8px; }
+.principle-item .name { font-weight:700; font-size:14px; margin-bottom:4px; }
+.principle-item .desc { font-size:12px; color:#666; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>AWAI デザイン提案書</h1>
+<p style="text-align:center;color:#7a6e68;font-size:14px;margin-bottom:32px;">LINE / myJCB のデザイン品質を目指す</p>
+
+<!-- 原則 -->
+<div class="proposal-section">
+<div class="proposal-title">デザイン原則</div>
+<div class="principle">
+  <div class="principle-item">
+    <div class="emoji">🫧</div>
+    <div class="name">余白で呼吸</div>
+    <div class="desc">詰め込まない。余白が高級感を作る</div>
+  </div>
+  <div class="principle-item">
+    <div class="emoji">👆</div>
+    <div class="name">大きなタップ</div>
+    <div class="desc">指で迷わない。アイコンは大きく明確に</div>
+  </div>
+  <div class="principle-item">
+    <div class="emoji">🎯</div>
+    <div class="name">1画面1目的</div>
+    <div class="desc">情報を絞る。最初に見えるものだけで判断できる</div>
+  </div>
+  <div class="principle-item">
+    <div class="emoji">🎨</div>
+    <div class="name">色は3つまで</div>
+    <div class="desc">アクセント色・テキスト色・背景色。それだけ</div>
+  </div>
+</div>
+</div>
+
+<!-- Before/After: トップ画面 -->
+<div class="proposal-section">
+<div class="proposal-title">1. トップ画面</div>
+<div class="proposal-desc">タブを上部チップ → 下部固定バーに。LINEと同じ操作感に。</div>
+<div class="compare">
+  <div class="compare-item">
+    <div class="compare-label before">BEFORE</div>
+    <div class="phone">
+      <div class="screen">
+        <div class="m-header"><div class="m-title">AWAI</div><div class="m-subtitle">友だちと記憶がここに</div></div>
+        <div class="m-search">🔍 名前・タグ・メモで検索</div>
+        <div class="m-tabs-top">
+          <div class="m-tab-top active">✨ お気に入り</div>
+          <div class="m-tab-top">🎀 もらった</div>
+          <div class="m-tab-top">🎁 あげた</div>
+          <div class="m-tab-top">📍 行きたい</div>
+          <div class="m-tab-top">👤 友だち</div>
+          <div class="m-tab-top">👥 グループ</div>
+        </div>
+        <div class="m-card"><div class="m-card-title">ワイヤレスイヤホン</div><div class="m-card-sub">🍪 お菓子 · ★★★★☆</div></div>
+        <div class="m-card"><div class="m-card-title">日本酒 獺祭</div><div class="m-card-sub">🍽 グルメ · ★★★★★</div></div>
+        <div class="m-card"><div class="m-card-title">ハンドクリーム</div><div class="m-card-sub">💄 美容・健康</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="compare-item">
+    <div class="compare-label after">AFTER</div>
+    <div class="phone">
+      <div class="screen" style="padding-bottom:56px;">
+        <div class="m-header" style="padding:20px 16px 12px;"><div class="m-title" style="font-size:26px;letter-spacing:3px;">AWAI</div></div>
+        <div class="m-search-new">🔍 検索</div>
+        <div class="m-card-new"><div class="title">ワイヤレスイヤホン</div><div class="sub">🍪 お菓子 · ★★★★☆</div></div>
+        <div class="m-card-new"><div class="title">日本酒 獺祭</div><div class="sub">🍽 グルメ · ★★★★★</div></div>
+        <div class="m-card-new"><div class="title">ハンドクリーム</div><div class="sub">💄 美容・健康</div></div>
+        <div class="m-fab">＋</div>
+        <div class="m-tabs-bottom">
+          <div class="m-tab-bottom active"><span class="icon">✨</span>お気に入り</div>
+          <div class="m-tab-bottom"><span class="icon">📋</span>記録</div>
+          <div class="m-tab-bottom"><span class="icon">📍</span>行きたい</div>
+          <div class="m-tab-bottom"><span class="icon">👤</span>友だち</div>
+          <div class="m-tab-bottom"><span class="icon">⚙️</span>その他</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="design-note">
+  <strong>狙い：</strong>タブが下にあることで片手操作がしやすく、画面上部はコンテンツに集中できる。LINEユーザーにとって馴染みのある操作感。サブタイトルを削除してヘッダーをコンパクトに。
+</div>
+</div>
+
+<!-- Before/After: 友だち一覧 -->
+<div class="proposal-section">
+<div class="proposal-title">2. 友だち一覧</div>
+<div class="proposal-desc">アバターを大きく、記念日カウントダウンを目立たせる。LINE友だちリスト風。</div>
+<div class="compare">
+  <div class="compare-item">
+    <div class="compare-label before">BEFORE</div>
+    <div class="phone">
+      <div class="screen">
+        <div style="padding:12px;">
+          <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #ede3dd;">
+            <div style="width:36px;height:36px;border-radius:50%;background:#fdf0ed;display:flex;align-items:center;justify-content:center;font-size:16px;">😊</div>
+            <div><div style="font-size:13px;font-weight:500;">さとうさん</div><div style="font-size:10px;color:#7a6e68;">友人</div></div>
+            <div style="margin-left:auto;font-size:10px;color:#7a6e68;">誕生日<br>あと3日</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #ede3dd;">
+            <div style="width:36px;height:36px;border-radius:50%;background:#e8f0ff;display:flex;align-items:center;justify-content:center;font-size:16px;">👨</div>
+            <div><div style="font-size:13px;font-weight:500;">たなかさん</div><div style="font-size:10px;color:#7a6e68;">同僚</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #ede3dd;">
+            <div style="width:36px;height:36px;border-radius:50%;background:#f0ffe8;display:flex;align-items:center;justify-content:center;font-size:16px;">👩</div>
+            <div><div style="font-size:13px;font-weight:500;">やまださん</div><div style="font-size:10px;color:#7a6e68;">家族</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="compare-item">
+    <div class="compare-label after">AFTER</div>
+    <div class="phone">
+      <div class="screen" style="padding-bottom:56px;">
+        <div style="padding:16px 14px 8px;font-size:13px;color:#7a6e68;">友だち</div>
+        <div class="m-list-item" style="border-bottom:1px solid #f5f0ed;">
+          <div class="m-avatar">😊</div>
+          <div><div class="m-list-name">さとうさん</div><div class="m-list-preview">友人</div></div>
+          <div class="m-badge" style="color:#c97070;font-size:12px;text-align:right;">🎂 誕生日<br><span style="font-size:16px;">あと3日</span></div>
+        </div>
+        <div class="m-list-item" style="border-bottom:1px solid #f5f0ed;">
+          <div class="m-avatar" style="background:#e8f0ff;">👨</div>
+          <div><div class="m-list-name">たなかさん</div><div class="m-list-preview">同僚</div></div>
+          <div class="m-badge" style="text-align:right;">💍 結婚記念日<br>あと25日</div>
+        </div>
+        <div class="m-list-item" style="border-bottom:1px solid #f5f0ed;">
+          <div class="m-avatar" style="background:#f0ffe8;">👩</div>
+          <div><div class="m-list-name">やまださん</div><div class="m-list-preview">家族</div></div>
+        </div>
+        <div class="m-tabs-bottom">
+          <div class="m-tab-bottom"><span class="icon">✨</span>お気に入り</div>
+          <div class="m-tab-bottom"><span class="icon">📋</span>記録</div>
+          <div class="m-tab-bottom"><span class="icon">📍</span>行きたい</div>
+          <div class="m-tab-bottom active"><span class="icon">👤</span>友だち</div>
+          <div class="m-tab-bottom"><span class="icon">⚙️</span>その他</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="design-note">
+  <strong>狙い：</strong>アバターを大きくして「人」が主役に。記念日カウントダウンが目立つことで「あ、もうすぐだ」と気づきやすい。余白で各人を区切る。
+</div>
+</div>
+
+<!-- カード詳細 -->
+<div class="proposal-section">
+<div class="proposal-title">3. 友だち詳細カード</div>
+<div class="proposal-desc">大きなアバター、コンシェルジュ＋ギフトボタンを目立たせる。情報はセクション分け。</div>
+<div class="phone" style="max-width:300px;margin:0 auto;">
+  <div class="screen" style="padding-bottom:56px;">
+    <div style="padding:8px 14px;"><span style="font-size:12px;color:#e8a598;">← 一覧に戻る</span></div>
+    <div style="text-align:center;padding:16px;">
+      <div style="width:80px;height:80px;border-radius:50%;background:#fdf0ed;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:36px;">😊</div>
+      <div style="font-family:'Shippori Mincho',serif;font-size:20px;font-weight:600;">さとうさん</div>
+      <div style="font-size:12px;color:#7a6e68;margin-top:4px;">友人</div>
+    </div>
+    <div style="display:flex;gap:8px;padding:0 14px;margin-bottom:16px;">
+      <div style="flex:1;padding:12px;border-radius:14px;background:linear-gradient(135deg,#fff4e6,#ffecd2);text-align:center;font-size:13px;font-weight:600;color:#4a3f3a;">💡 コンシェルジュ</div>
+      <div style="flex:1;padding:12px;border-radius:14px;background:linear-gradient(135deg,#e8f2fc,#daeaf8);text-align:center;font-size:13px;font-weight:600;color:#4a7aaa;">🎁 ギフトを探す</div>
+    </div>
+    <div style="padding:0 14px;">
+      <div style="background:#fff;border-radius:14px;padding:14px;margin-bottom:10px;box-shadow:0 1px 6px rgba(0,0,0,0.05);">
+        <div style="font-size:12px;color:#e8a598;font-weight:600;margin-bottom:8px;">📅 記念日</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div><div style="font-size:14px;">🎂 誕生日</div><div style="font-size:11px;color:#7a6e68;">4月15日</div></div>
+          <div style="font-size:14px;color:#c97070;font-weight:700;">あと3日</div>
+        </div>
+      </div>
+      <div style="background:#fff;border-radius:14px;padding:14px;margin-bottom:10px;box-shadow:0 1px 6px rgba(0,0,0,0.05);">
+        <div style="font-size:12px;color:#e8a598;font-weight:600;margin-bottom:8px;">💖 好きなもの</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <span style="background:#fdeee9;color:#e8a598;padding:4px 10px;border-radius:10px;font-size:12px;">ワイン</span>
+          <span style="background:#fdeee9;color:#e8a598;padding:4px 10px;border-radius:10px;font-size:12px;">旅行</span>
+          <span style="background:#fdeee9;color:#e8a598;padding:4px 10px;border-radius:10px;font-size:12px;">花</span>
+        </div>
+      </div>
+      <div style="background:#fff;border-radius:14px;padding:14px;margin-bottom:10px;box-shadow:0 1px 6px rgba(0,0,0,0.05);">
+        <div style="font-size:12px;color:#e8a598;font-weight:600;margin-bottom:8px;">📏 サイズ</div>
+        <div style="font-size:13px;display:flex;gap:16px;">
+          <span>服 <strong>M</strong></span>
+          <span>靴 <strong>25.5</strong></span>
+        </div>
+      </div>
+    </div>
+    <div class="m-tabs-bottom">
+      <div class="m-tab-bottom"><span class="icon">✨</span>お気に入り</div>
+      <div class="m-tab-bottom"><span class="icon">📋</span>記録</div>
+      <div class="m-tab-bottom"><span class="icon">📍</span>行きたい</div>
+      <div class="m-tab-bottom active"><span class="icon">👤</span>友だち</div>
+      <div class="m-tab-bottom"><span class="icon">⚙️</span>その他</div>
+    </div>
+  </div>
+</div>
+<div class="design-note">
+  <strong>狙い：</strong>カード詳細は「この人のことを知る画面」。大きなアバターで誰のカードか一目瞭然。コンシェルジュとギフトボタンが目立つことで「この人に何かしたい」という行動に直結する。各情報はカード型セクションで区切り、見たい情報だけ見れる。
+</div>
+</div>
+
+<!-- 今後 -->
+<div class="proposal-section">
+<div class="proposal-title">今後の改善方針</div>
+<div class="design-note">
+  <strong>Phase 1（今回）:</strong> CSS刷新 — 余白・角丸・シャドウ・ボトムナビ<br>
+  <strong>Phase 2:</strong> カード詳細のセクション分け — 情報をカード型に区切る<br>
+  <strong>Phase 3:</strong> アニメーション — ページ遷移、カード開閉の滑らかさ<br>
+  <strong>Phase 4:</strong> ダークモード対応<br>
+  <strong>Phase 5:</strong> 独自ドメイン＋OGP画像（SNSシェア時の見栄え）
+</div>
+</div>
+
+<div style="text-align:center;padding:40px 0;color:#b0a8a0;font-size:12px;">
+  AWAI Design Proposal — 2026.04.05<br>
+  © First Eight Group
+</div>
+
+</div>
+</body>
+</html>

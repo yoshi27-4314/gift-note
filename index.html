@@ -3185,6 +3185,11 @@ function openItemModal(id) {
     html += `<div class="form-group"><label>金額（任意）</label><input id="fAmount" type="number" placeholder="例：5000" value="${item?.amount||''}"></div>`;
   }
 
+  // Date (received/gave)
+  if (['received','gave'].includes(currentTab)) {
+    html += `<div class="form-group"><label>日付</label><input type="date" id="fDate" value="${item?.date||''}"></div>`;
+  }
+
   // Star rating
   const curRating = item?.rating||0;
   const ratingLabel = '評価';

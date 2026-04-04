@@ -3058,9 +3058,13 @@ function openItemModal(id) {
   // Person (received/gave)
   if (showPerson) {
     const personLabel = currentTab==='received' ? '誰から？' : '誰に？';
-    html += `<div class="form-group"><label>${personLabel}</label><input id="fPerson" placeholder="例：さとうさん" value="${esc(item?.person||'')}" list="peopleList">
-    <datalist id="peopleList">${data.people.map(p=>`<option value="${esc(p.nickname||'')}">`).join('')}</datalist>
-    <div class="form-hint">友だちに登録済みの名前が候補に出ます</div></div>`;
+    const personVal = item?.person||'';
+    html += `<div class="form-group"><label>${personLabel}</label>
+    <input id="fPerson" placeholder="例：さとうさん" value="${esc(personVal)}" oninput="filterPersonSuggest(this.value)">
+    <div id="personSuggestList" style="max-height:120px;overflow-y:auto;border:1px solid var(--border);border-radius:12px;margin-top:4px;${data.people.length?'':'display:none;'}">
+      ${data.people.filter(p=>!p.isMemory).map(p=>`<div style="padding:8px 12px;font-size:14px;cursor:pointer;border-bottom:1px solid var(--border);" class="person-suggest-item" onclick="document.getElementById('fPerson').value='${esc(p.nickname||'')}';document.getElementById('personSuggestList').style.display='none';">${esc(p.nickname||'')}</div>`).join('')}
+    </div>
+    <div class="form-hint">友だちに登録済みの名前をタップで選択</div></div>`;
   }
 
   // Category (like place)
@@ -3129,6 +3133,20 @@ function setItemPurpose(purpose, el) {
   el.classList.add('active');
   const targetGroup = document.getElementById('fGiftTargetGroup');
   if (targetGroup) targetGroup.style.display = purpose==='gift' ? '' : 'none';
+}
+
+function filterPersonSuggest(query) {
+  const list = document.getElementById('personSuggestList');
+  if (!list) return;
+  const items = list.querySelectorAll('.person-suggest-item');
+  const q = query.toLowerCase();
+  let visible = 0;
+  items.forEach(el => {
+    const match = !q || el.textContent.toLowerCase().includes(q);
+    el.style.display = match ? '' : 'none';
+    if (match) visible++;
+  });
+  list.style.display = visible ? '' : 'none';
 }
 
 function selectItemCatByIdx(el, ci) {
@@ -6365,6 +6383,10 @@ if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().t
 
   render();
   checkAppUpdate();
+
+  // プライベートブラウズ検出
+  try { localStorage.setItem('_test','1'); localStorage.removeItem('_test'); }
+  catch(e) { alert('プライベートブラウズモードではデータを保存できません。通常モードでご利用ください。'); }
 
   // Onboarding check (初回起動 or 既存データなし)
   if (!localStorage.getItem(OB_KEY) && !data.people.length && !data.wish.length) {

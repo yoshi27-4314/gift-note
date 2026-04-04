@@ -975,19 +975,28 @@ function renderPickup() {
 
   // Only show when searching or filtering by category
   const isSearching = searchQuery && searchQuery.length > 0;
-  const isItemCategoryFilter = ['wish','received','gave'].includes(currentTab) && currentLabel !== null && typeof currentLabel === 'string';
-  const isPlaceCategoryFilter = currentTab === 'place' && currentLabel !== null;
+  const isCategoryFilter = currentLabel !== null && typeof currentLabel === 'string' && currentLabel !== 'closed';
 
-  if (!isSearching && !isItemCategoryFilter && !isPlaceCategoryFilter) { zone.innerHTML=''; return; }
+  if (!isSearching && !isCategoryFilter) { zone.innerHTML=''; return; }
 
   // Collect tags from visible items + search keyword + category genres
   const searchTags = [];
   if (isSearching) searchTags.push(searchQuery);
-  if (isPlaceCategoryFilter && typeof currentLabel === 'number') {
-    const ln = getLabels('place')[currentLabel]?.name;
-    if (ln) searchTags.push(ln);
+  if (isCategoryFilter && currentTab === 'place') {
+    const catName = currentLabel.replace(/^[^\s]+\s/, '');
+    searchTags.push(catName);
+    const placeCategories = {
+      '🍽 食事': ['和食','イタリアン','フレンチ','中華','焼肉','寿司','ラーメン','カレー','居酒屋','バー','カフェ'],
+      '🎮 遊び': ['カラオケ','ボウリング','テーマパーク','映画館','ライブ','スポーツ観戦','キャンプ','ゴルフ'],
+      '📸 観光': ['神社','お寺','温泉','絶景','公園','美術館','博物館','水族館','動物園'],
+      '🛍 買い物': ['ショッピングモール','アウトレット','商店街','百貨店'],
+      '🏨 宿泊': ['ホテル','旅館','民宿','グランピング'],
+      '💆 リラックス': ['スパ','マッサージ','エステ','サウナ','岩盤浴','ヨガ'],
+      '📋 その他': []
+    };
+    (placeCategories[currentLabel]||[]).forEach(g => searchTags.push(g));
   }
-  if (isItemCategoryFilter) {
+  if (isCategoryFilter && ['wish','received','gave'].includes(currentTab)) {
     const itemCategories = {
       '👕 ファッション': ['服','靴','バッグ','アクセサリー','時計','帽子','財布','ストール','ネクタイ','サングラス'],
       '🍽 グルメ': ['お酒','コーヒー','紅茶','調味料','お取り寄せ','フルーツ','ワイン','日本酒'],
@@ -1042,13 +1051,20 @@ function renderLabelBar() {
     bar.innerHTML = html;
     return;
   }
+  // Place tab: category-based filter + 記憶
+  if (currentTab==='place') {
+    const placeCatNames = ['🍽 食事','🎮 遊び','📸 観光','🛍 買い物','🏨 宿泊','💆 リラックス','📋 その他'];
+    let html = `<div class="label-chip ${currentLabel===null?'active':''}" style="color:var(--accent);${currentLabel===null?'border-color:var(--accent);':''}" onclick="filterLabel(null)"><span class="ldot" style="background:var(--accent);"></span> すべて</div>`;
+    placeCatNames.forEach(cat => {
+      const active = currentLabel === cat;
+      html += `<div class="label-chip ${active?'active':''}" style="color:var(--text);${active?'border-color:var(--accent);background:var(--accent-light);':''}" onclick="filterLabel('${cat}')">${cat}</div>`;
+    });
+    html += `<div class="label-chip ${currentLabel==='closed'?'active':''}" style="color:#a09590;${currentLabel==='closed'?'border-color:#a09590;':''}" onclick="filterLabel('closed')"><span class="ldot" style="background:#a09590;"></span> 🤍 記憶</div>`;
+    bar.innerHTML = html;
+    return;
+  }
   const labels = getLabels(currentTab);
   let html = `<div class="label-chip ${currentLabel===null?'active':''}" style="color:var(--accent);${currentLabel===null?'border-color:var(--accent);':''}" onclick="filterLabel(null)"><span class="ldot" style="background:var(--accent);"></span> すべて</div>`;
-  if (currentTab==='place') {
-    html += `<div class="label-chip ${currentLabel==='want'?'active':''}" style="color:#e8a598;${currentLabel==='want'?'border-color:#e8a598;':''}" onclick="filterLabel('want')"><span class="ldot" style="background:#e8a598;"></span> 📍 行きたい</div>`;
-    html += `<div class="label-chip ${currentLabel==='visited'?'active':''}" style="color:#6bab8a;${currentLabel==='visited'?'border-color:#6bab8a;':''}" onclick="filterLabel('visited')"><span class="ldot" style="background:#6bab8a;"></span> ✅ 行った</div>`;
-    html += `<div class="label-chip ${currentLabel==='closed'?'active':''}" style="color:#a09590;${currentLabel==='closed'?'border-color:#a09590;':''}" onclick="filterLabel('closed')"><span class="ldot" style="background:#a09590;"></span> 🤍 記憶</div>`;
-  }
   labels.forEach((l,i) => {
     html += `<div class="label-chip ${currentLabel===i?'active':''}" style="color:${l.color};${currentLabel===i?'border-color:'+l.color+';':''}" onclick="filterLabel(${i})"><span class="ldot" style="background:${l.color};"></span> ${esc(l.name)}</div>`;
   });
@@ -2778,14 +2794,19 @@ function render() {
   let items = (data[currentTab]||[]).filter(i => matchesSearch(i, currentTab));
   // Place tab: hide closed places from default view
   if (currentTab === 'place' && currentLabel === null) items = items.filter(i => !i.isClosed);
-  // Place tab: want/visited filter
+  // Place tab: closed or category filter
   if (currentTab === 'place' && currentLabel==='closed') {
     const filtered = items.filter(i => i.isClosed);
     renderItems(filtered, cardList);
-  } else if (currentTab === 'place' && (currentLabel==='want'||currentLabel==='visited')) {
-    const filtered = items.filter(i => currentLabel==='visited' ? i.visited : (!i.visited && !i.isClosed));
+  } else if (currentTab === 'place' && currentLabel !== null && typeof currentLabel === 'string' && currentLabel !== 'closed') {
+    // Place category filter
+    const filtered = items.filter(i => !i.isClosed && i.placeCategory === currentLabel);
+    if (!filtered.length) {
+      cardList.innerHTML = `<div class="empty-msg">「${esc(currentLabel)}」の場所はまだありません</div>`;
+      return;
+    }
     renderItems(filtered, cardList);
-  } else if (['wish','received','gave'].includes(currentTab) && currentLabel !== null && typeof currentLabel === 'string' && !['want','visited','closed'].includes(currentLabel)) {
+  } else if (['wish','received','gave'].includes(currentTab) && currentLabel !== null && typeof currentLabel === 'string') {
     // Item tab: filter by category
     const filtered = items.filter(i => i.itemCategory === currentLabel);
     if (!filtered.length) {

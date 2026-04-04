@@ -1882,10 +1882,14 @@ function setRankMode(on) {
 }
 
 function renderItemCard(item, tab, rank) {
-  let html = '<div class="card">';
+  let html = '<div class="card" style="position:relative;">';
+  html += `<label style="position:absolute;top:12px;right:12px;font-size:11px;color:var(--sub);display:flex;align-items:center;gap:3px;cursor:pointer;z-index:1;" onclick="event.stopPropagation();">
+    <input type="checkbox" ${item.pinned?'checked':''} onchange="event.stopPropagation();togglePin('${tab}','${item.id}')">
+    <span>${item.pinned?'📌':'📌'}</span>
+  </label>`;
   if (rank) html += `<div style="display:flex;align-items:center;gap:8px;">
     <span class="rank-number">${rank}</span><div style="flex:1;">`;
-  html += '<div class="card-title">';
+  html += '<div class="card-title" style="padding-right:40px;">';
   html += esc(item.title||'無題');
   html += '</div>';
   html += renderStars(item.rating, item.id, tab);
@@ -1926,12 +1930,6 @@ function renderItemCard(item, tab, rank) {
   if (item.mapUrl) html += `<a class="card-url" href="${esc(item.mapUrl)}" target="_blank" rel="noopener" style="margin-top:6px;font-size:15px;">🔗 ホームページを開く</a>`;
   else if (item.url) html += `<a class="card-url" href="${esc(item.url)}" target="_blank" rel="noopener" style="font-size:15px;">🔗 ${esc(truncUrl(item.url))}</a>`;
   const _bs = 'display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border-radius:14px;font-size:13px;font-weight:500;cursor:pointer;font-family:"Zen Maru Gothic",sans-serif;';
-  html += `<div style="display:flex;gap:12px;justify-content:flex-end;margin-top:10px;">
-    <label style="font-size:11px;color:var(--sub);display:flex;align-items:center;gap:4px;cursor:pointer;" onclick="event.stopPropagation();">
-      <input type="checkbox" ${item.pinned?'checked':''} onchange="event.stopPropagation();togglePin('${tab}','${item.id}')">
-      <span>${item.pinned?'📌 固定中':'📌 固定'}</span>
-    </label>
-  </div>`;
   html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
     <button onclick="event.stopPropagation();regiftItem('${tab}','${item.id}')" style="${_bs}border:1px solid var(--pickup-border);background:linear-gradient(135deg,var(--pickup),#fff4e6);color:var(--text);">🎁 プレゼントする</button>
     ${tab==='place'&&!item.isClosed?`<button onclick="event.stopPropagation();markVisited('${item.id}')" style="${_bs}border:1px solid ${item.visited?'#a5d6a7':'var(--pickup-border)'};background:linear-gradient(135deg,${item.visited?'#e8f5e9':'var(--pickup)'},${item.visited?'#d4ecd6':'#fff4e6'});color:var(--text);">${item.visited?'✅ 行った！':'📍 行った！'}</button>`:''}
@@ -1946,8 +1944,16 @@ function renderItemCard(item, tab, rank) {
 }
 
 function renderPersonCard(p) {
-  let html = '<div class="person-card">';
+  let html = '<div class="person-card" style="position:relative;">';
   const isCorp = p.type==='corporate';
+  html += `<div style="position:absolute;top:10px;right:12px;display:flex;gap:8px;z-index:1;">
+    <label style="font-size:11px;color:var(--sub);display:flex;align-items:center;gap:2px;cursor:pointer;" onclick="event.stopPropagation();">
+      <input type="checkbox" ${p.pinned?'checked':''} onchange="event.stopPropagation();togglePin('people','${p.id}')"><span>📌</span>
+    </label>
+    <label style="font-size:11px;color:var(--sub);display:flex;align-items:center;gap:2px;cursor:pointer;" onclick="event.stopPropagation();">
+      <input type="checkbox" ${p.hidden?'checked':''} onchange="event.stopPropagation();toggleHidden('${p.id}')"><span>${p.hidden?'👁':'👁‍🗨'}</span>
+    </label>
+  </div>`;
   html += `<div style="padding:8px 16px 0;"><span style="font-size:12px;color:var(--accent);cursor:pointer;" onclick="event.stopPropagation();openPersonId=null;render();window.scrollTo({top:0,behavior:'smooth'});">← 一覧に戻る</span></div>`;
   html += `<div class="person-header">
     <div class="person-avatar${isCorp?' biz-avatar':''}" style="overflow:hidden;background:${p.avatar?'':personIcon(p).bg};${p.avatar?'cursor:pointer;':''}" ${p.avatar?`onclick="event.stopPropagation();showAvatarFull('${p.id}')"`:''}>${p.avatar?`<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;">`:(personIcon(p).emoji)}</div>
@@ -1959,16 +1965,7 @@ function renderPersonCard(p) {
     ${p.industry?`<div class="person-relation">${esc(p.industry)}</div>`:''}
     ${p.companyLink?(()=>{const corp=data.people.find(x=>x.type==='corporate'&&(x.nickname===p.companyLink||x.corpNickname===p.companyLink||x.corpFullName===p.companyLink));return corp?`<div class="person-relation" style="color:var(--accent);cursor:pointer;text-decoration:underline;" onclick="event.stopPropagation();jumpToPerson('${corp.id}')">🏢 ${esc(p.companyLink)}</div>`:`<div class="person-relation" style="color:var(--accent);">🏢 ${esc(p.companyLink)}</div>`;})():''}
     </div></div>
-  <div style="display:flex;gap:12px;justify-content:flex-end;padding:0 16px 4px;">
-    <label style="font-size:11px;color:var(--sub);display:flex;align-items:center;gap:4px;cursor:pointer;" onclick="event.stopPropagation();">
-      <input type="checkbox" ${p.pinned?'checked':''} onchange="event.stopPropagation();togglePin('people','${p.id}')">
-      <span>${p.pinned?'📌 固定中':'📌 固定'}</span>
-    </label>
-    <label style="font-size:11px;color:var(--sub);display:flex;align-items:center;gap:4px;cursor:pointer;" onclick="event.stopPropagation();">
-      <input type="checkbox" ${p.hidden?'checked':''} onchange="event.stopPropagation();toggleHidden('${p.id}')">
-      <span>${p.hidden?'👁 表示する':'👁‍🗨 非表示'}</span>
-    </label>
-  </div>`;
+`;
   // Concierge button (between name and anniversaries)
   if (!p.isMemory) {
     html += `<div style="padding:8px 16px;"><button class="card-btn" onclick="event.stopPropagation();openAiSuggest('${p.id}')" style="background:var(--pickup);border-color:var(--pickup-border);font-size:14px;padding:10px 20px;width:100%;">💡 コンシェルジュに相談</button></div>`;
@@ -2467,8 +2464,12 @@ function renderGroupListItem(g) {
 
 function renderGroupCard(g) {
   const members = (g.memberIds||[]).map(id => data.people.find(p=>p.id===id)).filter(Boolean);
-  let html = '<div class="card" style="border-left:3px solid var(--accent);">';
-  html += `<div class="card-title" style="font-size:17px;">👥 ${esc(g.name||'名前なし')}</div>`;
+  let html = '<div class="card" style="border-left:3px solid var(--accent);position:relative;">';
+  html += `<label style="position:absolute;top:12px;right:12px;font-size:11px;color:var(--sub);display:flex;align-items:center;gap:3px;cursor:pointer;z-index:1;" onclick="event.stopPropagation();">
+    <input type="checkbox" ${g.pinned?'checked':''} onchange="event.stopPropagation();togglePin('groups','${g.id}')">
+    <span>📌</span>
+  </label>`;
+  html += `<div class="card-title" style="font-size:17px;padding-right:40px;">👥 ${esc(g.name||'名前なし')}</div>`;
   if (g.description) html += `<div class="card-sub">${esc(g.description)}</div>`;
   html += `<div style="margin-top:8px;">`;
   if (!members.length) {
@@ -2524,13 +2525,6 @@ function renderGroupCard(g) {
     });
     html += '</div>';
   }
-  // Checkboxes (right-aligned)
-  html += `<div style="display:flex;gap:12px;justify-content:flex-end;padding:8px 0 4px;">
-    <label style="font-size:11px;color:var(--sub);display:flex;align-items:center;gap:4px;cursor:pointer;" onclick="event.stopPropagation();">
-      <input type="checkbox" ${g.pinned?'checked':''} onchange="event.stopPropagation();togglePin('groups','${g.id}')">
-      <span>${g.pinned?'📌 固定中':'📌 固定'}</span>
-    </label>
-  </div>`;
   // Concierge button
   html += `<div style="padding:4px 0 8px;"><button onclick="event.stopPropagation();openGroupAiSuggest('${g.id}')" style="width:100%;padding:10px 20px;border-radius:14px;border:1px solid var(--pickup-border);background:var(--pickup);color:var(--text);font-size:14px;font-weight:500;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">💡 コンシェルジュに相談</button></div>`;
   // Action buttons (grid)

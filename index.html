@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>AWAI — ギフトノート</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -379,14 +379,15 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 
 /* Modal */
 .modal-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.35);
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.35);
   z-index: 200; display: none; align-items: flex-end; justify-content: center;
 }
 .modal-overlay.open { display: flex; }
 .modal {
   background: var(--card); border-radius: 24px 24px 0 0;
-  width: 100%; max-width: 480px; max-height: 88dvh;
+  width: 100%; max-width: 480px; max-height: 85vh;
   overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 24px 20px 32px;
+  padding-bottom: env(safe-area-inset-bottom, 32px);
   animation: slideUp 0.3s ease;
 }
 @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
@@ -7383,22 +7384,40 @@ if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().t
   // URLからプロフィール交換パラメータを検出
   checkProfileParam();
 
-  // 入力フォーカス時にスクロールして入力欄を見えるようにする（キーボード対策）
+  // iOS キーボード対策: 入力フォーカス時にスクロール＋モーダル高さ調整
   document.addEventListener('focusin', e => {
     if (e.target.matches('input,textarea,select')) {
-      setTimeout(() => {
-        e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 300);
+      // モーダル内の場合、モーダル自体をスクロール
+      const modal = e.target.closest('.modal');
+      if (modal) {
+        setTimeout(() => {
+          const rect = e.target.getBoundingClientRect();
+          const modalRect = modal.getBoundingClientRect();
+          const offset = rect.top - modalRect.top - modal.clientHeight / 3;
+          modal.scrollTo({ top: modal.scrollTop + offset, behavior: 'smooth' });
+        }, 400);
+      } else {
+        setTimeout(() => {
+          e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 400);
+      }
     }
   });
 
-  // visualViewport resize（キーボード開閉時のモーダル高さ調整）
+  // visualViewport resize（iOS キーボード開閉時のモーダル高さ調整）
   if (window.visualViewport) {
+    let _lastVH = window.visualViewport.height;
     window.visualViewport.addEventListener('resize', () => {
+      const vh = window.visualViewport.height;
       const modal = document.querySelector('.modal-overlay.open .modal');
       if (modal) {
-        modal.style.maxHeight = (window.visualViewport.height * 0.88) + 'px';
+        modal.style.maxHeight = (vh * 0.85) + 'px';
+        // キーボードが閉じた時に元に戻す
+        if (vh > _lastVH + 100) {
+          modal.style.maxHeight = '';
+        }
       }
+      _lastVH = vh;
     });
   }
 

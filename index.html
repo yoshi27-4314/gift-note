@@ -1968,7 +1968,10 @@ function renderPersonCard(p) {
 `;
   // Concierge button (between name and anniversaries)
   if (!p.isMemory) {
-    html += `<div style="padding:8px 16px;"><button class="card-btn" onclick="event.stopPropagation();openAiSuggest('${p.id}')" style="background:var(--pickup);border-color:var(--pickup-border);font-size:14px;padding:10px 20px;width:100%;">💡 コンシェルジュに相談</button></div>`;
+    html += `<div style="padding:8px 16px;display:flex;gap:8px;">
+      <button class="card-btn" onclick="event.stopPropagation();openAiSuggest('${p.id}')" style="background:var(--pickup);border-color:var(--pickup-border);font-size:14px;padding:10px 16px;flex:1;">💡 コンシェルジュ</button>
+      <button class="card-btn" onclick="event.stopPropagation();openPartnerLinks('${p.id}')" style="background:linear-gradient(135deg,#e8f2fc,#daeaf8);border-color:#bdd8f0;font-size:14px;padding:10px 16px;flex:1;">🎁 ギフトを探す</button>
+    </div>`;
   }
   // Corporate photo (business card etc.)
   if (p.corpPhoto) {
@@ -2804,7 +2807,10 @@ function showAnnPopup() {
         <div class="ann-event">${esc(label)} ${formatAnnDate(u.ann.date, u.ann.dateType)}</div>
       </div>
       <span class="ann-badge ${badgeClass}">${badgeText}</span>
-    </div>`;
+    </div>
+    ${u.person.id!=='_myprofile'?`<div style="text-align:right;margin-top:-4px;margin-bottom:8px;padding-right:8px;">
+      <span style="font-size:12px;color:var(--accent);cursor:pointer;text-decoration:underline;" onclick="event.stopPropagation();closeAnnPopup();openPartnerLinks('${u.person.id}')">🎁 ギフトを探す</span>
+    </div>`:''}`;
   });
   html += '<div style="text-align:center;margin-top:14px;"><button class="btn btn-secondary" onclick="closeAnnPopup()" style="min-width:120px;">閉じる</button></div></div>';
   const overlay = document.createElement('div');
@@ -5158,6 +5164,59 @@ async function importFromContacts() {
       alert('連絡先の読み込みに失敗しました');
     }
   }
+}
+
+// ===== Partner Links (送客パートナー) =====
+const PARTNERS = [
+  { id: 'piary', name: 'PIARY（ピアリー）', url: 'https://www.piary.jp/gift/', icon: '🎁', desc: 'ギフト・内祝い', category: 'gift' },
+  { id: 'ktourist', name: 'ケーツーリスト', url: 'https://k-tourist.com/', icon: '✈️', desc: '旅行・体験', category: 'travel' },
+  { id: 'hikarika', name: 'ヒカリカ', url: 'https://hikarika.stores.jp/', icon: '💐', desc: 'お花・フラワーギフト', category: 'flower' }
+];
+
+function buildPartnerUrl(partner, personId) {
+  const ref = _sbUser ? _sbUser.id.substring(0, 8) : 'unknown';
+  return partner.url + '?ref=awai_' + ref + (personId ? '&pid=' + personId : '');
+}
+
+async function trackPartnerClick(partnerId, personId) {
+  if (!_sb || !_sbUser) return;
+  try {
+    await _sb.from('user_data').upsert({
+      user_id: _sbUser.id,
+      data: JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'),
+      profile: JSON.parse(localStorage.getItem('awai_my_profile') || '{}'),
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'user_id' });
+  } catch(e) {}
+}
+
+function openPartnerLinks(personId) {
+  const p = personId ? data.people.find(x=>x.id===personId) : null;
+  const modal = document.getElementById('modal');
+  let html = `<h2>🎁 ギフトを探す</h2>`;
+  if (p) {
+    html += `<div style="background:var(--bg);border-radius:12px;padding:12px;margin-bottom:16px;">
+      <div style="font-size:15px;font-weight:600;">${esc(p.nickname)} さんへ</div>
+      ${p.interests?.length ? '<div style="font-size:12px;color:var(--sub);margin-top:4px;">好き: ' + p.interests.slice(0,5).join(', ') + '</div>' : ''}
+      ${p.foodLike?.length ? '<div style="font-size:12px;color:var(--sub);">食: ' + p.foodLike.slice(0,3).join(', ') + '</div>' : ''}
+    </div>`;
+  }
+  html += `<div style="display:flex;flex-direction:column;gap:10px;">`;
+  PARTNERS.forEach(pt => {
+    const url = buildPartnerUrl(pt, personId);
+    html += `<a href="${url}" target="_blank" rel="noopener" onclick="trackPartnerClick('${pt.id}','${personId||''}')" style="display:flex;align-items:center;gap:12px;padding:16px;border-radius:14px;border:1px solid var(--border);background:var(--card);text-decoration:none;color:var(--text);transition:background 0.2s;">
+      <span style="font-size:28px;flex-shrink:0;">${pt.icon}</span>
+      <div>
+        <div style="font-size:15px;font-weight:600;">${pt.name}</div>
+        <div style="font-size:12px;color:var(--sub);">${pt.desc}</div>
+      </div>
+      <span style="margin-left:auto;font-size:14px;color:var(--accent);">→</span>
+    </a>`;
+  });
+  html += `</div>`;
+  html += `<div class="form-btns" style="margin-top:16px;"><button class="btn btn-secondary" onclick="closeModal()">閉じる</button></div>`;
+  modal.innerHTML = html;
+  openModal();
 }
 
 // ===== Referral =====

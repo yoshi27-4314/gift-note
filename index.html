@@ -767,10 +767,19 @@ let _sbSyncing = false;
 
 async function sbInit() {
   try {
+    // OAuth リダイレクト後のセッション検出
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const hasOAuthToken = hashParams.has('access_token') || window.location.search.includes('code=');
+
     // セッション復元 or 匿名ログイン
     const { data: { session } } = await _sb.auth.getSession();
     if (session) {
       _sbUser = session.user;
+      if (hasOAuthToken && _sbUser.email) {
+        // OAuthリダイレクト直後
+        window.history.replaceState({}, '', window.location.pathname);
+        setTimeout(() => showToast('✅ ' + _sbUser.email + ' で連携しました'), 500);
+      }
     } else {
       const { data: authData, error } = await _sb.auth.signInAnonymously();
       if (error) { console.error('Auth error:', error); return; }

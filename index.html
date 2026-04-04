@@ -993,6 +993,17 @@ function renderLabelBar() {
     bar.innerHTML = phtml;
     return;
   }
+  // Item tabs: category-based filter
+  if (['wish','received','gave'].includes(currentTab)) {
+    const itemCatNames = ['👕 ファッション','🍽 グルメ','🍪 お菓子','💄 美容・健康','🏠 インテリア','📱 家電・ガジェット','📚 趣味・体験','🎁 ギフト券','📋 その他'];
+    let html = `<div class="label-chip ${currentLabel===null?'active':''}" style="color:var(--accent);${currentLabel===null?'border-color:var(--accent);':''}" onclick="filterLabel(null)"><span class="ldot" style="background:var(--accent);"></span> すべて</div>`;
+    itemCatNames.forEach(cat => {
+      const active = currentLabel === cat;
+      html += `<div class="label-chip ${active?'active':''}" style="color:var(--text);${active?'border-color:var(--accent);background:var(--accent-light);':''}" onclick="filterLabel('${cat}')">${cat}</div>`;
+    });
+    bar.innerHTML = html;
+    return;
+  }
   const labels = getLabels(currentTab);
   let html = `<div class="label-chip ${currentLabel===null?'active':''}" style="color:var(--accent);${currentLabel===null?'border-color:var(--accent);':''}" onclick="filterLabel(null)"><span class="ldot" style="background:var(--accent);"></span> すべて</div>`;
   if (currentTab==='place') {
@@ -2736,6 +2747,14 @@ function render() {
   } else if (currentTab === 'place' && (currentLabel==='want'||currentLabel==='visited')) {
     const filtered = items.filter(i => currentLabel==='visited' ? i.visited : (!i.visited && !i.isClosed));
     renderItems(filtered, cardList);
+  } else if (['wish','received','gave'].includes(currentTab) && currentLabel !== null && typeof currentLabel === 'string' && !['want','visited','closed'].includes(currentLabel)) {
+    // Item tab: filter by category
+    const filtered = items.filter(i => i.itemCategory === currentLabel);
+    if (!filtered.length) {
+      cardList.innerHTML = `<div class="empty-msg">「${esc(currentLabel)}」のアイテムはまだありません</div>`;
+      return;
+    }
+    renderItems(filtered, cardList);
   } else if (currentTab !== 'people' && currentLabel !== null && typeof currentLabel === 'number') {
     const ln = (getLabels(currentTab)[currentLabel]?.name||'').toLowerCase();
     const filtered = items.filter(i => {
@@ -2920,7 +2939,8 @@ function openItemModal(id) {
   // Category + Genre (same structure as place)
   const itemCategories = {
     '👕 ファッション': ['服','靴','バッグ','アクセサリー','時計','帽子','財布','ストール','ネクタイ','サングラス'],
-    '🍽 グルメ': ['お菓子','お酒','コーヒー','紅茶','調味料','お取り寄せ','フルーツ','チョコレート','ワイン','日本酒'],
+    '🍽 グルメ': ['お酒','コーヒー','紅茶','調味料','お取り寄せ','フルーツ','ワイン','日本酒'],
+    '🍪 お菓子': ['チョコレート','焼き菓子','和菓子','ケーキ','クッキー','ゼリー','アイス','おせんべい','ギフトボックス'],
     '💄 美容・健康': ['コスメ','スキンケア','香水','ヘアケア','入浴剤','サプリ','マッサージ','アロマ'],
     '🏠 インテリア': ['雑貨','キッチン用品','食器','花','観葉植物','キャンドル','タオル','寝具','文房具'],
     '📱 家電・ガジェット': ['イヤホン','スピーカー','充電器','スマホケース','カメラ','家電','ゲーム'],
@@ -2939,40 +2959,12 @@ function openItemModal(id) {
   const titlePlaceholders = {wish:'例：ワイヤレスイヤホン、日本酒 獺祭',received:'例：バースデーケーキ、ネクタイ',gave:'例：ハンドクリーム、お菓子詰め合わせ'};
   html += `<div class="form-group"><label>アイテム名 *</label><input id="fTitle" placeholder="${titlePlaceholders[currentTab]||'例：アイテム名'}" value="${esc(item?.title||'')}"></div>`;
 
-  // Purpose (wish tab only)
-  if (currentTab === 'wish') {
-    const purpose = item?.purpose || 'curious';
-    html += `<div class="form-group"><label>目的</label>
-      <div style="display:flex;gap:6px;margin-top:4px;">
-        <div class="date-type-chip ${purpose==='self'?'active':''}" onclick="setItemPurpose('self',this)" style="flex:1;text-align:center;">🛒 自分用</div>
-        <div class="date-type-chip ${purpose==='gift'?'active':''}" onclick="setItemPurpose('gift',this)" style="flex:1;text-align:center;">🎁 あげたい</div>
-        <div class="date-type-chip ${purpose==='curious'?'active':''}" onclick="setItemPurpose('curious',this)" style="flex:1;text-align:center;">💭 気になる</div>
-      </div>
-      <input type="hidden" id="fPurpose" value="${purpose}">
-    </div>`;
-    html += `<div class="form-group" id="fGiftTargetGroup" style="display:${purpose==='gift'?'':'none'};">
-      <label>誰にあげたい？</label>
-      <input id="fGiftTarget" placeholder="例：さとうさん" value="${esc(item?.giftTarget||item?.person||'')}" list="peopleListWish">
-      <datalist id="peopleListWish">${data.people.map(p=>`<option value="${esc(p.nickname||'')}">`).join('')}</datalist>
-    </div>`;
-  }
-
   // Person (received/gave)
   if (showPerson) {
     const personLabel = currentTab==='received' ? '誰から？' : '誰に？';
     html += `<div class="form-group"><label>${personLabel}</label><input id="fPerson" placeholder="例：さとうさん" value="${esc(item?.person||'')}" list="peopleList">
     <datalist id="peopleList">${data.people.map(p=>`<option value="${esc(p.nickname||'')}">`).join('')}</datalist>
     <div class="form-hint">大切な人に登録済みの名前が候補に出ます</div></div>`;
-  }
-
-  // Labels
-  if (labels.length) {
-    html += `<div class="form-group"><label>ラベル</label><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;">`;
-    labels.forEach((l,i) => {
-      const active = item?.labelIdx===i;
-      html += `<div class="label-chip ${active?'active':''}" style="color:${l.color};${active?'border-color:'+l.color+';background:'+l.color+'18;':''}" onclick="toggleFormLabel(this,${i})"><span class="ldot" style="background:${l.color};"></span> ${esc(l.name)}</div>`;
-    });
-    html += `</div><input type="hidden" id="fLabelIdx" value="${item?.labelIdx??''}"></div>`;
   }
 
   // Category (like place)
@@ -3006,9 +2998,6 @@ function openItemModal(id) {
   if (showAmount) {
     html += `<div class="form-group"><label>金額（任意）</label><input id="fAmount" type="number" placeholder="例：5000" value="${item?.amount||''}"></div>`;
   }
-
-  // Date
-  html += `<div class="form-group"><label>日付</label><input type="date" id="fDate" value="${item?.date||''}"></div>`;
 
   // Star rating
   const curRating = item?.rating||0;
@@ -3052,7 +3041,8 @@ function selectItemCategory(el, cat) {
   // Update genre tags
   const itemCategories = {
     '👕 ファッション': ['服','靴','バッグ','アクセサリー','時計','帽子','財布','ストール','ネクタイ','サングラス'],
-    '🍽 グルメ': ['お菓子','お酒','コーヒー','紅茶','調味料','お取り寄せ','フルーツ','チョコレート','ワイン','日本酒'],
+    '🍽 グルメ': ['お酒','コーヒー','紅茶','調味料','お取り寄せ','フルーツ','ワイン','日本酒'],
+    '🍪 お菓子': ['チョコレート','焼き菓子','和菓子','ケーキ','クッキー','ゼリー','アイス','おせんべい','ギフトボックス'],
     '💄 美容・健康': ['コスメ','スキンケア','香水','ヘアケア','入浴剤','サプリ','マッサージ','アロマ'],
     '🏠 インテリア': ['雑貨','キッチン用品','食器','花','観葉植物','キャンドル','タオル','寝具','文房具'],
     '📱 家電・ガジェット': ['イヤホン','スピーカー','充電器','スマホケース','カメラ','家電','ゲーム'],

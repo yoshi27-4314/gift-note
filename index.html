@@ -8,6 +8,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="theme-color" content="#e8a598">
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&family=Shippori+Mincho:wght@400;600&display=swap" rel="stylesheet">
@@ -276,7 +277,7 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 .pull-indicator.visible { transform: translateX(-50%) translateY(0); }
 /* Anniversary reminder popup */
 .ann-popup-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 300; display: flex; align-items: center; justify-content: center; animation: fadeIn 0.3s; }
-.ann-popup { background: var(--card); border-radius: 20px; width: 90%; max-width: 400px; max-height: 80dvh; overflow-y: auto; padding: 24px 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
+.ann-popup { background: var(--card); border-radius: 20px; width: 90%; max-width: 400px; max-height: 80dvh; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 24px 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
 .ann-popup h2 { text-align: center; font-size: 20px; margin-bottom: 16px; }
 .ann-popup-item { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 14px; background: var(--bg); margin-bottom: 8px; cursor: pointer; transition: background 0.2s; }
 .ann-popup-item:active { background: var(--accent-light); }
@@ -384,7 +385,7 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 .modal {
   background: var(--card); border-radius: 24px 24px 0 0;
   width: 100%; max-width: 480px; max-height: 88dvh;
-  overflow-y: auto; padding: 24px 20px 32px;
+  overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 24px 20px 32px;
   animation: slideUp 0.3s ease;
 }
 @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
@@ -591,8 +592,37 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
       <div style="text-align:center;margin-bottom:32px;font-size:48px;">🕊️</div>
       <h1 style="text-align:center;font-family:'Shippori Mincho',serif;font-size:28px;font-weight:600;margin-bottom:16px;color:var(--text);">AWAIへようこそ</h1>
       <p style="text-align:center;color:var(--sub);font-size:15px;line-height:1.8;margin-bottom:40px;">大切な人を喜ばせたい。忘れない。</p>
-      <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;" onclick="obNext(2)">はじめる</button>
+      <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;" onclick="obNext('install')">はじめる</button>
       <p style="text-align:center;margin-top:16px;font-size:11px;color:var(--sub);">続けることで<a href="privacy.html" target="_blank" style="color:var(--accent);">プライバシーポリシー</a>に同意したものとみなします</p>
+    </div>
+    <!-- Step Install: ホーム画面に追加 -->
+    <div id="obStepinstall" class="ob-step" style="display:none;">
+      <div style="text-align:center;margin-bottom:24px;font-size:48px;">📲</div>
+      <h2 style="text-align:center;font-family:'Shippori Mincho',serif;font-size:22px;margin-bottom:8px;">ホーム画面に追加</h2>
+      <p style="text-align:center;color:var(--sub);font-size:14px;line-height:1.8;margin-bottom:24px;">アプリのように使えます。<br>まずホーム画面に追加しましょう。</p>
+      <div id="obInstallIos" style="display:none;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:16px;">
+        <div style="font-size:15px;font-weight:600;margin-bottom:12px;">🍎 iPhone / iPad</div>
+        <div style="font-size:14px;color:var(--text);line-height:2;">
+          <div>① 画面下の <span style="font-size:18px;vertical-align:middle;">⬆</span>（共有ボタン）をタップ</div>
+          <div>② 「ホーム画面に追加」をタップ</div>
+          <div>③ 右上の「追加」をタップ</div>
+        </div>
+      </div>
+      <div id="obInstallAndroid" style="display:none;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:16px;">
+        <div style="font-size:15px;font-weight:600;margin-bottom:12px;">🤖 Android</div>
+        <div style="font-size:14px;color:var(--text);line-height:2;">
+          <div>① 画面右上の <span style="font-size:16px;vertical-align:middle;">⋮</span>（メニュー）をタップ</div>
+          <div>② 「ホーム画面に追加」または<br>　「アプリをインストール」をタップ</div>
+        </div>
+      </div>
+      <div id="obInstallPwa" style="display:none;text-align:center;margin-bottom:16px;">
+        <button class="btn btn-primary" id="obInstallBtn" style="width:100%;padding:16px;font-size:17px;border-radius:14px;" onclick="obPwaInstall()">📲 インストール</button>
+      </div>
+      <div id="obInstallAlready" style="display:none;text-align:center;margin-bottom:16px;">
+        <div style="font-size:15px;color:#6bab8a;font-weight:600;">✅ すでにインストール済みです</div>
+      </div>
+      <p style="text-align:center;color:var(--sub);font-size:12px;margin-bottom:24px;">あとからでも設定画面から追加できます</p>
+      <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;" onclick="obNext(2)">次へ</button>
     </div>
     <!-- Step 2: My Profile -->
     <div id="obStep2" class="ob-step" style="display:none;">
@@ -600,7 +630,14 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
       <p style="text-align:center;color:var(--sub);font-size:13px;margin-bottom:32px;">他の情報はあとで設定できます</p>
       <div class="form-group"><label>名前</label><input id="obMyName" placeholder="あなたの名前" style="padding:14px 16px;font-size:16px;border-radius:12px;border:1px solid var(--border);width:100%;"></div>
       <div class="form-group" style="margin-top:16px;"><label>誕生日（任意）</label>
+        <div style="display:flex;gap:4px;margin-bottom:8px;">
+          <div class="date-type-chip" onclick="obSetDateType('my','full',this)" style="flex:1;text-align:center;font-size:13px;">年月日</div>
+          <div class="date-type-chip active" onclick="obSetDateType('my','monthday',this)" style="flex:1;text-align:center;font-size:13px;">月日</div>
+          <div class="date-type-chip" onclick="obSetDateType('my','month',this)" style="flex:1;text-align:center;font-size:13px;">月のみ</div>
+        </div>
+        <input type="hidden" id="obMyDateType" value="monthday">
         <div style="display:flex;gap:8px;">
+          <input id="obMyBirthYear" type="number" min="1900" max="2100" placeholder="年" style="flex:1;padding:14px 12px;font-size:16px;border-radius:12px;border:1px solid var(--border);display:none;">
           <input id="obMyBirthMonth" type="number" min="1" max="12" placeholder="月" style="flex:1;padding:14px 12px;font-size:16px;border-radius:12px;border:1px solid var(--border);">
           <input id="obMyBirthDay" type="number" min="1" max="31" placeholder="日" style="flex:1;padding:14px 12px;font-size:16px;border-radius:12px;border:1px solid var(--border);">
         </div>
@@ -613,7 +650,14 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
       <p style="text-align:center;color:var(--sub);font-size:13px;margin-bottom:32px;">名前と誕生日だけで大丈夫です</p>
       <div class="form-group"><label>呼び名</label><input id="obPersonName" placeholder="その人の名前" style="padding:14px 16px;font-size:16px;border-radius:12px;border:1px solid var(--border);width:100%;"></div>
       <div class="form-group" style="margin-top:16px;"><label>誕生日（任意）</label>
+        <div style="display:flex;gap:4px;margin-bottom:8px;">
+          <div class="date-type-chip" onclick="obSetDateType('person','full',this)" style="flex:1;text-align:center;font-size:13px;">年月日</div>
+          <div class="date-type-chip active" onclick="obSetDateType('person','monthday',this)" style="flex:1;text-align:center;font-size:13px;">月日</div>
+          <div class="date-type-chip" onclick="obSetDateType('person','month',this)" style="flex:1;text-align:center;font-size:13px;">月のみ</div>
+        </div>
+        <input type="hidden" id="obPersonDateType" value="monthday">
         <div style="display:flex;gap:8px;">
+          <input id="obPersonBirthYear" type="number" min="1900" max="2100" placeholder="年" style="flex:1;padding:14px 12px;font-size:16px;border-radius:12px;border:1px solid var(--border);display:none;">
           <input id="obPersonBirthMonth" type="number" min="1" max="12" placeholder="月" style="flex:1;padding:14px 12px;font-size:16px;border-radius:12px;border:1px solid var(--border);">
           <input id="obPersonBirthDay" type="number" min="1" max="31" placeholder="日" style="flex:1;padding:14px 12px;font-size:16px;border-radius:12px;border:1px solid var(--border);">
         </div>
@@ -1169,6 +1213,186 @@ function openMapSearch() {
   document.getElementById('fGoogleMapUrl').value = mapUrl;
   document.getElementById('fMapLinkStatus').style.display = 'inline';
   window.open(mapUrl, '_blank');
+}
+
+function openPlaceMemoryModal(id) {
+  editingId = id||null;
+  const modal = document.getElementById('modal');
+  const isEdit = !!editingId;
+  const item = isEdit ? data.place.find(i=>i.id===editingId) : null;
+  const labels = getLabels('place');
+
+  let html = `<h2>🤍 記憶の場所を${isEdit?'編集':'追加'}</h2>`;
+  html += `<div class="form-group"><label>場所の名前 *</label><input id="fTitle" placeholder="例：炭火焼肉 牛角 岐阜店、じいちゃんの畑" value="${esc(item?.title||'')}"></div>`;
+
+  // Labels
+  if (labels.length) {
+    html += `<div class="form-group"><label>ラベル</label><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;">`;
+    labels.forEach((l,i) => {
+      const active = item?.labelIdx===i;
+      html += `<div class="label-chip ${active?'active':''}" style="color:${l.color};${active?'border-color:'+l.color+';background:'+l.color+'18;':''}" onclick="toggleFormLabel(this,${i})"><span class="ldot" style="background:${l.color};"></span> ${esc(l.name)}</div>`;
+    });
+    html += `</div><input type="hidden" id="fLabelIdx" value="${item?.labelIdx??''}"></div>`;
+  }
+
+  // Category + Genre tags
+  const placeCategories = {
+    '🍽 食事': ['和食','イタリアン','フレンチ','中華','焼肉','寿司','ラーメン','カレー','居酒屋','バー','カフェ','パン屋','スイーツ','ビュッフェ','鉄板焼き','海鮮','うどん・そば'],
+    '🎮 遊び': ['カラオケ','ボウリング','テーマパーク','ゲームセンター','映画館','ライブ','スポーツ観戦','釣り','キャンプ','BBQ','ドライブ','プール','スキー','ゴルフ'],
+    '📸 観光': ['神社','お寺','温泉','絶景','公園','美術館','博物館','水族館','動物園','城','庭園','展望台','街歩き','離島','世界遺産'],
+    '🛍 買い物': ['ショッピングモール','アウトレット','商店街','百貨店','セレクトショップ','お土産','市場','蚤の市'],
+    '🏨 宿泊': ['ホテル','旅館','民宿','グランピング','コテージ','ゲストハウス'],
+    '💆 リラックス': ['スパ','マッサージ','エステ','サウナ','岩盤浴','ヨガ','リトリート'],
+    '📋 その他': []
+  };
+  const allGenreSuggestions = [...new Set(Object.values(placeCategories).flat())];
+  const currentTags = item?.tags || [];
+  const currentCat = item?.placeCategory || '';
+
+  html += `<div class="form-group"><label>カテゴリ</label>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">`;
+  Object.keys(placeCategories).forEach(cat => {
+    const active = currentCat === cat;
+    html += `<div class="date-type-chip ${active?'active':''}" onclick="selectPlaceCategory(this,'${cat}')" style="font-size:13px;padding:6px 14px;">${cat}</div>`;
+  });
+  html += `</div><input type="hidden" id="fPlaceCategory" value="${esc(currentCat)}"></div>`;
+
+  html += `<div class="form-group"><label>ジャンル・目的</label>
+    <div id="placeGenreTags" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;">`;
+  const showTags = currentCat && placeCategories[currentCat] ? placeCategories[currentCat] : allGenreSuggestions;
+  showTags.forEach(g => {
+    const active = currentTags.includes(g.toLowerCase()) || currentTags.includes(g);
+    html += `<div class="date-type-chip ${active?'active':''}" onclick="togglePlaceTag(this,'${g}')" style="font-size:12px;">${g}</div>`;
+  });
+  html += `</div>
+    <input id="fTags" placeholder="その他のタグ（カンマ区切り）" value="${currentTags.filter(t=>!allGenreSuggestions.map(g=>g.toLowerCase()).includes(t)&&!allGenreSuggestions.includes(t)).join(', ')}">
+    <input type="hidden" id="fPlaceSelectedTags" value="${currentTags.filter(t=>allGenreSuggestions.map(g=>g.toLowerCase()).includes(t)||allGenreSuggestions.includes(t)).join(',')}">
+  </div>`;
+
+  // Star rating - 思い出の大切さとして
+  const curRating = item?.rating||0;
+  html += `<div class="form-group"><label>大切さ</label><div class="stars" id="fStars">`;
+  for (let i=1; i<=5; i++) html += `<span class="star ${i<=curRating?'on':''}" onclick="setFormStar(${i})">★</span>`;
+  html += `</div><input type="hidden" id="fRating" value="${curRating}"></div>`;
+
+  // Address + Map
+  html += `<div class="form-group"><label>📍 住所</label>
+    <input id="fAddress" placeholder="例：岐阜県各務原市..." value="${esc(item?.address||'')}">
+    <div style="margin-top:6px;display:flex;align-items:center;gap:8px;">
+      <button class="card-btn" onclick="openMapSearch()" style="font-size:13px;">🗺 Googleマップで検索</button>
+      <span id="fMapLinkStatus" style="font-size:12px;color:#6bab8a;display:${item?.googleMapUrl?'inline':'none'};">✓ リンク登録済み</span>
+    </div>
+    <input type="hidden" id="fGoogleMapUrl" value="${esc(item?.googleMapUrl||'')}">
+  </div>`;
+
+  // Homepage URL
+  html += `<div class="form-group"><label>🔗 ホームページURL</label>
+    <input id="fMapUrl" placeholder="https://..." value="${esc(item?.mapUrl||item?.url||'')}">
+  </div>`;
+
+  // Phone
+  html += `<div class="form-group"><label>📞 連絡先</label>
+    <input id="fPhone" type="tel" placeholder="例：058-123-4567" value="${esc(item?.phone||'')}">
+  </div>`;
+
+  // Who
+  const selectedWith = item?.withPeople || (item?.person ? [item.person] : []);
+  const selectedGroups = item?.withGroups || [];
+  html += `<div class="form-group"><label>誰との思い出？</label>
+    <div class="form-hint" style="margin-bottom:6px;">タップで選択（複数OK）</div>
+    <div style="max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:12px;padding:4px;">`;
+  if (data.groups.length) {
+    data.groups.forEach(g => {
+      const checked = selectedGroups.includes(g.id);
+      html += `<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;cursor:pointer;${checked?'background:var(--accent-light);':''}border-radius:8px;margin-bottom:2px;" onclick="togglePlaceWith(this,'group','${g.id}')">
+        <span style="font-size:14px;">👥</span>
+        <span style="font-size:13px;font-weight:${checked?'600':'400'};">${esc(g.name)}</span>
+        <span style="font-size:11px;color:var(--sub);">${(g.memberIds||[]).length}人</span>
+        ${checked?'<span style="margin-left:auto;color:var(--accent);">✓</span>':''}
+      </div>`;
+    });
+  }
+  data.people.filter(p=>p.type!=='corporate').forEach(p => {
+    const checked = selectedWith.includes(p.nickname);
+    html += `<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;cursor:pointer;${checked?'background:var(--accent-light);':''}border-radius:8px;margin-bottom:2px;" onclick="togglePlaceWith(this,'person','${esc(p.nickname)}')">
+      <span style="font-size:14px;">👤</span>
+      <span style="font-size:13px;font-weight:${checked?'600':'400'};">${esc(p.nickname)}</span>
+      ${checked?'<span style="margin-left:auto;color:var(--accent);">✓</span>':''}
+    </div>`;
+  });
+  html += `</div>
+    <input type="hidden" id="fWithPeople" value="${selectedWith.join(',')}">
+    <input type="hidden" id="fWithGroups" value="${selectedGroups.join(',')}">
+  </div>`;
+
+  // Memo - 記憶向けplaceholder
+  html += `<div class="form-group"><label>📝 メモ</label><textarea id="fMemo" placeholder="家族でよく行った焼肉屋。あの特製タレの味が忘れられない">${esc(item?.memo||'')}</textarea></div>`;
+
+  // Photo
+  html += photoInputHTML('fImg', item?.img);
+
+  html += `<div class="form-btns"><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button><button class="btn btn-primary" onclick="savePlaceMemoryItem()">保存</button></div>`;
+  modal.innerHTML = html;
+  openModal();
+}
+
+function savePlaceMemoryItem() {
+  // 通常のsavePlaceItemと同じロジックだが isClosed: true で保存
+  const title = document.getElementById('fTitle').value.trim();
+  if (!title) { alert('場所の名前を入力してください'); return; }
+  const fileInput = getPhotoData('fImg');
+
+  const selectedTags = document.getElementById('fPlaceSelectedTags')?.value.split(',').filter(Boolean) || [];
+  const typedTags = parseTags(document.getElementById('fTags')?.value||'');
+  const allTags = [...new Set([...selectedTags, ...typedTags])];
+
+  const labelIdxEl = document.getElementById('fLabelIdx');
+  const labelIdx = labelIdxEl&&labelIdxEl.value!=='' ? parseInt(labelIdxEl.value) : null;
+
+  function doSave(imgData) {
+    const item = {
+      id: editingId || genId(),
+      title,
+      withPeople: document.getElementById('fWithPeople')?.value.split(',').filter(Boolean)||[],
+      withGroups: document.getElementById('fWithGroups')?.value.split(',').filter(Boolean)||[],
+      person: (document.getElementById('fWithPeople')?.value.split(',').filter(Boolean)||[]).join(', ')||null,
+      labelIdx,
+      address: document.getElementById('fAddress')?.value.trim()||null,
+      mapUrl: document.getElementById('fMapUrl')?.value.trim()||null,
+      url: document.getElementById('fMapUrl')?.value.trim()||null,
+      googleMapUrl: document.getElementById('fGoogleMapUrl')?.value.trim()||null,
+      phone: document.getElementById('fPhone')?.value.trim()||null,
+      tags: allTags.length ? allTags : null,
+      placeCategory: document.getElementById('fPlaceCategory')?.value||null,
+      rating: parseInt(document.getElementById('fRating')?.value)||0,
+      memo: document.getElementById('fMemo')?.value.trim()||null,
+      img: imgData,
+      isClosed: true,
+      pinned: editingId ? (data.place.find(i=>i.id===editingId)?.pinned||false) : false,
+      createdAt: editingId ? (data.place.find(i=>i.id===editingId)?.createdAt||new Date().toISOString()) : new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    if (item.labelIdx===null||item.labelIdx===undefined) {
+      const labels = getLabels('place');
+      const text = [item.title, item.memo, ...(item.tags||[])].filter(Boolean).join(' ').toLowerCase();
+      labels.forEach((l,i) => { if (text.includes(l.name.toLowerCase())) item.labelIdx = i; });
+    }
+    if (editingId) {
+      const idx = data.place.findIndex(i=>i.id===editingId);
+      if (idx>=0) { item.isClosed = data.place[idx].isClosed; data.place[idx] = item; }
+    } else {
+      data.place.push(item);
+    }
+    saveData(); closeModal(); render();
+  }
+
+  const removeFlag = document.getElementById('fImgRemove')?.value === '1';
+  if (removeFlag) { doSave(null); return; }
+  if (fileInput&&fileInput.files&&fileInput.files[0]) {
+    compressImage(fileInput.files[0]).then(dataUrl => doSave(dataUrl));
+  } else {
+    doSave(editingId ? (data.place.find(i=>i.id===editingId)?.img||null) : null);
+  }
 }
 
 function savePlaceItem() {
@@ -3333,7 +3557,13 @@ function saveItem() {
 function editItem(tab, id) {
   currentTab = tab;
   document.querySelectorAll('.tab').forEach(el => el.classList.toggle('active', el.dataset.tab===tab));
-  if (tab==='people') openPeopleModal(id); else if (tab==='place') openPlaceModal(id); else openItemModal(id);
+  if (tab==='people') {
+    const p = data.people.find(x=>x.id===id);
+    if (p?.isMemory) openMemoryModal(id); else openPeopleModal(id);
+  } else if (tab==='place') {
+    const pl = data.place.find(x=>x.id===id);
+    if (pl?.isClosed) openPlaceMemoryModal(id); else openPlaceModal(id);
+  } else openItemModal(id);
 }
 function deleteItem(tab, id) {
   const lockMethod = localStorage.getItem(LOCK_METHOD_KEY);
@@ -3442,6 +3672,7 @@ function openModal() {
 
 // ===== Close modal =====
 function closeModal() {
+  stopQRCamera();
   document.getElementById('modalOverlay').classList.remove('open');
   document.getElementById('labelModalOverlay').classList.remove('open');
   editingId = null;
@@ -3962,13 +4193,23 @@ function generateProfileQR() {
   }
 }
 
+let _qrStream = null;
+let _qrAnimFrame = null;
+
 function openQRScanner() {
   const modal = document.getElementById('modal');
-  let html = `<h2>🤍 QR読み取り</h2>`;
+  let html = `<h2>📷 QR読み取り</h2>`;
   html += `<p style="font-size:13px;color:var(--sub);text-align:center;margin-bottom:16px;">相手のQRコードをカメラで読み取ります</p>`;
-  html += `<div style="text-align:center;">
-    <input type="file" id="qrScanInput" accept="image/*" capture="environment" style="display:none;" onchange="processQRImage(this)">
-    <button class="btn btn-primary" onclick="document.getElementById('qrScanInput').click()" style="padding:14px 32px;">📷 カメラで読み取る</button>
+  html += `<div id="qrCameraArea" style="text-align:center;">
+    <video id="qrVideo" playsinline style="width:100%;max-width:320px;border-radius:12px;background:#000;display:none;"></video>
+    <canvas id="qrCanvas" style="display:none;"></canvas>
+    <div id="qrCameraMsg" style="font-size:13px;color:var(--sub);margin-top:8px;"></div>
+    <button class="btn btn-primary" id="qrStartBtn" onclick="startQRCamera()" style="padding:14px 32px;margin-top:8px;">📷 カメラを起動</button>
+  </div>`;
+  html += `<div style="text-align:center;margin-top:16px;">
+    <div class="form-hint">カメラが使えない場合は画像を選択：</div>
+    <input type="file" id="qrScanInput" accept="image/*" style="display:none;" onchange="processQRImage(this)">
+    <button class="card-btn" onclick="document.getElementById('qrScanInput').click()" style="margin-top:6px;">📁 画像を選択</button>
   </div>`;
   html += `<div style="text-align:center;margin-top:12px;">
     <div class="form-hint">または、QRコードのデータを貼り付け：</div>
@@ -3976,30 +4217,115 @@ function openQRScanner() {
     <button class="card-btn" onclick="processQRManual()" style="margin-top:8px;">読み込む</button>
   </div>`;
   html += `<div id="qrScanResult" style="margin-top:16px;"></div>`;
-  html += `<div class="form-btns" style="margin-top:16px;"><button class="btn btn-secondary" onclick="closeModal()">閉じる</button></div>`;
+  html += `<div class="form-btns" style="margin-top:16px;"><button class="btn btn-secondary" onclick="stopQRCamera();closeModal()">閉じる</button></div>`;
   modal.innerHTML = html;
   openModal();
 }
 
-function processQRImage(input) {
-  if (!input.files||!input.files[0]) return;
-  // Use canvas to decode - simple approach: rely on manual paste for now
-  const area = document.getElementById('qrScanResult');
-  area.innerHTML = `<div style="font-size:13px;color:var(--sub);text-align:center;">
-    カメラで撮影した場合は、QRリーダーアプリで読み取った結果を下の欄に貼り付けてください。
-  </div>`;
+function startQRCamera() {
+  const video = document.getElementById('qrVideo');
+  const msg = document.getElementById('qrCameraMsg');
+  const btn = document.getElementById('qrStartBtn');
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    msg.innerHTML = 'このブラウザではカメラを利用できません。<br>画像選択または貼り付けをお使いください。';
+    return;
+  }
+  btn.style.display = 'none';
+  msg.textContent = 'カメラを起動中...';
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    .then(stream => {
+      _qrStream = stream;
+      video.srcObject = stream;
+      video.style.display = 'block';
+      video.play();
+      msg.textContent = 'QRコードをカメラに映してください';
+      scanQRFromVideo();
+    })
+    .catch(err => {
+      btn.style.display = '';
+      msg.innerHTML = 'カメラへのアクセスが拒否されました。<br>画像選択または貼り付けをお使いください。';
+    });
 }
 
-function processQRManual() {
-  const raw = document.getElementById('qrManualInput')?.value.trim();
-  if (!raw) return;
+function scanQRFromVideo() {
+  const video = document.getElementById('qrVideo');
+  const canvas = document.getElementById('qrCanvas');
+  if (!video || !canvas || video.readyState < 2) {
+    _qrAnimFrame = requestAnimationFrame(scanQRFromVideo);
+    return;
+  }
+  const ctx = canvas.getContext('2d');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const code = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: 'dontInvert' });
+  if (code && code.data) {
+    stopQRCamera();
+    handleQRData(code.data);
+    return;
+  }
+  _qrAnimFrame = requestAnimationFrame(scanQRFromVideo);
+}
+
+function stopQRCamera() {
+  if (_qrAnimFrame) { cancelAnimationFrame(_qrAnimFrame); _qrAnimFrame = null; }
+  if (_qrStream) { _qrStream.getTracks().forEach(t => t.stop()); _qrStream = null; }
+  const video = document.getElementById('qrVideo');
+  if (video) { video.srcObject = null; video.style.display = 'none'; }
+}
+
+function processQRImage(input) {
+  if (!input.files||!input.files[0]) return;
+  const file = input.files[0];
+  const area = document.getElementById('qrScanResult');
+  const img = new Image();
+  img.onload = function() {
+    try {
+      const maxDim = 1200;
+      let w = img.width, h = img.height;
+      if (w > maxDim || h > maxDim) {
+        const scale = maxDim / Math.max(w, h);
+        w = Math.round(w * scale); h = Math.round(h * scale);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { area.innerHTML = '<div style="font-size:13px;color:#c97070;text-align:center;">画像の処理に失敗しました。貼り付けをお試しください。</div>'; return; }
+      ctx.drawImage(img, 0, 0, w, h);
+      const imgData = ctx.getImageData(0, 0, w, h);
+      const code = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: 'dontInvert' });
+      if (code && code.data) {
+        handleQRData(code.data);
+      } else {
+        area.innerHTML = '<div style="font-size:13px;color:#c97070;text-align:center;">QRコードを検出できませんでした。<br>もう一度撮影するか、貼り付けをお試しください。</div>';
+      }
+    } catch(e) {
+      area.innerHTML = '<div style="font-size:13px;color:#c97070;text-align:center;">画像の処理に失敗しました。貼り付けをお試しください。</div>';
+    }
+    URL.revokeObjectURL(img.src);
+  };
+  img.onerror = function() {
+    area.innerHTML = '<div style="font-size:13px;color:#c97070;text-align:center;">画像を読み込めませんでした。</div>';
+    URL.revokeObjectURL(img.src);
+  };
+  img.src = URL.createObjectURL(file);
+}
+
+function handleQRData(raw) {
   try {
     const d = JSON.parse(raw);
     if (!d.n) { alert('AWAIのプロフィールデータではありません'); return; }
     showQRRegistration(d);
   } catch(e) {
-    alert('データの読み込みに失敗しました');
+    alert('AWAIのプロフィールデータではありません');
   }
+}
+
+function processQRManual() {
+  const raw = document.getElementById('qrManualInput')?.value.trim();
+  if (!raw) return;
+  handleQRData(raw);
 }
 
 function showQRRegistration(d) {
@@ -4345,13 +4671,13 @@ function restoreFromMemory(id) {
 }
 
 function closePlacePrompt(id) {
-  const reason = prompt('理由（任意）：\n閉店・震災・再開発・その他', '');
-  if (reason === null) return;
+  if (!confirm('この場所を記憶に移しますか？\n記録やリンクはそのまま残ります。')) return;
   const item = data.place.find(x=>x.id===id);
   if (!item) return;
   item.isClosed = true;
-  item.closedReason = reason||'';
-  saveData(); render();
+  saveData();
+  currentLabel = 'closed';
+  render();
   showToast('🤍 記憶に移しました');
 }
 
@@ -4360,8 +4686,9 @@ function reopenPlace(id) {
   const item = data.place.find(x=>x.id===id);
   if (!item) return;
   item.isClosed = false;
-  item.closedReason = '';
-  saveData(); render();
+  saveData();
+  currentLabel = null;
+  render();
   showToast('行きたい場所に戻しました');
 }
 
@@ -4614,30 +4941,93 @@ function showOnboarding() {
   document.getElementById('onboardingOverlay').style.display = '';
 }
 
+let _deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); _deferredInstallPrompt = e; });
+
 function obNext(step) {
   document.querySelectorAll('.ob-step').forEach(el => el.style.display = 'none');
   const next = document.getElementById('obStep' + step);
   if (next) {
     next.style.display = '';
-    // Re-trigger animations
     next.querySelectorAll(':scope > *').forEach(el => {
       el.style.animation = 'none';
       el.offsetHeight;
       el.style.animation = '';
     });
   }
+  // インストール案内ステップの表示制御
+  if (step === 'install') {
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+    const iosEl = document.getElementById('obInstallIos');
+    const androidEl = document.getElementById('obInstallAndroid');
+    const pwaEl = document.getElementById('obInstallPwa');
+    const alreadyEl = document.getElementById('obInstallAlready');
+    if (isStandalone) {
+      // 既にインストール済み
+      alreadyEl.style.display = '';
+    } else if (_deferredInstallPrompt) {
+      // Chromeのインストールプロンプトが使える
+      pwaEl.style.display = '';
+      androidEl.style.display = '';
+    } else {
+      const ua = navigator.userAgent;
+      const isIos = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      const isAndroid = /Android/.test(ua);
+      if (isIos) { iosEl.style.display = ''; }
+      else if (isAndroid) { androidEl.style.display = ''; }
+      else { iosEl.style.display = ''; androidEl.style.display = ''; }
+    }
+  }
+}
+
+function obPwaInstall() {
+  if (!_deferredInstallPrompt) return;
+  _deferredInstallPrompt.prompt();
+  _deferredInstallPrompt.userChoice.then(result => {
+    _deferredInstallPrompt = null;
+    if (result.outcome === 'accepted') {
+      const alreadyEl = document.getElementById('obInstallAlready');
+      const pwaEl = document.getElementById('obInstallPwa');
+      if (pwaEl) pwaEl.style.display = 'none';
+      if (alreadyEl) alreadyEl.style.display = '';
+    }
+  });
+}
+
+function obSetDateType(target, type, el) {
+  const prefix = target === 'my' ? 'obMy' : 'obPerson';
+  document.getElementById(prefix + 'DateType').value = type;
+  el.parentElement.querySelectorAll('.date-type-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById(prefix + 'BirthYear').style.display = type === 'full' ? '' : 'none';
+  document.getElementById(prefix + 'BirthDay').style.display = type === 'month' ? 'none' : '';
+}
+
+function obBuildDate(prefix) {
+  const dateType = document.getElementById(prefix + 'DateType').value;
+  const year = document.getElementById(prefix + 'BirthYear').value;
+  const month = document.getElementById(prefix + 'BirthMonth').value;
+  const day = document.getElementById(prefix + 'BirthDay').value;
+  if (!month) return null;
+  let date = '';
+  if (dateType === 'full' && year && month) {
+    date = year + '-' + String(month).padStart(2,'0') + '-' + String(day||1).padStart(2,'0');
+  } else if (dateType === 'monthday') {
+    date = String(month).padStart(2,'0') + '-' + String(day||1).padStart(2,'0');
+  } else if (dateType === 'month') {
+    date = String(month).padStart(2,'0');
+  }
+  return { date, dateType };
 }
 
 function obSaveProfile() {
   const name = document.getElementById('obMyName').value.trim();
   if (!name) { alert('名前を入力してください'); return; }
-  const month = document.getElementById('obMyBirthMonth').value;
-  const day = document.getElementById('obMyBirthDay').value;
   const profile = getMyProfile();
   profile.name = name;
-  if (month) {
-    const date = String(month).padStart(2,'0') + '-' + String(day||1).padStart(2,'0');
-    profile.anniversaries = [{name:'🎂 誕生日', date, dateType:'monthday', repeat:'yearly', reminders:[30]}];
+  const bd = obBuildDate('obMy');
+  if (bd) {
+    profile.anniversaries = [{name:'🎂 誕生日', date: bd.date, dateType: bd.dateType, repeat:'yearly', reminders:[30]}];
   }
   localStorage.setItem(MY_PROFILE_KEY, JSON.stringify(profile));
   obNext(3);
@@ -4646,8 +5036,6 @@ function obSaveProfile() {
 function obSavePerson() {
   const name = document.getElementById('obPersonName').value.trim();
   if (!name) { alert('名前を入力してください'); return; }
-  const month = document.getElementById('obPersonBirthMonth').value;
-  const day = document.getElementById('obPersonBirthDay').value;
   const person = {
     id: genId(), nickname: name, type: 'individual', gender: 'unset',
     avatar: null, fullName: null, relation: null, companyLink: null,
@@ -4655,15 +5043,16 @@ function obSavePerson() {
     interests: [], brands: [], foodLike: [], foodDislike: [],
     personality: [], family: [], memo: null, oshi: [], corpPhoto: null
   };
-  if (month) {
-    const date = String(month).padStart(2,'0') + '-' + String(day||1).padStart(2,'0');
-    person.anniversaries = [{name:'🎂 誕生日', date, dateType:'monthday', repeat:'yearly', reminders:[30]}];
+  const bd = obBuildDate('obPerson');
+  if (bd) {
+    person.anniversaries = [{name:'🎂 誕生日', date: bd.date, dateType: bd.dateType, repeat:'yearly', reminders:[30]}];
   }
   data.people.push(person);
   saveData();
   // Show completion with countdown
   const title = document.getElementById('obCompleteTitle');
-  const msg = document.getElementById('obCompleteMsg');
+  const month = document.getElementById('obPersonBirthMonth').value;
+  const day = document.getElementById('obPersonBirthDay').value;
   if (month && day) {
     const today = new Date();
     const thisYear = today.getFullYear();
@@ -5405,6 +5794,7 @@ if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().t
     if (currentTab==='people' && currentLabel==='memory') openMemoryModal();
     else if (currentTab==='people') openPeopleModal();
     else if (currentTab==='groups') openGroupModal();
+    else if (currentTab==='place' && currentLabel==='closed') openPlaceMemoryModal();
     else if (currentTab==='place') openPlaceModal();
     else openItemModal();
   });

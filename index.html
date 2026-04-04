@@ -1131,9 +1131,10 @@ function openPlaceModal(id) {
 
   html += `<div class="form-group"><label>カテゴリ</label>
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">`;
-  Object.keys(placeCategories).forEach(cat => {
+  const _pcKeys = Object.keys(placeCategories);
+  _pcKeys.forEach((cat, ci) => {
     const active = currentCat === cat;
-    html += `<div class="date-type-chip ${active?'active':''}" onclick="selectPlaceCategory(this,'${cat}')" style="font-size:13px;padding:6px 14px;">${cat}</div>`;
+    html += `<div class="date-type-chip ${active?'active':''}" onclick="selectPlaceCatByIdx(this,${ci})" style="font-size:13px;padding:6px 14px;">${cat}</div>`;
   });
   html += `</div><input type="hidden" id="fPlaceCategory" value="${esc(currentCat)}"></div>`;
 
@@ -1217,6 +1218,11 @@ function openPlaceModal(id) {
   html += `<div class="form-btns"><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button><button class="btn btn-primary" onclick="savePlaceItem()">保存</button></div>`;
   modal.innerHTML = html;
   openModal();
+}
+
+const _placeCatFormList = ['🍽 食事','🎮 遊び','📸 観光','🛍 買い物','🏨 宿泊','💆 リラックス','📋 その他'];
+function selectPlaceCatByIdx(el, ci) {
+  selectPlaceCategory(el, _placeCatFormList[ci]);
 }
 
 function selectPlaceCategory(el, cat) {
@@ -1326,9 +1332,10 @@ function openPlaceMemoryModal(id) {
 
   html += `<div class="form-group"><label>カテゴリ</label>
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">`;
-  Object.keys(placeCategories).forEach(cat => {
+  const _pcKeys = Object.keys(placeCategories);
+  _pcKeys.forEach((cat, ci) => {
     const active = currentCat === cat;
-    html += `<div class="date-type-chip ${active?'active':''}" onclick="selectPlaceCategory(this,'${cat}')" style="font-size:13px;padding:6px 14px;">${cat}</div>`;
+    html += `<div class="date-type-chip ${active?'active':''}" onclick="selectPlaceCatByIdx(this,${ci})" style="font-size:13px;padding:6px 14px;">${cat}</div>`;
   });
   html += `</div><input type="hidden" id="fPlaceCategory" value="${esc(currentCat)}"></div>`;
 
@@ -3050,11 +3057,12 @@ function openItemModal(id) {
   }
 
   // Category (like place)
+  const itemCatKeys = Object.keys(itemCategories);
   html += `<div class="form-group"><label>カテゴリ</label>
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">`;
-  Object.keys(itemCategories).forEach(cat => {
+  itemCatKeys.forEach((cat, ci) => {
     const active = currentCat === cat;
-    html += `<div class="date-type-chip ${active?'active':''}" onclick="selectItemCategory(this,'${cat}')" style="font-size:13px;padding:6px 14px;">${cat}</div>`;
+    html += `<div class="date-type-chip ${active?'active':''}" onclick="selectItemCatByIdx(this,${ci})" style="font-size:13px;padding:6px 14px;">${cat}</div>`;
   });
   html += `</div><input type="hidden" id="fItemCategory" value="${esc(currentCat)}"></div>`;
 
@@ -3113,6 +3121,10 @@ function setItemPurpose(purpose, el) {
   el.classList.add('active');
   const targetGroup = document.getElementById('fGiftTargetGroup');
   if (targetGroup) targetGroup.style.display = purpose==='gift' ? '' : 'none';
+}
+
+function selectItemCatByIdx(el, ci) {
+  selectItemCategory(el, _itemCatList[ci]);
 }
 
 function selectItemCategory(el, cat) {

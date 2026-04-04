@@ -4017,6 +4017,7 @@ function saveItem() {
       person: document.getElementById('fPerson')?.value.trim()||(document.getElementById('fGiftTarget')?.value.trim())||null,
       labelIdx,
       itemCategory: document.getElementById('fItemCategory')?.value||null,
+      _debug_cat: 'CAT=' + (document.getElementById('fItemCategory')?.value||'EMPTY'),
       occasion: document.getElementById('fOccasion')?.value.trim()||null,
       amount: document.getElementById('fAmount')?.value||null,
       date: document.getElementById('fDate')?.value||null,
@@ -4042,6 +4043,8 @@ function saveItem() {
       data[currentTab].push(item);
     }
     saveData(); closeModal(); render();
+    // DEBUG: カテゴリ確認（確認後に削除）
+    alert('保存カテゴリ: [' + (item.itemCategory||'なし') + '] debug: ' + item._debug_cat);
     // Pickup toast
     if (tags.length && currentTab!=='people') {
       const matches = findMatchingPeople(tags);

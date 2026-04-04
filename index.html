@@ -4392,7 +4392,7 @@ function generateProfileQR() {
   const area = document.getElementById('profileQRResult');
   try {
     const qr = qrcode(0, 'M');
-    qr.addData(json);
+    qr.addData(unescape(encodeURIComponent(json)));
     qr.make();
     area.innerHTML = qr.createSvgTag(4, 0);
     area.querySelector('svg').style.maxWidth = '200px';
@@ -4526,7 +4526,10 @@ function processQRImage(input) {
 
 function handleQRData(raw) {
   try {
-    const d = JSON.parse(raw);
+    // UTF-8エンコードされたデータをデコード試行
+    let decoded = raw;
+    try { decoded = decodeURIComponent(escape(raw)); } catch(e) {}
+    const d = JSON.parse(decoded);
     if (!d.n) { alert('AWAIのプロフィールデータではありません'); return; }
     showQRRegistration(d);
   } catch(e) {

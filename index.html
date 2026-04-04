@@ -1320,6 +1320,13 @@ function renderLabelBar() {
   });
   html += `<div class="label-chip add" onclick="openLabelModal()">＋</div>`;
   bar.innerHTML = html;
+  // スクロールリセット＋ヒントアニメーション再実行
+  bar.scrollLeft = 0;
+  bar.classList.remove('hint-anim');
+  void bar.offsetHeight; // reflow
+  bar.classList.add('hint-anim');
+  const wrap = bar.parentElement;
+  if (wrap) wrap.classList.remove('scrolled-end');
 }
 function filterLabel(idx) { currentLabel=idx; render(); }
 // カテゴリ: データ保存はテキストのみ、表示時に絵文字を付与

@@ -1050,9 +1050,9 @@ function renderLabelBar() {
   if (['wish','received','gave'].includes(currentTab)) {
     const itemCatNames = ['👕 ファッション','🍽 グルメ','🍪 お菓子','💄 美容・健康','🏠 インテリア','📱 家電・ガジェット','📚 趣味・体験','🎁 ギフト券','📋 その他'];
     let html = `<div class="label-chip ${currentLabel===null?'active':''}" style="color:var(--accent);${currentLabel===null?'border-color:var(--accent);':''}" onclick="filterLabel(null)"><span class="ldot" style="background:var(--accent);"></span> すべて</div>`;
-    itemCatNames.forEach(cat => {
+    itemCatNames.forEach((cat, ci) => {
       const active = currentLabel === cat;
-      html += `<div class="label-chip ${active?'active':''}" style="color:var(--text);${active?'border-color:var(--accent);background:var(--accent-light);':''}" onclick="filterLabel('${cat}')">${cat}</div>`;
+      html += `<div class="label-chip ${active?'active':''}" style="color:var(--text);${active?'border-color:var(--accent);background:var(--accent-light);':''}" onclick="filterItemCat(${ci})">${cat}</div>`;
     });
     bar.innerHTML = html;
     return;
@@ -1061,9 +1061,9 @@ function renderLabelBar() {
   if (currentTab==='place') {
     const placeCatNames = ['🍽 食事','🎮 遊び','📸 観光','🛍 買い物','🏨 宿泊','💆 リラックス','📋 その他'];
     let html = `<div class="label-chip ${currentLabel===null?'active':''}" style="color:var(--accent);${currentLabel===null?'border-color:var(--accent);':''}" onclick="filterLabel(null)"><span class="ldot" style="background:var(--accent);"></span> すべて</div>`;
-    placeCatNames.forEach(cat => {
+    placeCatNames.forEach((cat, ci) => {
       const active = currentLabel === cat;
-      html += `<div class="label-chip ${active?'active':''}" style="color:var(--text);${active?'border-color:var(--accent);background:var(--accent-light);':''}" onclick="filterLabel('${cat}')">${cat}</div>`;
+      html += `<div class="label-chip ${active?'active':''}" style="color:var(--text);${active?'border-color:var(--accent);background:var(--accent-light);':''}" onclick="filterPlaceCat(${ci})">${cat}</div>`;
     });
     html += `<div class="label-chip ${currentLabel==='closed'?'active':''}" style="color:#a09590;${currentLabel==='closed'?'border-color:#a09590;':''}" onclick="filterLabel('closed')"><span class="ldot" style="background:#a09590;"></span> 🤍 記憶</div>`;
     bar.innerHTML = html;
@@ -1078,6 +1078,10 @@ function renderLabelBar() {
   bar.innerHTML = html;
 }
 function filterLabel(idx) { currentLabel=idx; render(); }
+const _itemCatList = ['👕 ファッション','🍽 グルメ','🍪 お菓子','💄 美容・健康','🏠 インテリア','📱 家電・ガジェット','📚 趣味・体験','🎁 ギフト券','📋 その他'];
+const _placeCatList = ['🍽 食事','🎮 遊び','📸 観光','🛍 買い物','🏨 宿泊','💆 リラックス','📋 その他'];
+function filterItemCat(ci) { currentLabel = _itemCatList[ci]; render(); }
+function filterPlaceCat(ci) { currentLabel = _placeCatList[ci]; render(); }
 
 // ===== Render items =====
 function renderStars(rating, itemId, tab) {

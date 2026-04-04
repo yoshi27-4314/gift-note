@@ -929,12 +929,16 @@ function matchesSearch(item, tab) {
 function findMatchingPeople(tags) {
   if (!tags||!tags.length) return [];
   return data.people.filter(p => {
-    if (!p.interests||!p.interests.length) return false;
-    return tags.some(t => p.interests.some(i => t.includes(i)||i.includes(t)));
-  }).map(p => ({
-    name: p.nickname||'名前なし',
-    matched: tags.filter(t => p.interests.some(i => t.includes(i)||i.includes(t)))
-  })).filter(m=>m.matched.length).sort((a,b)=>b.matched.length-a.matched.length);
+    const allPrefs = [...(p.interests||[]), ...(p.foodLike||[]), ...(p.brands||[]), ...(p.oshi||[])];
+    if (!allPrefs.length) return false;
+    return tags.some(t => allPrefs.some(i => t.toLowerCase().includes(i.toLowerCase())||i.toLowerCase().includes(t.toLowerCase())));
+  }).map(p => {
+    const allPrefs = [...(p.interests||[]), ...(p.foodLike||[]), ...(p.brands||[]), ...(p.oshi||[])];
+    return {
+      name: p.nickname||'名前なし',
+      matched: [...new Set(tags.filter(t => allPrefs.some(i => t.toLowerCase().includes(i.toLowerCase())||i.toLowerCase().includes(t.toLowerCase()))))]
+    };
+  }).filter(m=>m.matched.length).sort((a,b)=>b.matched.length-a.matched.length);
 }
 
 // ===== Reminders =====
@@ -967,14 +971,48 @@ function renderReminders() {
 
 function renderPickup() {
   const zone = document.getElementById('pickupZone');
-  if (currentTab==='people') { zone.innerHTML=''; return; }
-  const allTags = [];
-  (data[currentTab]||[]).slice(-10).forEach(i => (i.tags||[]).forEach(t => { if (!allTags.includes(t)) allTags.push(t); }));
-  const matches = findMatchingPeople(allTags);
+  if (currentTab==='people' || currentTab==='groups') { zone.innerHTML=''; return; }
+
+  // Only show when searching or filtering by category
+  const isSearching = searchQuery && searchQuery.length > 0;
+  const isItemCategoryFilter = ['wish','received','gave'].includes(currentTab) && currentLabel !== null && typeof currentLabel === 'string';
+  const isPlaceCategoryFilter = currentTab === 'place' && currentLabel !== null;
+
+  if (!isSearching && !isItemCategoryFilter && !isPlaceCategoryFilter) { zone.innerHTML=''; return; }
+
+  // Collect tags from visible items + search keyword + category genres
+  const searchTags = [];
+  if (isSearching) searchTags.push(searchQuery);
+  if (isPlaceCategoryFilter && typeof currentLabel === 'number') {
+    const ln = getLabels('place')[currentLabel]?.name;
+    if (ln) searchTags.push(ln);
+  }
+  if (isItemCategoryFilter) {
+    const itemCategories = {
+      '👕 ファッション': ['服','靴','バッグ','アクセサリー','時計','帽子','財布','ストール','ネクタイ','サングラス'],
+      '🍽 グルメ': ['お酒','コーヒー','紅茶','調味料','お取り寄せ','フルーツ','ワイン','日本酒'],
+      '🍪 お菓子': ['チョコレート','焼き菓子','和菓子','ケーキ','クッキー','ゼリー','アイス','おせんべい'],
+      '💄 美容・健康': ['コスメ','スキンケア','香水','ヘアケア','入浴剤','サプリ','マッサージ','アロマ'],
+      '🏠 インテリア': ['雑貨','キッチン用品','食器','花','観葉植物','キャンドル','タオル','寝具','文房具'],
+      '📱 家電・ガジェット': ['イヤホン','スピーカー','充電器','スマホケース','カメラ','家電','ゲーム'],
+      '📚 趣味・体験': ['本','音楽','映画','チケット','体験ギフト','習い事','旅行券','スポーツ用品'],
+      '🎁 ギフト券': ['Amazonギフト','商品券','カタログギフト','QUOカード','食事券','旅行券'],
+      '📋 その他': []
+    };
+    const catName = currentLabel.replace(/^[^\s]+\s/, '');
+    searchTags.push(catName);
+    (itemCategories[currentLabel]||[]).forEach(g => searchTags.push(g));
+  }
+  // Also include tags from filtered items
+  const items = (data[currentTab]||[]).filter(i => matchesSearch(i, currentTab));
+  items.forEach(i => (i.tags||[]).forEach(t => { if (!searchTags.includes(t)) searchTags.push(t); }));
+
+  const matches = findMatchingPeople(searchTags);
   if (!matches.length) { zone.innerHTML=''; return; }
-  zone.innerHTML = `<div class="pickup-mini"><div class="pickup-mini-title">💡 喜びそうな人</div>${
-    matches.slice(0,2).map(m =>
-      `<div class="pickup-mini-row"><span class="pickup-mini-person">${esc(m.name)}</span>${m.matched.map(t=>`<span class="pickup-mini-tag">${esc(t)}</span>`).join('')}</div>`
+
+  zone.innerHTML = `<div class="pickup-mini" style="animation:fadeUp 0.3s ease;"><div class="pickup-mini-title">💡 喜びそうな人</div>${
+    matches.slice(0,3).map(m =>
+      `<div class="pickup-mini-row"><span class="pickup-mini-person" style="cursor:pointer;" onclick="jumpToPerson('${data.people.find(p=>p.nickname===m.name)?.id||''}')">${esc(m.name)}</span>${m.matched.map(t=>`<span class="pickup-mini-tag">${esc(t)}</span>`).join('')}</div>`
     ).join('')
   }</div>`;
 }

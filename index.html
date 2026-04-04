@@ -3001,7 +3001,7 @@ function openItemModal(id) {
 
   // Star rating
   const curRating = item?.rating||0;
-  const ratingLabel = currentTab==='wish' ? 'ほしさ' : currentTab==='received' ? 'うれしさ' : '満足度';
+  const ratingLabel = '評価';
   html += `<div class="form-group"><label>${ratingLabel}</label><div class="stars" id="fStars">`;
   for (let i=1; i<=5; i++) {
     html += `<span class="star ${i<=curRating?'on':''}" onclick="setFormStar(${i})">★</span>`;

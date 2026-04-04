@@ -4545,9 +4545,6 @@ function openSettings() {
   const modal = document.getElementById('settingsModal');
   const currentSize = localStorage.getItem(FONTSIZE_KEY) || 'normal';
   const emailLinked = _sbUser && _sbUser.email;
-  const emailSectionHtml = emailLinked
-    ? '<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:12px;"><span style="color:#6bab8a;font-size:18px;">✅</span><span style="font-size:14px;color:var(--text);">' + _sbUser.email + '</span></div><button class="card-btn delete" onclick="logoutAccount()" style="font-size:13px;padding:6px 14px;margin-top:8px;">ログアウト</button>'
-    : '<input type="email" id="regEmail" placeholder="メールアドレス" style="width:100%;padding:10px 14px;font-size:14px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;"><input type="password" id="regPassword" placeholder="パスワード（6文字以上）" style="width:100%;padding:10px 14px;font-size:14px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;"><button class="card-btn" onclick="registerEmail()" style="font-size:14px;padding:8px 20px;">登録</button>';
   modal.innerHTML = `<h2>⚙️ 設定</h2>
     <div class="form-group"><label>文字サイズ</label>
       <div style="display:flex;gap:8px;margin-top:4px;">
@@ -4614,14 +4611,30 @@ function openSettings() {
       <div class="form-hint" style="text-align:center;">紹介した人数: <strong id="referralCount">0</strong>人</div>
       <div class="form-hint" style="text-align:center;margin-top:4px;">紹介ポイント: <strong id="referralPoints">0</strong>pt <span style="font-size:11px;color:var(--sub);">（1紹介 = 10pt）</span></div>
     </div>
-    <div class="form-group"><label>📧 アカウント連携</label>
-      <div class="form-hint" style="margin-bottom:8px;">アカウントを連携すると、端末を変えてもデータを引き継げます</div>
-      <div id="emailAuthSection">${emailSectionHtml}</div>
-      ${!_sbUser?.email?`<div style="margin-top:12px;">
-        <button onclick="document.getElementById('settingsModalOverlay').classList.remove('open');loginWithGoogle()" style="width:100%;padding:12px;font-size:14px;border-radius:12px;border:1px solid var(--border);background:#fff;color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;font-family:'Zen Maru Gothic',sans-serif;">
-          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:18px;height:18px;"> Googleで連携
+    <div class="form-group"><label>🔐 アカウント連携</label>
+      <div class="form-hint" style="margin-bottom:12px;">連携すると端末を変えてもデータを引き継げます</div>
+      ${emailLinked?`
+        <div style="padding:12px 14px;background:#f0f8ee;border:1px solid #c8d8c0;border-radius:12px;display:flex;align-items:center;gap:8px;">
+          <span style="color:#6bab8a;font-size:18px;">✅</span>
+          <div>
+            <div style="font-size:14px;font-weight:500;">${_sbUser.email}</div>
+            <div style="font-size:11px;color:var(--sub);">連携済み</div>
+          </div>
+        </div>
+        <button class="card-btn delete" onclick="logoutAccount()" style="font-size:13px;padding:6px 14px;margin-top:8px;">ログアウト</button>
+      `:`
+        <button onclick="document.getElementById('settingsModalOverlay').classList.remove('open');loginWithGoogle()" style="width:100%;padding:14px;font-size:15px;border-radius:14px;border:1px solid #dadce0;background:#fff;color:#3c4043;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;font-family:'Zen Maru Gothic',sans-serif;font-weight:500;box-shadow:0 1px 3px rgba(0,0,0,0.08);margin-bottom:12px;">
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:20px;height:20px;"> Googleで連携（かんたん）
         </button>
-      </div>`:''}
+        <div style="display:flex;align-items:center;gap:10px;margin:12px 0;">
+          <div style="flex:1;height:1px;background:var(--border);"></div>
+          <span style="font-size:11px;color:var(--sub);">または</span>
+          <div style="flex:1;height:1px;background:var(--border);"></div>
+        </div>
+        <input type="email" id="regEmail" placeholder="メールアドレス" style="width:100%;padding:10px 14px;font-size:14px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;">
+        <input type="password" id="regPassword" placeholder="パスワード（6文字以上）" style="width:100%;padding:10px 14px;font-size:14px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;">
+        <button class="card-btn" onclick="registerEmail()" style="font-size:14px;padding:8px 20px;">メールで登録</button>
+      `}
     </div>
     <div class="form-group"><label>💾 データ管理</label>
       <div class="form-hint" style="margin-bottom:8px;">大切なデータを守るため、定期的にバックアップしてください</div>

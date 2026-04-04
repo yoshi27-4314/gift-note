@@ -1921,10 +1921,14 @@ function setRankMode(on) {
 
 function renderItemCard(item, tab, rank) {
   let html = '<div class="card" style="position:relative;">';
-  html += `<label style="position:absolute;top:12px;right:12px;font-size:11px;color:var(--sub);display:flex;align-items:center;gap:3px;cursor:pointer;z-index:1;" onclick="event.stopPropagation();">
-    <input type="checkbox" ${item.pinned?'checked':''} onchange="event.stopPropagation();togglePin('${tab}','${item.id}')">
-    <span>${item.pinned?'📌':'📌'}</span>
-  </label>`;
+  html += `<div style="position:absolute;top:10px;right:12px;display:flex;gap:8px;z-index:1;">
+    <label style="font-size:11px;color:var(--sub);display:flex;align-items:center;gap:2px;cursor:pointer;" onclick="event.stopPropagation();">
+      <input type="checkbox" ${item.pinned?'checked':''} onchange="event.stopPropagation();togglePin('${tab}','${item.id}')"><span>📌</span>
+    </label>
+    <label style="font-size:11px;color:var(--sub);display:flex;align-items:center;gap:2px;cursor:pointer;" onclick="event.stopPropagation();">
+      <input type="checkbox" ${item.hidden?'checked':''} onchange="event.stopPropagation();toggleItemHidden('${tab}','${item.id}')"><span>${item.hidden?'👁':'👁‍🗨'}</span>
+    </label>
+  </div>`;
   if (rank) html += `<div style="display:flex;align-items:center;gap:8px;">
     <span class="rank-number">${rank}</span><div style="flex:1;">`;
   html += '<div class="card-title" style="padding-right:40px;">';
@@ -2536,10 +2540,14 @@ function renderGroupListItem(g) {
 function renderGroupCard(g) {
   const members = (g.memberIds||[]).map(id => data.people.find(p=>p.id===id)).filter(Boolean);
   let html = '<div class="card" style="border-left:3px solid var(--accent);position:relative;">';
-  html += `<label style="position:absolute;top:12px;right:12px;font-size:11px;color:var(--sub);display:flex;align-items:center;gap:3px;cursor:pointer;z-index:1;" onclick="event.stopPropagation();">
-    <input type="checkbox" ${g.pinned?'checked':''} onchange="event.stopPropagation();togglePin('groups','${g.id}')">
-    <span>📌</span>
-  </label>`;
+  html += `<div style="position:absolute;top:10px;right:12px;display:flex;gap:8px;z-index:1;">
+    <label style="font-size:11px;color:var(--sub);display:flex;align-items:center;gap:2px;cursor:pointer;" onclick="event.stopPropagation();">
+      <input type="checkbox" ${g.pinned?'checked':''} onchange="event.stopPropagation();togglePin('groups','${g.id}')"><span>📌</span>
+    </label>
+    <label style="font-size:11px;color:var(--sub);display:flex;align-items:center;gap:2px;cursor:pointer;" onclick="event.stopPropagation();">
+      <input type="checkbox" ${g.hidden?'checked':''} onchange="event.stopPropagation();toggleItemHidden('groups','${g.id}')"><span>${g.hidden?'👁':'👁‍🗨'}</span>
+    </label>
+  </div>`;
   html += `<div class="card-title" style="font-size:17px;padding-right:40px;">👥 ${esc(g.name||'名前なし')}</div>`;
   if (g.description) html += `<div class="card-sub">${esc(g.description)}</div>`;
   html += `<div style="margin-top:8px;">`;
@@ -3229,13 +3237,22 @@ function render() {
       cardList.innerHTML = '<div class="empty-msg">👥 グループを作りましょう<br>旅行のお土産やまとめた贈り物に便利です<br>下の ＋ ボタンから作成できます</div>';
       return;
     }
-    // Sort: pinned first, then by updatedAt
-    const sorted = [...groups].sort((a,b) => {
+    const visibleGroups = groups.filter(g => !g.hidden);
+    const hiddenGroups = groups.filter(g => g.hidden);
+    const sorted = [...visibleGroups].sort((a,b) => {
       if (a.pinned && !b.pinned) return -1;
       if (!a.pinned && b.pinned) return 1;
       return (b.updatedAt||b.createdAt||'').localeCompare(a.updatedAt||a.createdAt||'');
     });
-    cardList.innerHTML = sorted.map(g => renderGroupListItem(g)).join('');
+    let groupHtml = sorted.map(g => renderGroupListItem(g)).join('');
+    if (hiddenGroups.length) {
+      const hid = 'hiddenGroups_'+Math.random().toString(36).slice(2);
+      groupHtml += `<div style="margin-top:12px;padding:8px 12px;cursor:pointer;color:var(--sub);font-size:13px;text-align:center;border:1px dashed var(--border);border-radius:12px;" onclick="const b=document.getElementById('${hid}');const t=this;if(b.style.display==='none'){b.style.display='';t.textContent='▲ 非表示を閉じる (${hiddenGroups.length}件)';}else{b.style.display='none';t.textContent='▼ 非表示を表示 (${hiddenGroups.length}件)';}">▼ 非表示を表示 (${hiddenGroups.length}件)</div>`;
+      groupHtml += `<div id="${hid}" style="display:none;opacity:0.5;">`;
+      groupHtml += hiddenGroups.map(g => renderGroupListItem(g)).join('');
+      groupHtml += '</div>';
+    }
+    cardList.innerHTML = groupHtml;
     if (openGroupId) {
       const group = data.groups.find(x=>x.id===openGroupId);
       if (group) cardList.innerHTML += `<div id="groupDetail">${renderGroupCard(group)}</div>`;
@@ -3321,7 +3338,11 @@ function toggleItemDetail(id) {
 }
 
 function renderItems(items, cardList) {
-  if (!items.length) {
+  // 非表示フィルタリング
+  const visibleItems = items.filter(i => !i.hidden);
+  const hiddenItems = items.filter(i => i.hidden);
+
+  if (!visibleItems.length && !hiddenItems.length) {
     const msgs = { wish:'✨ お気に入りを追加してみましょう', received:'🎀 もらった贈り物を記録しましょう',
       gave:'🎁 あげた贈り物を記録しましょう', place:'📍 行きたい場所を追加しましょう' };
     cardList.innerHTML = `<div class="empty-msg">${msgs[currentTab]||''}<br>下の ＋ ボタンから追加できます</div>`;
@@ -3329,7 +3350,7 @@ function renderItems(items, cardList) {
   }
   let sorted;
   if (rankMode) {
-    sorted = [...items].filter(i=>(i.rating||0)>0).sort((a,b) => {
+    sorted = [...visibleItems].filter(i=>(i.rating||0)>0).sort((a,b) => {
       if (a.pinned&&!b.pinned) return -1; if (!a.pinned&&b.pinned) return 1;
       return (b.rating||0)-(a.rating||0);
     });
@@ -3343,13 +3364,22 @@ function renderItems(items, cardList) {
       if (item) cardList.innerHTML += `<div id="itemDetail">${renderItemCard(item, currentTab)}</div>`;
     }
   } else {
-    sorted = [...items].sort((a,b) => {
+    sorted = [...visibleItems].sort((a,b) => {
       if (a.pinned&&!b.pinned) return -1; if (!a.pinned&&b.pinned) return 1;
       return (b.date||b.createdAt||'').localeCompare(a.date||a.createdAt||'');
     });
-    cardList.innerHTML = sorted.map(i => renderItemListItem(i, currentTab)).join('');
+    let listHtml = sorted.map(i => renderItemListItem(i, currentTab)).join('');
+    // 非表示アイテムの折りたたみ
+    if (hiddenItems.length) {
+      const hid = 'hiddenItems_'+Math.random().toString(36).slice(2);
+      listHtml += `<div style="margin-top:12px;padding:8px 12px;cursor:pointer;color:var(--sub);font-size:13px;text-align:center;border:1px dashed var(--border);border-radius:12px;" onclick="const b=document.getElementById('${hid}');const t=this;if(b.style.display==='none'){b.style.display='';t.textContent='▲ 非表示を閉じる (${hiddenItems.length}件)';}else{b.style.display='none';t.textContent='▼ 非表示を表示 (${hiddenItems.length}件)';}">▼ 非表示を表示 (${hiddenItems.length}件)</div>`;
+      listHtml += `<div id="${hid}" style="display:none;opacity:0.5;">`;
+      listHtml += [...hiddenItems].sort((a,b) => (b.date||b.createdAt||'').localeCompare(a.date||a.createdAt||'')).map(i => renderItemListItem(i, currentTab)).join('');
+      listHtml += '</div>';
+    }
+    cardList.innerHTML = listHtml;
     if (openItemId) {
-      const item = sorted.find(x=>x.id===openItemId);
+      const item = items.find(x=>x.id===openItemId);
       if (item) cardList.innerHTML += `<div id="itemDetail">${renderItemCard(item, currentTab)}</div>`;
     }
   }
@@ -6362,6 +6392,15 @@ function toggleHidden(personId) {
   openPersonId = null;
   render();
   showToast(p.hidden ? '非表示にしました' : '表示に戻しました');
+}
+
+function toggleItemHidden(tab, id) {
+  const arr = tab==='groups' ? data.groups : data[tab];
+  const item = arr?.find(x=>x.id===id);
+  if (!item) return;
+  item.hidden = !item.hidden;
+  saveData(); render();
+  showToast(item.hidden ? '非表示にしました' : '表示に戻しました');
 }
 
 function toggleAnnReminder(personId, annIdx, checked) {

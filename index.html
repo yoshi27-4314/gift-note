@@ -238,11 +238,23 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 .tab:active .tab-icon { transform: scale(0.9); }
 
 /* Labels */
+.label-bar-wrap {
+  position: relative;
+}
+.label-bar-wrap::after {
+  content: ''; position: absolute; top: 0; right: 0; bottom: 0; width: 40px;
+  background: linear-gradient(to right, transparent, var(--bg));
+  pointer-events: none; z-index: 1;
+  transition: opacity 0.3s;
+}
+.label-bar-wrap.scrolled-end::after { opacity: 0; }
 .label-bar {
   display: flex; align-items: center; gap: 8px;
   padding: 8px 20px; overflow-x: auto; scrollbar-width: none;
 }
 .label-bar::-webkit-scrollbar { display: none; }
+@keyframes labelHint { 0%{transform:translateX(0)} 30%{transform:translateX(-20px)} 60%{transform:translateX(0)} }
+.label-bar.hint-anim { animation: labelHint 0.8s ease 0.5s 1; }
 .label-chip {
   flex-shrink: 0; padding: 8px 16px; border-radius: 20px;
   font-size: 13px; border: none;
@@ -756,7 +768,7 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
   <div class="tab" data-tab="groups"><span class="tab-icon">👥</span><span class="tab-label">グループ</span></div>
 </div>
 
-<div class="label-bar" id="labelBar"></div>
+<div class="label-bar-wrap"><div class="label-bar hint-anim" id="labelBar"></div></div>
 <div class="ranking-toggle" id="rankingToggle" style="display:none;">
   <div class="ranking-btn" id="rankOnBtn" onclick="setRankMode(!rankMode)">⭐ ランキング</div>
 </div>
@@ -7788,6 +7800,18 @@ if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().t
       }
     }
   });
+
+  // ラベルバーのスクロール状態でフェード制御
+  const labelBar = document.getElementById('labelBar');
+  if (labelBar) {
+    labelBar.addEventListener('scroll', () => {
+      const wrap = labelBar.parentElement;
+      const atEnd = labelBar.scrollLeft + labelBar.clientWidth >= labelBar.scrollWidth - 10;
+      wrap.classList.toggle('scrolled-end', atEnd);
+    });
+    // ヒントアニメーションは初回のみ
+    labelBar.addEventListener('animationend', () => { labelBar.classList.remove('hint-anim'); });
+  }
 
   // Pull-to-refresh for iOS
   let _ptr_startY = 0, _ptr_pulling = false;

@@ -9,6 +9,7 @@
 <meta name="theme-color" content="#e8a598">
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&family=Shippori+Mincho:wght@400;600&display=swap" rel="stylesheet">
@@ -740,6 +741,72 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 </div>
 
 <script>
+// ===== Supabase =====
+const SUPABASE_URL = 'https://njdnfvlucwasrafoepmu.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5qZG5mdmx1Y3dhc3JhZm9lcG11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMTEzNjgsImV4cCI6MjA5MDg4NzM2OH0.jDjqf3nWqaQ0sMfDf-85dDQNbEhX90qLsOOhWJdDlM8';
+const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let _sbUser = null;
+let _sbSyncing = false;
+
+async function sbInit() {
+  try {
+    // セッション復元 or 匿名ログイン
+    const { data: { session } } = await _sb.auth.getSession();
+    if (session) {
+      _sbUser = session.user;
+    } else {
+      const { data: authData, error } = await _sb.auth.signInAnonymously();
+      if (error) { console.error('Auth error:', error); return; }
+      _sbUser = authData.user;
+    }
+    // クラウドからデータを読み込み
+    await sbLoad();
+  } catch(e) { console.error('Supabase init error:', e); }
+}
+
+async function sbLoad() {
+  if (!_sbUser) return;
+  try {
+    const { data: row, error } = await _sb.from('user_data').select('data,profile').eq('user_id', _sbUser.id).single();
+    if (error && error.code !== 'PGRST116') { console.error('Load error:', error); return; }
+    if (row && row.data) {
+      // クラウドのデータとローカルを比較し、新しい方を採用
+      const localRaw = localStorage.getItem('awai_data');
+      const localData = localRaw ? JSON.parse(localRaw) : null;
+      const localCount = localData ? Object.values(localData).reduce((s,v) => s + (Array.isArray(v)?v.length:0), 0) : 0;
+      const cloudCount = Object.values(row.data).reduce((s,v) => s + (Array.isArray(v)?v.length:0), 0);
+
+      if (cloudCount > 0 && cloudCount >= localCount) {
+        // クラウドのデータを採用
+        TABS.forEach(t => { if (Array.isArray(row.data[t])) data[t] = row.data[t]; });
+        if (row.data.labels) data.labels = {...data.labels, ...row.data.labels};
+        localStorage.setItem('awai_data', JSON.stringify(data));
+        render();
+      }
+      if (row.profile) {
+        localStorage.setItem('awai_my_profile', JSON.stringify(row.profile));
+      }
+    }
+  } catch(e) { console.error('sbLoad error:', e); }
+}
+
+async function sbSave() {
+  if (!_sbUser || _sbSyncing) return;
+  _sbSyncing = true;
+  try {
+    const dataObj = JSON.parse(localStorage.getItem('awai_data') || '{}');
+    const profileObj = JSON.parse(localStorage.getItem('awai_my_profile') || '{}');
+    const { error } = await _sb.from('user_data').upsert({
+      user_id: _sbUser.id,
+      data: dataObj,
+      profile: profileObj,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'user_id' });
+    if (error) console.error('Save error:', error);
+  } catch(e) { console.error('sbSave error:', e); }
+  _sbSyncing = false;
+}
+
 // ===== Constants =====
 const APP_VERSION = '1.9';
 const STORAGE_KEY = 'awai_data';
@@ -824,8 +891,9 @@ function loadData() {
 function saveData() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    // 自動バックアップ: sessionStorageに一時保存（ブラウザ閉じるまで有効）
     try { sessionStorage.setItem('awai_auto_backup', JSON.stringify(data)); } catch(e2) {}
+    // クラウド同期（非同期・失敗してもローカル保存は成功）
+    sbSave();
   } catch(e) {
     console.error('Save error:', e);
     alert('保存に失敗しました。写真が多すぎる可能性があります。不要な写真を削除してください。');
@@ -4641,6 +4709,7 @@ function saveMyProfile() {
     updatedAt: new Date().toISOString()
   };
   localStorage.setItem(MY_PROFILE_KEY, JSON.stringify(profile));
+  sbSave();
   closeModal();
   showToast('プロフィールを保存しました ✓');
 }
@@ -5594,6 +5663,7 @@ function obSaveProfile() {
     profile.anniversaries = [{name:'🎂 誕生日', date: bd.date, dateType: bd.dateType, repeat:'yearly', reminders:[30]}];
   }
   localStorage.setItem(MY_PROFILE_KEY, JSON.stringify(profile));
+  sbSave();
   obNext(3);
 }
 
@@ -6349,6 +6419,9 @@ if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().t
   checkReferral();
   const savedSeason = localStorage.getItem(SEASON_KEY);
   setSeason(savedSeason || getAutoSeason());
+
+  // Supabase初期化（クラウド同期開始）
+  sbInit();
 
   document.querySelectorAll('.tab').forEach(el => {
     el.addEventListener('click', () => switchTab(el.dataset.tab));

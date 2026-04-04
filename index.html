@@ -1169,32 +1169,12 @@ function renderPickup() {
   if (isCategoryFilter && currentTab === 'place') {
     const catName = currentLabel.replace(/^[^\s]+\s/, '');
     searchTags.push(catName);
-    const placeCategories = {
-      '食事': ['和食','洋食','イタリアン','フレンチ','中華','焼肉','寿司','ラーメン','カレー','居酒屋','バー','カフェ'],
-      '遊び': ['カラオケ','ボウリング','テーマパーク','映画館','ライブ','スポーツ観戦','キャンプ','ゴルフ'],
-      '観光': ['神社','お寺','温泉','絶景','公園','美術館','博物館','水族館','動物園'],
-      '買い物': ['ショッピングモール','アウトレット','商店街','百貨店'],
-      '宿泊': ['ホテル','旅館','民宿','グランピング'],
-      'リラックス': ['スパ','マッサージ','エステ','サウナ','岩盤浴','ヨガ'],
-      'その他': []
-    };
-    (placeCategories[currentLabel]||[]).forEach(g => searchTags.push(g));
+    (PLACE_CATEGORIES[currentLabel]||[]).forEach(g => searchTags.push(g));
   }
   if (isCategoryFilter && ['wish','received','gave'].includes(currentTab)) {
-    const itemCategories = {
-      'ファッション': ['服','靴','バッグ','アクセサリー','時計','帽子','財布','ストール','ネクタイ','サングラス'],
-      'グルメ': ['お酒','コーヒー','紅茶','調味料','お取り寄せ','フルーツ','ワイン','日本酒'],
-      'お菓子': ['チョコレート','焼き菓子','和菓子','ケーキ','クッキー','ゼリー','アイス','おせんべい','ナッツ'],
-      '美容・健康': ['コスメ','オイル','スキンケア','香水','ヘアケア','入浴剤','サプリ','マッサージ','アロマ'],
-      'インテリア': ['雑貨','キッチン用品','食器','花','観葉植物','キャンドル','タオル','寝具','文房具'],
-      '家電・ガジェット': ['イヤホン','スピーカー','充電器','スマホケース','カメラ','家電','ゲーム'],
-      '趣味・体験': ['本','音楽','映画','チケット','体験ギフト','習い事','旅行券','スポーツ用品'],
-      'ギフト券': ['Amazonギフト','商品券','カタログギフト','QUOカード','食事券','旅行券'],
-      'その他': []
-    };
     const catName = currentLabel.replace(/^[^\s]+\s/, '');
     searchTags.push(catName);
-    (itemCategories[currentLabel]||[]).forEach(g => searchTags.push(g));
+    (ITEM_CATEGORIES[currentLabel]||[]).forEach(g => searchTags.push(g));
   }
   // Also include tags from filtered items (only items matching current filter)
   let filteredItems = (data[currentTab]||[]).filter(i => matchesSearch(i, currentTab));
@@ -1218,6 +1198,12 @@ function renderPickup() {
 // ===== Labels =====
 function getLabelKey(tab) { return (tab==='gave'||tab==='received') ? 'gift' : tab; }
 function getLabels(tab) { return data.labels[getLabelKey(tab)]||[]; }
+function autoLabelItem(item, tab) {
+  if (item.labelIdx !== null && item.labelIdx !== undefined) return;
+  const labels = getLabels(tab);
+  const text = [item.title, item.memo, ...(item.tags||[])].filter(Boolean).join(' ').toLowerCase();
+  labels.forEach((l, i) => { if (text.includes(l.name.toLowerCase())) item.labelIdx = i; });
+}
 function renderLabelBar() {
   const bar = document.getElementById('labelBar');
   if (currentTab==='groups') { bar.innerHTML=''; return; }
@@ -1264,6 +1250,29 @@ const _itemCatData = ['ファッション','グルメ','お菓子','美容・健
 const _itemCatEmoji = ['👕','🍽','🍪','💄','🏠','📱','📚','🎁','📋'];
 const _placeCatData = ['食事','遊び','観光','買い物','宿泊','リラックス','その他'];
 const _placeCatEmoji = ['🍽','🎮','📸','🛍','🏨','💆','📋'];
+
+const ITEM_CATEGORIES = {
+  'ファッション': ['服','靴','バッグ','アクセサリー','時計','帽子','財布','ストール','ネクタイ','サングラス'],
+  'グルメ': ['お酒','コーヒー','紅茶','調味料','お取り寄せ','フルーツ','ワイン','日本酒'],
+  'お菓子': ['チョコレート','焼き菓子','和菓子','ケーキ','クッキー','ゼリー','アイス','おせんべい','ナッツ','ギフトボックス'],
+  '美容・健康': ['コスメ','オイル','スキンケア','香水','ヘアケア','入浴剤','サプリ','マッサージ','アロマ'],
+  'インテリア': ['雑貨','キッチン用品','食器','花','観葉植物','キャンドル','タオル','寝具','文房具'],
+  '家電・ガジェット': ['イヤホン','スピーカー','充電器','スマホケース','カメラ','家電','ゲーム'],
+  '趣味・体験': ['本','音楽','映画','チケット','体験ギフト','習い事','旅行券','スポーツ用品'],
+  'ギフト券': ['Amazonギフト','商品券','カタログギフト','QUOカード','食事券','旅行券'],
+  'その他': []
+};
+const PLACE_CATEGORIES = {
+  '食事': ['和食','洋食','イタリアン','フレンチ','中華','焼肉','寿司','ラーメン','カレー','居酒屋','バー','カフェ','パン屋','スイーツ','ビュッフェ','鉄板焼き','海鮮','うどん・そば'],
+  '遊び': ['カラオケ','ボウリング','テーマパーク','ゲームセンター','映画館','ライブ','スポーツ観戦','釣り','キャンプ','BBQ','ドライブ','プール','スキー','ゴルフ'],
+  '観光': ['神社','お寺','温泉','絶景','公園','美術館','博物館','水族館','動物園','城','庭園','展望台','街歩き','離島','世界遺産'],
+  '買い物': ['ショッピングモール','アウトレット','商店街','百貨店','セレクトショップ','お土産','市場','蚤の市'],
+  '宿泊': ['ホテル','旅館','民宿','グランピング','コテージ','ゲストハウス'],
+  'リラックス': ['スパ','マッサージ','エステ','サウナ','岩盤浴','ヨガ','リトリート'],
+  'その他': []
+};
+const ALL_ITEM_GENRES = [...new Set(Object.values(ITEM_CATEGORIES).flat())];
+const ALL_PLACE_GENRES = [...new Set(Object.values(PLACE_CATEGORIES).flat())];
 function catDisplay(data, emoji, idx) { return emoji[idx] + ' ' + data[idx]; }
 function filterItemCat(ci) { currentLabel = _itemCatData[ci]; render(); }
 function filterPlaceCat(ci) { currentLabel = _placeCatData[ci]; render(); }
@@ -1301,22 +1310,12 @@ function openPlaceModal(id) {
   }
 
   // Category + Genre tags with association
-  const placeCategories = {
-    '食事': ['和食','洋食','イタリアン','フレンチ','中華','焼肉','寿司','ラーメン','カレー','居酒屋','バー','カフェ','パン屋','スイーツ','ビュッフェ','鉄板焼き','海鮮','うどん・そば'],
-    '遊び': ['カラオケ','ボウリング','テーマパーク','ゲームセンター','映画館','ライブ','スポーツ観戦','釣り','キャンプ','BBQ','ドライブ','プール','スキー','ゴルフ'],
-    '観光': ['神社','お寺','温泉','絶景','公園','美術館','博物館','水族館','動物園','城','庭園','展望台','街歩き','離島','世界遺産'],
-    '買い物': ['ショッピングモール','アウトレット','商店街','百貨店','セレクトショップ','お土産','市場','蚤の市'],
-    '宿泊': ['ホテル','旅館','民宿','グランピング','コテージ','ゲストハウス'],
-    'リラックス': ['スパ','マッサージ','エステ','サウナ','岩盤浴','ヨガ','リトリート'],
-    'その他': []
-  };
-  const allGenreSuggestions = [...new Set(Object.values(placeCategories).flat())];
   const currentTags = item?.tags || [];
   const currentCat = item?.placeCategory || '';
 
   html += `<div class="form-group"><label>カテゴリ</label>
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">`;
-  const _pcKeys = Object.keys(placeCategories);
+  const _pcKeys = Object.keys(PLACE_CATEGORIES);
   _pcKeys.forEach((cat, ci) => {
     const active = currentCat === cat;
     const _pEmoji = _placeCatEmoji[_placeCatData.indexOf(cat)] || '';
@@ -1326,14 +1325,14 @@ function openPlaceModal(id) {
 
   html += `<div class="form-group"><label>ジャンル・目的</label>
     <div id="placeGenreTags" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;">`;
-  const showTags = currentCat && placeCategories[currentCat] ? placeCategories[currentCat] : allGenreSuggestions;
+  const showTags = currentCat && PLACE_CATEGORIES[currentCat] ? PLACE_CATEGORIES[currentCat] : ALL_PLACE_GENRES;
   showTags.forEach(g => {
     const active = currentTags.includes(g.toLowerCase()) || currentTags.includes(g);
     html += `<div class="date-type-chip ${active?'active':''}" onclick="togglePlaceTag(this,'${g}')" style="font-size:12px;">${g}</div>`;
   });
   html += `</div>
-    <input id="fTags" placeholder="その他のタグ（カンマ区切り）" value="${currentTags.filter(t=>!allGenreSuggestions.map(g=>g.toLowerCase()).includes(t)&&!allGenreSuggestions.includes(t)).join(', ')}">
-    <input type="hidden" id="fPlaceSelectedTags" value="${currentTags.filter(t=>allGenreSuggestions.map(g=>g.toLowerCase()).includes(t)||allGenreSuggestions.includes(t)).join(',')}">
+    <input id="fTags" placeholder="その他のタグ（カンマ区切り）" value="${currentTags.filter(t=>!ALL_PLACE_GENRES.map(g=>g.toLowerCase()).includes(t)&&!ALL_PLACE_GENRES.includes(t)).join(', ')}">
+    <input type="hidden" id="fPlaceSelectedTags" value="${currentTags.filter(t=>ALL_PLACE_GENRES.map(g=>g.toLowerCase()).includes(t)||ALL_PLACE_GENRES.includes(t)).join(',')}">
   </div>`;
 
   // Star rating
@@ -1406,9 +1405,8 @@ function openPlaceModal(id) {
   openModal();
 }
 
-const _placeCatFormList = ['食事','遊び','観光','買い物','宿泊','リラックス','その他'];
 function selectPlaceCatByIdx(el, ci) {
-  selectPlaceCategory(el, _placeCatFormList[ci]);
+  selectPlaceCategory(el, _placeCatData[ci]);
 }
 
 function selectPlaceCategory(el, cat) {
@@ -1422,17 +1420,8 @@ function selectPlaceCategory(el, cat) {
     input.value = cat;
   }
   // Update genre tags based on category
-  const placeCategories = {
-    '食事': ['和食','洋食','イタリアン','フレンチ','中華','焼肉','寿司','ラーメン','カレー','居酒屋','バー','カフェ','パン屋','スイーツ','ビュッフェ','鉄板焼き','海鮮','うどん・そば'],
-    '遊び': ['カラオケ','ボウリング','テーマパーク','ゲームセンター','映画館','ライブ','スポーツ観戦','釣り','キャンプ','BBQ','ドライブ','プール','スキー','ゴルフ'],
-    '観光': ['神社','お寺','温泉','絶景','公園','美術館','博物館','水族館','動物園','城','庭園','展望台','街歩き','離島','世界遺産'],
-    '買い物': ['ショッピングモール','アウトレット','商店街','百貨店','セレクトショップ','お土産','市場','蚤の市'],
-    '宿泊': ['ホテル','旅館','民宿','グランピング','コテージ','ゲストハウス'],
-    'リラックス': ['スパ','マッサージ','エステ','サウナ','岩盤浴','ヨガ','リトリート'],
-    'その他': []
-  };
   const selectedTags = document.getElementById('fPlaceSelectedTags').value ? document.getElementById('fPlaceSelectedTags').value.split(',').filter(Boolean) : [];
-  const showTags = input.value && placeCategories[input.value] ? placeCategories[input.value] : [...new Set(Object.values(placeCategories).flat())];
+  const showTags = input.value && PLACE_CATEGORIES[input.value] ? PLACE_CATEGORIES[input.value] : ALL_PLACE_GENRES;
   const container = document.getElementById('placeGenreTags');
   container.innerHTML = showTags.map(g => {
     const active = selectedTags.includes(g.toLowerCase()) || selectedTags.includes(g);
@@ -1503,22 +1492,12 @@ function openPlaceMemoryModal(id) {
   }
 
   // Category + Genre tags
-  const placeCategories = {
-    '食事': ['和食','洋食','イタリアン','フレンチ','中華','焼肉','寿司','ラーメン','カレー','居酒屋','バー','カフェ','パン屋','スイーツ','ビュッフェ','鉄板焼き','海鮮','うどん・そば'],
-    '遊び': ['カラオケ','ボウリング','テーマパーク','ゲームセンター','映画館','ライブ','スポーツ観戦','釣り','キャンプ','BBQ','ドライブ','プール','スキー','ゴルフ'],
-    '観光': ['神社','お寺','温泉','絶景','公園','美術館','博物館','水族館','動物園','城','庭園','展望台','街歩き','離島','世界遺産'],
-    '買い物': ['ショッピングモール','アウトレット','商店街','百貨店','セレクトショップ','お土産','市場','蚤の市'],
-    '宿泊': ['ホテル','旅館','民宿','グランピング','コテージ','ゲストハウス'],
-    'リラックス': ['スパ','マッサージ','エステ','サウナ','岩盤浴','ヨガ','リトリート'],
-    'その他': []
-  };
-  const allGenreSuggestions = [...new Set(Object.values(placeCategories).flat())];
   const currentTags = item?.tags || [];
   const currentCat = item?.placeCategory || '';
 
   html += `<div class="form-group"><label>カテゴリ</label>
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">`;
-  const _pcKeys = Object.keys(placeCategories);
+  const _pcKeys = Object.keys(PLACE_CATEGORIES);
   _pcKeys.forEach((cat, ci) => {
     const active = currentCat === cat;
     const _pEmoji = _placeCatEmoji[_placeCatData.indexOf(cat)] || '';
@@ -1528,14 +1507,14 @@ function openPlaceMemoryModal(id) {
 
   html += `<div class="form-group"><label>ジャンル・目的</label>
     <div id="placeGenreTags" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;">`;
-  const showTags = currentCat && placeCategories[currentCat] ? placeCategories[currentCat] : allGenreSuggestions;
+  const showTags = currentCat && PLACE_CATEGORIES[currentCat] ? PLACE_CATEGORIES[currentCat] : ALL_PLACE_GENRES;
   showTags.forEach(g => {
     const active = currentTags.includes(g.toLowerCase()) || currentTags.includes(g);
     html += `<div class="date-type-chip ${active?'active':''}" onclick="togglePlaceTag(this,'${g}')" style="font-size:12px;">${g}</div>`;
   });
   html += `</div>
-    <input id="fTags" placeholder="その他のタグ（カンマ区切り）" value="${currentTags.filter(t=>!allGenreSuggestions.map(g=>g.toLowerCase()).includes(t)&&!allGenreSuggestions.includes(t)).join(', ')}">
-    <input type="hidden" id="fPlaceSelectedTags" value="${currentTags.filter(t=>allGenreSuggestions.map(g=>g.toLowerCase()).includes(t)||allGenreSuggestions.includes(t)).join(',')}">
+    <input id="fTags" placeholder="その他のタグ（カンマ区切り）" value="${currentTags.filter(t=>!ALL_PLACE_GENRES.map(g=>g.toLowerCase()).includes(t)&&!ALL_PLACE_GENRES.includes(t)).join(', ')}">
+    <input type="hidden" id="fPlaceSelectedTags" value="${currentTags.filter(t=>ALL_PLACE_GENRES.map(g=>g.toLowerCase()).includes(t)||ALL_PLACE_GENRES.includes(t)).join(',')}">
   </div>`;
 
   // Star rating - 思い出の大切さとして
@@ -1600,73 +1579,14 @@ function openPlaceMemoryModal(id) {
   // Photo
   html += photoInputHTML('fImg', item?.img);
 
-  html += `<div class="form-btns"><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button><button class="btn btn-primary" onclick="savePlaceMemoryItem()">保存</button></div>`;
+  html += `<div class="form-btns"><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button><button class="btn btn-primary" onclick="savePlaceItem(true)">保存</button></div>`;
   modal.innerHTML = html;
   openModal();
 }
 
-function savePlaceMemoryItem() {
-  // 通常のsavePlaceItemと同じロジックだが isClosed: true で保存
+function savePlaceItem(asMemory) {
   const title = document.getElementById('fTitle').value.trim();
-  if (!title) { alert('場所の名前を入力してください'); return; }
-  const fileInput = getPhotoData('fImg');
-
-  const selectedTags = document.getElementById('fPlaceSelectedTags')?.value.split(',').filter(Boolean) || [];
-  const typedTags = parseTags(document.getElementById('fTags')?.value||'');
-  const allTags = [...new Set([...selectedTags, ...typedTags])];
-
-  const labelIdxEl = document.getElementById('fLabelIdx');
-  const labelIdx = labelIdxEl&&labelIdxEl.value!=='' ? parseInt(labelIdxEl.value) : null;
-
-  function doSave(imgData) {
-    const item = {
-      id: editingId || genId(),
-      title,
-      withPeople: document.getElementById('fWithPeople')?.value.split(',').filter(Boolean)||[],
-      withGroups: document.getElementById('fWithGroups')?.value.split(',').filter(Boolean)||[],
-      person: (document.getElementById('fWithPeople')?.value.split(',').filter(Boolean)||[]).join(', ')||null,
-      labelIdx,
-      address: document.getElementById('fAddress')?.value.trim()||null,
-      mapUrl: document.getElementById('fMapUrl')?.value.trim()||null,
-      url: document.getElementById('fMapUrl')?.value.trim()||null,
-      googleMapUrl: document.getElementById('fGoogleMapUrl')?.value.trim()||null,
-      phone: document.getElementById('fPhone')?.value.trim()||null,
-      tags: allTags.length ? allTags : null,
-      placeCategory: document.getElementById('fPlaceCategory')?.value||null,
-      rating: parseInt(document.getElementById('fRating')?.value)||0,
-      memo: document.getElementById('fMemo')?.value.trim()||null,
-      img: imgData,
-      isClosed: true,
-      pinned: editingId ? (data.place.find(i=>i.id===editingId)?.pinned||false) : false,
-      createdAt: editingId ? (data.place.find(i=>i.id===editingId)?.createdAt||new Date().toISOString()) : new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    if (item.labelIdx===null||item.labelIdx===undefined) {
-      const labels = getLabels('place');
-      const text = [item.title, item.memo, ...(item.tags||[])].filter(Boolean).join(' ').toLowerCase();
-      labels.forEach((l,i) => { if (text.includes(l.name.toLowerCase())) item.labelIdx = i; });
-    }
-    if (editingId) {
-      const idx = data.place.findIndex(i=>i.id===editingId);
-      if (idx>=0) { item.isClosed = data.place[idx].isClosed; data.place[idx] = item; }
-    } else {
-      data.place.push(item);
-    }
-    saveData(); closeModal(); render();
-  }
-
-  const removeFlag = document.getElementById('fImgRemove')?.value === '1';
-  if (removeFlag) { doSave(null); return; }
-  if (fileInput&&fileInput.files&&fileInput.files[0]) {
-    compressImage(fileInput.files[0]).then(dataUrl => doSave(dataUrl));
-  } else {
-    doSave(editingId ? (data.place.find(i=>i.id===editingId)?.img||null) : null);
-  }
-}
-
-function savePlaceItem() {
-  const title = document.getElementById('fTitle').value.trim();
-  if (!title) { alert('店名・場所名を入力してください'); return; }
+  if (!title) { alert(asMemory ? '場所の名前を入力してください' : '店名・場所名を入力してください'); return; }
   const fileInput = getPhotoData('fImg');
 
   // Combine selected tags + typed tags
@@ -1699,15 +1619,11 @@ function savePlaceItem() {
       createdAt: editingId ? (data.place.find(i=>i.id===editingId)?.createdAt||new Date().toISOString()) : new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-    // Auto-label if not manually set
-    if (item.labelIdx===null||item.labelIdx===undefined) {
-      const labels = getLabels('place');
-      const text = [item.title, item.memo, ...(item.tags||[])].filter(Boolean).join(' ').toLowerCase();
-      labels.forEach((l,i) => { if (text.includes(l.name.toLowerCase())) item.labelIdx = i; });
-    }
+    if (asMemory) item.isClosed = true;
+    autoLabelItem(item, 'place');
     if (editingId) {
       const idx = data.place.findIndex(i=>i.id===editingId);
-      if (idx>=0) data.place[idx] = item;
+      if (idx>=0) { if (asMemory) item.isClosed = data.place[idx].isClosed; data.place[idx] = item; }
     } else {
       data.place.push(item);
     }
@@ -3385,21 +3301,8 @@ function openItemModal(id) {
   const showOccasion = ['received','gave'].includes(currentTab);
   const showAmount = ['received','gave'].includes(currentTab);
   const showUrl = currentTab!=='people';
-  const labels = getLabels(currentTab);
 
   // Category + Genre (same structure as place)
-  const itemCategories = {
-    'ファッション': ['服','靴','バッグ','アクセサリー','時計','帽子','財布','ストール','ネクタイ','サングラス'],
-    'グルメ': ['お酒','コーヒー','紅茶','調味料','お取り寄せ','フルーツ','ワイン','日本酒'],
-    'お菓子': ['チョコレート','焼き菓子','和菓子','ケーキ','クッキー','ゼリー','アイス','おせんべい','ナッツ','ギフトボックス'],
-    '美容・健康': ['コスメ','オイル','スキンケア','香水','ヘアケア','入浴剤','サプリ','マッサージ','アロマ'],
-    'インテリア': ['雑貨','キッチン用品','食器','花','観葉植物','キャンドル','タオル','寝具','文房具'],
-    '家電・ガジェット': ['イヤホン','スピーカー','充電器','スマホケース','カメラ','家電','ゲーム'],
-    '趣味・体験': ['本','音楽','映画','チケット','体験ギフト','習い事','旅行券','スポーツ用品'],
-    'ギフト券': ['Amazonギフト','商品券','カタログギフト','QUOカード','食事券','旅行券'],
-    'その他': []
-  };
-  const allItemGenres = [...new Set(Object.values(itemCategories).flat())];
   const currentTags = item?.tags || [];
   const currentCat = item?.itemCategory || '';
 
@@ -3423,7 +3326,7 @@ function openItemModal(id) {
   }
 
   // Category (like place)
-  const itemCatKeys = Object.keys(itemCategories);
+  const itemCatKeys = Object.keys(ITEM_CATEGORIES);
   html += `<div class="form-group"><label>カテゴリ</label>
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">`;
   itemCatKeys.forEach((cat, ci) => {
@@ -3436,14 +3339,14 @@ function openItemModal(id) {
   // Genre tags (like place)
   html += `<div class="form-group"><label>ジャンル</label>
     <div id="itemGenreTags" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;">`;
-  const showGenres = currentCat && itemCategories[currentCat] ? itemCategories[currentCat] : allItemGenres;
+  const showGenres = currentCat && ITEM_CATEGORIES[currentCat] ? ITEM_CATEGORIES[currentCat] : ALL_ITEM_GENRES;
   showGenres.forEach(g => {
     const active = currentTags.includes(g.toLowerCase()) || currentTags.includes(g);
     html += `<div class="date-type-chip ${active?'active':''}" onclick="toggleItemTag(this,'${g}')" style="font-size:12px;">${g}</div>`;
   });
   html += `</div>
-    <input id="fTags" placeholder="その他のタグ（カンマ区切り）" value="${currentTags.filter(t=>!allItemGenres.map(g=>g.toLowerCase()).includes(t)&&!allItemGenres.includes(t)).join(', ')}">
-    <input type="hidden" id="fItemSelectedTags" value="${currentTags.filter(t=>allItemGenres.map(g=>g.toLowerCase()).includes(t)||allItemGenres.includes(t)).join(',')}">
+    <input id="fTags" placeholder="その他のタグ（カンマ区切り）" value="${currentTags.filter(t=>!ALL_ITEM_GENRES.map(g=>g.toLowerCase()).includes(t)&&!ALL_ITEM_GENRES.includes(t)).join(', ')}">
+    <input type="hidden" id="fItemSelectedTags" value="${currentTags.filter(t=>ALL_ITEM_GENRES.map(g=>g.toLowerCase()).includes(t)||ALL_ITEM_GENRES.includes(t)).join(',')}">
   </div>`;
 
   // Occasion (received/gave)
@@ -3519,20 +3422,8 @@ function selectItemCategory(el, cat) {
   el.parentElement.querySelectorAll('.date-type-chip').forEach(c=>c.classList.remove('active'));
   if (!wasActive) { el.classList.add('active'); input.value = cat; } else { input.value = ''; }
   // Update genre tags
-  const itemCategories = {
-    'ファッション': ['服','靴','バッグ','アクセサリー','時計','帽子','財布','ストール','ネクタイ','サングラス'],
-    'グルメ': ['お酒','コーヒー','紅茶','調味料','お取り寄せ','フルーツ','ワイン','日本酒'],
-    'お菓子': ['チョコレート','焼き菓子','和菓子','ケーキ','クッキー','ゼリー','アイス','おせんべい','ナッツ','ギフトボックス'],
-    '美容・健康': ['コスメ','オイル','スキンケア','香水','ヘアケア','入浴剤','サプリ','マッサージ','アロマ'],
-    'インテリア': ['雑貨','キッチン用品','食器','花','観葉植物','キャンドル','タオル','寝具','文房具'],
-    '家電・ガジェット': ['イヤホン','スピーカー','充電器','スマホケース','カメラ','家電','ゲーム'],
-    '趣味・体験': ['本','音楽','映画','チケット','体験ギフト','習い事','旅行券','スポーツ用品'],
-    'ギフト券': ['Amazonギフト','商品券','カタログギフト','QUOカード','食事券','旅行券'],
-    'その他': []
-  };
-  const allGenres = [...new Set(Object.values(itemCategories).flat())];
   const selectedTags = (document.getElementById('fItemSelectedTags')?.value||'').split(',').filter(Boolean);
-  const genres = input.value && itemCategories[input.value] ? itemCategories[input.value] : allGenres;
+  const genres = input.value && ITEM_CATEGORIES[input.value] ? ITEM_CATEGORIES[input.value] : ALL_ITEM_GENRES;
   const container = document.getElementById('itemGenreTags');
   if (container) {
     container.innerHTML = genres.map(g => {
@@ -4357,17 +4248,15 @@ function saveItem() {
   const selectedItemTags = document.getElementById('fItemSelectedTags')?.value.split(',').filter(Boolean) || [];
   const typedTags = parseTags(document.getElementById('fTags')?.value||'');
   const tags = [...new Set([...selectedItemTags, ...typedTags])];
-  const labelIdxEl = document.getElementById('fLabelIdx');
-  const labelIdx = labelIdxEl&&labelIdxEl.value!=='' ? parseInt(labelIdxEl.value) : null;
-
   function doSave(imgData) {
+    const existingItem = editingId ? data[currentTab].find(i=>i.id===editingId) : null;
     const item = {
       id: editingId || genId(),
       title,
       purpose: document.getElementById('fPurpose')?.value||null,
       giftTarget: document.getElementById('fGiftTarget')?.value.trim()||null,
       person: document.getElementById('fPerson')?.value.trim()||(document.getElementById('fGiftTarget')?.value.trim())||null,
-      labelIdx,
+      labelIdx: existingItem?.labelIdx ?? null,
       itemCategory: document.getElementById('fItemCategory')?.value||null,
       occasion: document.getElementById('fOccasion')?.value.trim()||null,
       amount: document.getElementById('fAmount')?.value||null,
@@ -4377,16 +4266,10 @@ function saveItem() {
       url: document.getElementById('fUrl')?.value.trim()||null,
       memo: document.getElementById('fMemo')?.value.trim()||null,
       img: imgData,
-      pinned: editingId ? (data[currentTab].find(i=>i.id===editingId)?.pinned||false) : false,
-      createdAt: editingId ? (data[currentTab].find(i=>i.id===editingId)?.createdAt||new Date().toISOString()) : new Date().toISOString(),
+      pinned: existingItem?.pinned||false,
+      createdAt: existingItem?.createdAt||new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-    // Auto-label if not manually set
-    if (item.labelIdx===null||item.labelIdx===undefined) {
-      const labels = getLabels(currentTab);
-      const text = [item.title, item.memo, ...(item.tags||[])].filter(Boolean).join(' ').toLowerCase();
-      labels.forEach((l,i) => { if (text.includes(l.name.toLowerCase())) item.labelIdx = i; });
-    }
     if (editingId) {
       const idx = data[currentTab].findIndex(i=>i.id===editingId);
       if (idx>=0) data[currentTab][idx] = item;

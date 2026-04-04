@@ -2187,7 +2187,7 @@ function renderPersonCard(p) {
   }
 
   // Chat section
-  html += renderChatSection(p.id);
+  html += renderChatSection(p.id, !!p.isMemory);
 
   html += `<div style="padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
     <button onclick="event.stopPropagation();sharePerson('${p.id}')" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border-radius:14px;border:1px solid #bdd8f0;background:linear-gradient(135deg,#e8f2fc,#daeaf8);color:#4a7aaa;font-size:13px;font-weight:500;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">📤 共有</button>
@@ -2260,34 +2260,34 @@ function togglePersonDetail(id) {
 // ===== Card Chat =====
 const _chatChannels = {};
 
-function renderChatSection(cardId) {
-  const secId = 'chatSec_' + cardId;
+function renderChatSection(cardId, isMemory) {
   const bodyId = 'chatBody_' + cardId;
   const msgsId = 'chatMsgs_' + cardId;
   const inputId = 'chatInput_' + cardId;
+  const memoryFlag = isMemory ? 'true' : 'false';
   return `<div class="person-section">
-    <div class="person-section-title" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;" onclick="event.stopPropagation();toggleChatSection('${cardId}')">
-      <span>💬 チャット</span>
+    <div class="person-section-title" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;" onclick="event.stopPropagation();toggleChatSection('${cardId}',${memoryFlag})">
+      <span>${isMemory ? '🕯️ ひとこと' : '💬 チャット'}</span>
       <span id="chatToggle_${cardId}" class="sec-toggle" style="font-size:12px;color:var(--sub);">▶</span>
     </div>
     <div id="${bodyId}" style="display:none;">
       <div id="${msgsId}" class="chat-messages"><div style="font-size:12px;color:var(--sub);text-align:center;padding:12px 0;">読み込み中…</div></div>
-      <div class="chat-input-row" onclick="event.stopPropagation();">
-        <input id="${inputId}" type="text" placeholder="メッセージを入力…" data-chat-input="true" onkeydown="if(event.key==='Enter'){event.preventDefault();sendCardChat('${cardId}');}" autocomplete="off">
-        <button onclick="event.stopPropagation();sendCardChat('${cardId}')">送信</button>
+      <div class="chat-input-row" id="chatInputRow_${cardId}" onclick="event.stopPropagation();">
+        <input id="${inputId}" type="text" placeholder="${isMemory ? '思い出に一言…' : 'メッセージを入力…'}" data-chat-input="true" onkeydown="if(event.key==='Enter'){event.preventDefault();sendCardChat('${cardId}',${memoryFlag});}" autocomplete="off">
+        <button onclick="event.stopPropagation();sendCardChat('${cardId}',${memoryFlag})">送信</button>
       </div>
     </div>
   </div>`;
 }
 
-function toggleChatSection(cardId) {
+function toggleChatSection(cardId, isMemory) {
   const body = document.getElementById('chatBody_' + cardId);
   const toggle = document.getElementById('chatToggle_' + cardId);
   if (!body) return;
   if (body.style.display === 'none') {
     body.style.display = '';
     if (toggle) toggle.textContent = '▼';
-    loadCardChat(cardId);
+    loadCardChat(cardId, isMemory);
     subscribeCardChat(cardId);
   } else {
     body.style.display = 'none';
@@ -2296,7 +2296,7 @@ function toggleChatSection(cardId) {
   }
 }
 
-async function loadCardChat(cardId) {
+async function loadCardChat(cardId, isMemory) {
   const msgsEl = document.getElementById('chatMsgs_' + cardId);
   if (!msgsEl) return;
   if (!_sb || !_sbUser) {
@@ -2310,6 +2310,12 @@ async function loadCardChat(cardId) {
       .order('created_at', { ascending: true });
     if (error) throw error;
     renderChatMessages(cardId, msgs || []);
+    // 記憶カード: 自分のメッセージが既にあれば入力欄を非表示
+    if (isMemory) {
+      const myMsgExists = (msgs||[]).some(m => m.user_id === _sbUser.id);
+      const inputRow = document.getElementById('chatInputRow_' + cardId);
+      if (inputRow && myMsgExists) inputRow.style.display = 'none';
+    }
   } catch (e) {
     console.error('loadCardChat error:', e);
     msgsEl.innerHTML = '<div style="font-size:12px;color:#c07070;text-align:center;padding:12px 0;">読み込みに失敗しました</div>';
@@ -2329,19 +2335,43 @@ function renderChatMessages(cardId, msgs) {
   recent.forEach(m => {
     const isMine = m.user_id === myId;
     const time = m.created_at ? new Date(m.created_at).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }) : '';
-    html += `<div style="display:flex;flex-direction:column;align-items:${isMine ? 'flex-end' : 'flex-start'};">`;
+    html += `<div style="display:flex;flex-direction:column;align-items:${isMine ? 'flex-end' : 'flex-start'};margin-bottom:4px;">`;
     if (!isMine) {
       html += `<div class="chat-sender">${esc(m.sender_name || 'ゲスト')}</div>`;
     }
     html += `<div class="chat-bubble ${isMine ? 'chat-bubble-mine' : 'chat-bubble-other'}">${esc(m.message)}</div>`;
-    html += `<div class="chat-time">${time}</div>`;
-    html += '</div>';
+    html += `<div style="display:flex;align-items:center;gap:6px;">`;
+    html += `<span class="chat-time">${time}</span>`;
+    if (isMine) {
+      html += `<span style="font-size:10px;color:var(--sub);cursor:pointer;" onclick="event.stopPropagation();editChatMsg('${cardId}','${m.id}','${esc(m.message).replace(/'/g,"\\'")}')">✏️</span>`;
+      html += `<span style="font-size:10px;color:#c07070;cursor:pointer;" onclick="event.stopPropagation();deleteChatMsg('${cardId}','${m.id}')">🗑</span>`;
+    }
+    html += `</div></div>`;
   });
   msgsEl.innerHTML = html;
   msgsEl.scrollTop = msgsEl.scrollHeight;
 }
 
-async function sendCardChat(cardId) {
+async function editChatMsg(cardId, msgId, oldText) {
+  const newText = prompt('メッセージを編集', oldText);
+  if (newText === null || newText.trim() === '' || newText === oldText) return;
+  try {
+    const { error } = await _sb.from('card_chats').update({ message: newText.trim() }).eq('id', msgId);
+    if (error) throw error;
+    await loadCardChat(cardId);
+  } catch(e) { alert('編集に失敗しました'); }
+}
+
+async function deleteChatMsg(cardId, msgId) {
+  if (!confirm('このメッセージを削除しますか？')) return;
+  try {
+    const { error } = await _sb.from('card_chats').delete().eq('id', msgId);
+    if (error) throw error;
+    await loadCardChat(cardId);
+  } catch(e) { alert('削除に失敗しました'); }
+}
+
+async function sendCardChat(cardId, isMemory) {
   const inputEl = document.getElementById('chatInput_' + cardId);
   if (!inputEl) return;
   const message = inputEl.value.trim();
@@ -2359,14 +2389,14 @@ async function sendCardChat(cardId) {
       message: message
     });
     if (error) throw error;
-    await loadCardChat(cardId);
+    await loadCardChat(cardId, isMemory);
   } catch (e) {
     console.error('sendCardChat error:', e);
     inputEl.value = message;
     alert('送信に失敗しました');
   } finally {
     inputEl.disabled = false;
-    inputEl.focus();
+    if (!isMemory) inputEl.focus();
   }
 }
 
@@ -3433,6 +3463,20 @@ function filterPersonSuggest(query) {
   list.style.display = visible ? '' : 'none';
 }
 
+function filterCompanySuggest(query) {
+  const list = document.getElementById('companySuggestList');
+  if (!list) return;
+  const items = list.querySelectorAll('.company-suggest-item');
+  const q = query.toLowerCase();
+  let visible = 0;
+  items.forEach(el => {
+    const match = !q || el.textContent.toLowerCase().includes(q);
+    el.style.display = match ? '' : 'none';
+    if (match) visible++;
+  });
+  list.style.display = visible ? '' : 'none';
+}
+
 function selectItemCatByIdx(el, ci) {
   selectItemCategory(el, _itemCatData[ci]);
 }
@@ -3663,8 +3707,13 @@ function openPeopleModal(id) {
     </div><input type="hidden" id="pGender" value="${p?.gender||'unset'}">
   </div>`;
   html += `<div class="form-group"><label>関係 ${helpBtn('relation')}</label><input id="pRelation" placeholder="例：友人、同僚、取引先、家族" value="${esc(p?.relation||'')}"></div>`;
-  html += `<div class="form-group"><label>所属会社（任意）</label><input id="pCompanyLink" placeholder="登録済みの会社名" value="${esc(p?.companyLink||'')}" list="companyList">
-    <datalist id="companyList">${data.people.filter(x=>x.type==='corporate').map(x=>`<option value="${esc(x.nickname||'')}">`).join('')}</datalist></div>`;
+  const corps = data.people.filter(x=>x.type==='corporate');
+  html += `<div class="form-group"><label>所属会社（任意）</label>
+    <input id="pCompanyLink" placeholder="会社名を入力" value="${esc(p?.companyLink||'')}" oninput="filterCompanySuggest(this.value)">
+    ${corps.length?`<div id="companySuggestList" style="max-height:100px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;margin-top:4px;">
+      ${corps.map(c=>`<div style="padding:6px 10px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--border);" class="company-suggest-item" onclick="document.getElementById('pCompanyLink').value='${esc(c.nickname||'')}';document.getElementById('companySuggestList').style.display='none';">🏢 ${esc(c.nickname||'')}</div>`).join('')}
+    </div>`:''}
+  </div>`;
   html += `<div class="form-group"><label>役職</label><input id="pPosition" placeholder="例：営業部長" value="${esc(p?.position||'')}"></div>`;
   html += `</div>`;
 

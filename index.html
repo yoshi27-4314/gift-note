@@ -2467,7 +2467,7 @@ function renderGroupCard(g) {
   } else {
     members.forEach(m => {
       html += `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;">
-        <span style="width:28px;height:28px;border-radius:50%;background:${personIcon(m).bg};display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">${personIcon(m).emoji}</span>
+        <span style="width:28px;height:28px;border-radius:50%;background:${m.avatar?'transparent':personIcon(m).bg};display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;overflow:hidden;">${m.avatar?`<img src="${m.avatar}" style="width:100%;height:100%;object-fit:cover;">`:personIcon(m).emoji}</span>
         <span style="font-weight:500;">${esc(m.nickname)}</span>
         ${m.relation?`<span style="font-size:11px;color:var(--sub);">${esc(m.relation)}</span>`:''}
       </div>`;
@@ -2551,10 +2551,10 @@ function openGroupModal(id) {
   } else {
     data.people.forEach(p => {
       const checked = selectedIds.includes(p.id);
-      html += `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;" onclick="toggleGroupMember(this,'${p.id}')">
-        <span style="width:24px;height:24px;border-radius:6px;border:2px solid ${checked?'var(--accent)':'var(--border)'};background:${checked?'var(--accent)':'var(--card)'};display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;flex-shrink:0;transition:all 0.2s;" class="gcheck">${checked?'✓':''}</span>
-        <span style="font-size:16px;">${personIcon(p).emoji}</span>
-        <div><div style="font-weight:500;font-size:14px;">${esc(p.nickname)}</div>
+      html += `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);cursor:pointer;" onclick="toggleGroupMember(this,'${p.id}')">
+        <span style="width:20px;height:20px;border-radius:5px;border:2px solid ${checked?'var(--accent)':'var(--border)'};background:${checked?'var(--accent)':'var(--card)'};display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;flex-shrink:0;transition:all 0.2s;" class="gcheck">${checked?'✓':''}</span>
+        <span style="width:24px;height:24px;border-radius:50%;background:${p.avatar?'transparent':personIcon(p).bg};display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;overflow:hidden;">${p.avatar?`<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;">`:personIcon(p).emoji}</span>
+        <div><div style="font-weight:500;font-size:13px;">${esc(p.nickname)}</div>
         ${p.relation?`<div style="font-size:11px;color:var(--sub);">${esc(p.relation)}</div>`:''}</div>
       </div>`;
     });

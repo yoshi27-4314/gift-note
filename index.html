@@ -3124,7 +3124,10 @@ function setItemPurpose(purpose, el) {
 }
 
 function selectItemCatByIdx(el, ci) {
-  selectItemCategory(el, _itemCatList[ci]);
+  const cat = _itemCatList[ci];
+  console.log('selectItemCatByIdx:', ci, cat);
+  selectItemCategory(el, cat);
+  console.log('fItemCategory value after:', document.getElementById('fItemCategory')?.value);
 }
 
 function selectItemCategory(el, cat) {

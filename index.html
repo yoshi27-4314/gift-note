@@ -860,6 +860,14 @@ function showLoginScreen() {
       </div>
       <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;margin-top:16px;" onclick="doLogin()">ログイン</button>
       <p style="text-align:center;margin-top:16px;"><a href="#" onclick="event.preventDefault();showResetPassword()" style="color:var(--accent);font-size:13px;">パスワードを忘れた方</a></p>
+      <div style="display:flex;align-items:center;gap:12px;margin:24px 0;">
+        <div style="flex:1;height:1px;background:var(--border);"></div>
+        <span style="font-size:12px;color:var(--sub);">または</span>
+        <div style="flex:1;height:1px;background:var(--border);"></div>
+      </div>
+      <button onclick="loginWithGoogle()" style="width:100%;padding:14px;font-size:16px;border-radius:14px;border:1px solid var(--border);background:#fff;color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;font-family:'Zen Maru Gothic',sans-serif;">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:20px;height:20px;"> Googleでログイン
+      </button>
       <p style="text-align:center;margin-top:24px;"><a href="#" onclick="event.preventDefault();document.getElementById('loginOverlay').remove()" style="color:var(--sub);font-size:13px;">戻る</a></p>
     </div>`;
   document.body.appendChild(overlay);
@@ -880,6 +888,16 @@ async function doLogin() {
     localStorage.setItem(OB_KEY, '1');
     showToast('ログインしました');
   } catch(e) { alert('ログインに失敗しました: ' + e.message); }
+}
+
+async function loginWithGoogle() {
+  try {
+    const { error } = await _sb.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: 'https://yoshi27-4314.github.io/gift-note/' }
+    });
+    if (error) alert('Googleログインエラー: ' + error.message);
+  } catch(e) { alert('Googleログインに失敗しました'); }
 }
 
 function showResetPassword() {
@@ -4596,9 +4614,14 @@ function openSettings() {
       <div class="form-hint" style="text-align:center;">紹介した人数: <strong id="referralCount">0</strong>人</div>
       <div class="form-hint" style="text-align:center;margin-top:4px;">紹介ポイント: <strong id="referralPoints">0</strong>pt <span style="font-size:11px;color:var(--sub);">（1紹介 = 10pt）</span></div>
     </div>
-    <div class="form-group"><label>📧 メールアドレス登録</label>
-      <div class="form-hint" style="margin-bottom:8px;">メールアドレスを登録すると、端末を変えてもデータを引き継げます</div>
+    <div class="form-group"><label>📧 アカウント連携</label>
+      <div class="form-hint" style="margin-bottom:8px;">アカウントを連携すると、端末を変えてもデータを引き継げます</div>
       <div id="emailAuthSection">${emailSectionHtml}</div>
+      ${!_sbUser?.email?`<div style="margin-top:12px;">
+        <button onclick="document.getElementById('settingsModalOverlay').classList.remove('open');loginWithGoogle()" style="width:100%;padding:12px;font-size:14px;border-radius:12px;border:1px solid var(--border);background:#fff;color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;font-family:'Zen Maru Gothic',sans-serif;">
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:18px;height:18px;"> Googleで連携
+        </button>
+      </div>`:''}
     </div>
     <div class="form-group"><label>💾 データ管理</label>
       <div class="form-hint" style="margin-bottom:8px;">大切なデータを守るため、定期的にバックアップしてください</div>

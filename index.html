@@ -3239,7 +3239,9 @@ function filterPersonSuggest(query) {
 }
 
 function selectItemCatByIdx(el, ci) {
+  alert('カテゴリ選択: idx=' + ci + ' value=' + _itemCatData[ci]);
   selectItemCategory(el, _itemCatData[ci]);
+  alert('fItemCategory.value = ' + document.getElementById('fItemCategory')?.value);
 }
 
 function selectItemCategory(el, cat) {

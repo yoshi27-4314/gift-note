@@ -4389,18 +4389,19 @@ function generateProfileQR() {
   }
 
   const json = JSON.stringify(shareData);
+  const encoded = btoa(unescape(encodeURIComponent(json)));
+  const url = 'https://yoshi27-4314.github.io/gift-note/?p=' + encodeURIComponent(encoded);
   const area = document.getElementById('profileQRResult');
   try {
     const qr = qrcode(0, 'M');
-    qr.addData(unescape(encodeURIComponent(json)));
+    qr.addData(url);
     qr.make();
     area.innerHTML = qr.createSvgTag(4, 0);
     area.querySelector('svg').style.maxWidth = '200px';
     area.querySelector('svg').style.margin = '0 auto';
     area.querySelector('svg').style.display = 'block';
-    area.innerHTML += `<div style="font-size:12px;color:var(--sub);margin-top:12px;">相手のAWAIで「QR読み取り」を押してもらってください</div>`;
+    area.innerHTML += `<div style="font-size:12px;color:var(--sub);margin-top:12px;">相手のスマホのカメラでQRコードを読み取ってもらうだけでOKです</div>`;
   } catch(e) {
-    // Data too large for QR
     area.innerHTML = '<div style="color:#c97070;font-size:13px;">データが多すぎてQRに収まりません。共有項目を減らしてください。</div>';
   }
 }
@@ -4543,8 +4544,7 @@ function processQRManual() {
   handleQRData(raw);
 }
 
-function showQRRegistration(d) {
-  const area = document.getElementById('qrScanResult');
+function showQRRegistration(d, useModal) {
   let info = `<div style="font-size:15px;font-weight:600;margin-bottom:8px;">${esc(d.n)} さんの情報を受け取りました</div>`;
   if (d.b) info += `<div style="font-size:13px;color:var(--sub);">誕生日：${d.b}</div>`;
   if (d.i) info += `<div style="font-size:13px;color:var(--sub);">好きなもの：${d.i.join(', ')}</div>`;
@@ -4558,13 +4558,36 @@ function showQRRegistration(d) {
     <button class="btn btn-primary" onclick="registerFromQR()" style="padding:14px 32px;">登録する</button>
   </div>`;
 
-  area.innerHTML = info;
-  area._qrData = d;
+  if (useModal) {
+    const modal = document.getElementById('modal');
+    modal.innerHTML = `<h2>🤍 プロフィール受信</h2>${info}<div class="form-btns" style="margin-top:16px;"><button class="btn btn-secondary" onclick="closeModal()">閉じる</button></div>`;
+    modal._qrData = d;
+    openModal();
+  } else {
+    const area = document.getElementById('qrScanResult');
+    area.innerHTML = info;
+    area._qrData = d;
+  }
+}
+
+function checkProfileParam() {
+  const params = new URLSearchParams(window.location.search);
+  const p = params.get('p');
+  if (!p) return;
+  try {
+    const json = decodeURIComponent(escape(atob(decodeURIComponent(p))));
+    const d = JSON.parse(json);
+    if (!d.n) return;
+    // URLパラメータをクリア（履歴を汚さない）
+    window.history.replaceState({}, '', window.location.pathname);
+    setTimeout(() => showQRRegistration(d, true), 500);
+  } catch(e) {}
 }
 
 function registerFromQR() {
   const area = document.getElementById('qrScanResult');
-  const d = area._qrData;
+  const modal = document.getElementById('modal');
+  const d = area?._qrData || modal?._qrData;
   if (!d) return;
   const nickname = document.getElementById('qrNickname').value.trim();
   if (!nickname) { alert('呼び名を入力してください'); return; }
@@ -6058,6 +6081,9 @@ if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().t
 
   // PINがない場合のみ起動時にポップアップ（PINありの場合はPIN解除後に表示）
   if (!localStorage.getItem(PIN_KEY)) setTimeout(() => showAnnPopup(), 500);
+
+  // URLからプロフィール交換パラメータを検出
+  checkProfileParam();
 
   // Pull-to-refresh for iOS
   let _ptr_startY = 0, _ptr_pulling = false;

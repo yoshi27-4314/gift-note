@@ -1738,17 +1738,17 @@ function renderPersonCard(p) {
     ${p.position?`<div class="person-relation">${esc(p.position)}</div>`:''}
     ${p.industry?`<div class="person-relation">${esc(p.industry)}</div>`:''}
     ${p.companyLink?(()=>{const corp=data.people.find(x=>x.type==='corporate'&&(x.nickname===p.companyLink||x.corpNickname===p.companyLink||x.corpFullName===p.companyLink));return corp?`<div class="person-relation" style="color:var(--accent);cursor:pointer;text-decoration:underline;" onclick="event.stopPropagation();jumpToPerson('${corp.id}')">🏢 ${esc(p.companyLink)}</div>`:`<div class="person-relation" style="color:var(--accent);">🏢 ${esc(p.companyLink)}</div>`;})():''}
-    <div style="display:flex;gap:12px;margin-top:8px;justify-content:flex-end;">
-      <label style="font-size:11px;color:var(--sub);display:flex;align-items:center;gap:4px;cursor:pointer;" onclick="event.stopPropagation();">
-        <input type="checkbox" ${p.pinned?'checked':''} onchange="event.stopPropagation();togglePin('people','${p.id}')">
-        <span>${p.pinned?'📌 固定中':'📌 固定'}</span>
-      </label>
-      <label style="font-size:11px;color:var(--sub);display:flex;align-items:center;gap:4px;cursor:pointer;" onclick="event.stopPropagation();">
-        <input type="checkbox" ${p.hidden?'checked':''} onchange="event.stopPropagation();toggleHidden('${p.id}')">
-        <span>${p.hidden?'👁 表示する':'👁‍🗨 非表示'}</span>
-      </label>
-    </div>
-    </div></div>`;
+    </div></div>
+  <div style="display:flex;gap:12px;justify-content:flex-end;padding:0 16px 4px;">
+    <label style="font-size:11px;color:var(--sub);display:flex;align-items:center;gap:4px;cursor:pointer;" onclick="event.stopPropagation();">
+      <input type="checkbox" ${p.pinned?'checked':''} onchange="event.stopPropagation();togglePin('people','${p.id}')">
+      <span>${p.pinned?'📌 固定中':'📌 固定'}</span>
+    </label>
+    <label style="font-size:11px;color:var(--sub);display:flex;align-items:center;gap:4px;cursor:pointer;" onclick="event.stopPropagation();">
+      <input type="checkbox" ${p.hidden?'checked':''} onchange="event.stopPropagation();toggleHidden('${p.id}')">
+      <span>${p.hidden?'👁 表示する':'👁‍🗨 非表示'}</span>
+    </label>
+  </div>`;
   // Concierge button (between name and anniversaries)
   if (!p.isMemory) {
     html += `<div style="padding:8px 16px;"><button class="card-btn" onclick="event.stopPropagation();openAiSuggest('${p.id}')" style="background:var(--pickup);border-color:var(--pickup-border);font-size:14px;padding:10px 20px;width:100%;">💡 コンシェルジュに相談</button></div>`;

@@ -1809,6 +1809,7 @@ function renderItemCard(item, tab, rank) {
     ${tab==='place'&&item.isClosed?`<button onclick="event.stopPropagation();reopenPlace('${item.id}')" style="${_bs}border:1px solid #90caf9;background:linear-gradient(135deg,#e8f4ff,#d6ebfc);color:#4a7aaa;">↩ 戻す</button>`:''}
     ${tab!=='received'&&tab!=='gave'?`<button onclick="event.stopPropagation();shareItem('${tab}','${item.id}')" style="${_bs}border:1px solid #bdd8f0;background:linear-gradient(135deg,#e8f2fc,#daeaf8);color:#4a7aaa;">📤 共有</button>`:''}
     <button onclick="event.stopPropagation();editItem('${tab}','${item.id}')" style="${_bs}border:1px solid var(--border);background:linear-gradient(135deg,#faf8f6,#f3eeea);color:var(--text);">✏️ 編集</button>
+    <button onclick="event.stopPropagation();duplicateItem('${tab}','${item.id}')" style="${_bs}border:1px solid #c8d8c0;background:linear-gradient(135deg,#f0f8ee,#e4f0e0);color:#6a8a60;">📋 コピー</button>
     <button onclick="event.stopPropagation();deleteItem('${tab}','${item.id}')" style="${_bs}border:1px solid #e8c0c0;background:linear-gradient(135deg,#fdf0f0,#f8e4e4);color:#c07070;">🗑 削除</button>
   </div></div>`;
   return html;
@@ -2063,6 +2064,7 @@ function renderPersonCard(p) {
     <button onclick="event.stopPropagation();editItem('people','${p.id}')" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border-radius:14px;border:1px solid var(--border);background:linear-gradient(135deg,#faf8f6,#f3eeea);color:var(--text);font-size:13px;font-weight:500;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">✏️ 編集</button>
     ${!p.isMemory?`<button onclick="event.stopPropagation();moveToMemory('${p.id}')" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border-radius:14px;border:1px solid #d8d0c8;background:linear-gradient(135deg,#f5f0eb,#ece5dd);color:#8a7e74;font-size:13px;font-weight:500;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">🤍 記憶に移す</button>`:''}
     ${p.isMemory?`<button onclick="event.stopPropagation();restoreFromMemory('${p.id}')" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border-radius:14px;border:1px solid #90caf9;background:linear-gradient(135deg,#e8f4ff,#d6ebfc);color:#4a7aaa;font-size:13px;font-weight:500;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">↩ 戻す</button>`:''}
+    <button onclick="event.stopPropagation();duplicateItem('people','${p.id}')" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border-radius:14px;border:1px solid #c8d8c0;background:linear-gradient(135deg,#f0f8ee,#e4f0e0);color:#6a8a60;font-size:13px;font-weight:500;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">📋 コピー</button>
     <button onclick="event.stopPropagation();deleteItem('people','${p.id}')" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border-radius:14px;border:1px solid #e8c0c0;background:linear-gradient(135deg,#fdf0f0,#f8e4e4);color:#c07070;font-size:13px;font-weight:500;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">🗑 削除</button>
   </div></div>`;
   return html;
@@ -2228,6 +2230,7 @@ function renderGroupCard(g) {
   html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:8px;">
     <button onclick="event.stopPropagation();shareGroup('${g.id}')" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border-radius:14px;border:1px solid #bdd8f0;background:linear-gradient(135deg,#e8f2fc,#daeaf8);color:#4a7aaa;font-size:13px;font-weight:500;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">📤 共有</button>
     <button onclick="event.stopPropagation();editGroup('${g.id}')" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border-radius:14px;border:1px solid var(--border);background:linear-gradient(135deg,#faf8f6,#f3eeea);color:var(--text);font-size:13px;font-weight:500;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">✏️ 編集</button>
+    <button onclick="event.stopPropagation();duplicateItem('groups','${g.id}')" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border-radius:14px;border:1px solid #c8d8c0;background:linear-gradient(135deg,#f0f8ee,#e4f0e0);color:#6a8a60;font-size:13px;font-weight:500;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">📋 コピー</button>
     <button onclick="event.stopPropagation();deleteItem('groups','${g.id}')" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border-radius:14px;border:1px solid #e8c0c0;background:linear-gradient(135deg,#fdf0f0,#f8e4e4);color:#c07070;font-size:13px;font-weight:500;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">🗑 削除</button>
   </div></div>`;
   return html;
@@ -3769,6 +3772,24 @@ function editItem(tab, id) {
     if (pl?.isClosed) openPlaceMemoryModal(id); else openPlaceModal(id);
   } else openItemModal(id);
 }
+function duplicateItem(tab, id) {
+  const src = (tab==='groups' ? data.groups : tab==='people' ? data.people : data[tab])?.find(i=>i.id===id);
+  if (!src) return;
+  const copy = JSON.parse(JSON.stringify(src));
+  copy.id = genId();
+  copy.title = copy.title ? copy.title + '（コピー）' : undefined;
+  copy.nickname = copy.nickname ? copy.nickname + '（コピー）' : undefined;
+  copy.name = (tab==='groups' && copy.name) ? copy.name + '（コピー）' : copy.name;
+  copy.createdAt = new Date().toISOString();
+  copy.updatedAt = new Date().toISOString();
+  copy.pinned = false;
+  if (tab==='groups') data.groups.push(copy);
+  else if (tab==='people') data.people.push(copy);
+  else data[tab].push(copy);
+  saveData(); render();
+  showToast('コピーを作成しました');
+}
+
 function deleteItem(tab, id) {
   const lockMethod = localStorage.getItem(LOCK_METHOD_KEY);
   const hasPin = !!localStorage.getItem(PIN_KEY);

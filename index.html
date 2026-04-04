@@ -616,6 +616,8 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 }
 .ranking-btn:active { transform: scale(0.95); }
 .ranking-btn.active { background: #f0b040; color: #fff; box-shadow: 0 2px 8px rgba(240,176,64,0.3); }
+#giftGaveBtn.active { background: #d48a7a; color: #fff; box-shadow: 0 2px 8px rgba(212,138,122,0.3); }
+#giftReceivedBtn.active { background: #7a9ad4; color: #fff; box-shadow: 0 2px 8px rgba(122,154,212,0.3); }
 .rank-number {
   font-size: 14px; font-weight: 700; color: var(--accent);
   min-width: 24px; text-align: center; flex-shrink: 0;
@@ -769,6 +771,8 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 <div class="label-bar-wrap"><div class="label-bar hint-anim" id="labelBar"></div></div>
 <div class="ranking-toggle" id="rankingToggle" style="display:none;">
   <div class="ranking-btn" id="rankOnBtn" onclick="setRankMode(!rankMode)">⭐ ランキング</div>
+  <div class="ranking-btn" id="giftGaveBtn" style="display:none;" onclick="filterGiftType('gave')">🎁 あげた</div>
+  <div class="ranking-btn" id="giftReceivedBtn" style="display:none;" onclick="filterGiftType('received')">🎀 もらった</div>
 </div>
 <div id="annSection"></div>
 <div class="card-list" id="cardList"></div>
@@ -1290,11 +1294,9 @@ function renderLabelBar() {
     bar.innerHTML = phtml;
     return;
   }
-  // Gift tab: もらった/あげた + カテゴリ
+  // Gift tab: カテゴリのみ（あげた/もらったはランキング横のボタンで）
   if (currentTab==='gift') {
-    let html = `<div class="label-chip ${currentLabel===null?'active':''}" onclick="filterLabel(null)"><span class="ldot" style="background:var(--accent);"></span> すべて</div>`;
-    html += `<div class="label-chip ${currentLabel==='received'?'active':''}" onclick="filterLabel('received')">🎀 もらった</div>`;
-    html += `<div class="label-chip ${currentLabel==='gave'?'active':''}" onclick="filterLabel('gave')">🎁 あげた</div>`;
+    let html = `<div class="label-chip ${currentLabel===null||currentLabel==='received'||currentLabel==='gave'?'active':''}" onclick="filterLabel(null)"><span class="ldot" style="background:var(--accent);"></span> すべて</div>`;
     _itemCatData.forEach((cat, ci) => {
       const active = currentLabel === cat;
       html += `<div class="label-chip ${active?'active':''}" onclick="filterItemCat(${ci})">${_itemCatEmoji[ci]} ${cat}</div>`;
@@ -1346,6 +1348,7 @@ function renderLabelBar() {
   });
 }
 function filterLabel(idx) { currentLabel=idx; render(); }
+function filterGiftType(type) { currentLabel = currentLabel===type ? null : type; render(); }
 // カテゴリ: データ保存はテキストのみ、表示時に絵文字を付与
 const _itemCatData = ['ファッション','グルメ','お菓子','美容・健康','インテリア','家電・ガジェット','趣味・体験','ギフト券','その他'];
 const _itemCatEmoji = ['👕','🍽','🍪','💄','🏠','📱','📚','🎁','📋'];
@@ -3152,6 +3155,15 @@ function render() {
   // Show ranking toggle for item tabs
   const rankToggle = document.getElementById('rankingToggle');
   rankToggle.style.display = ['wish','received','gave','place','gift'].includes(currentTab) ? '' : 'none';
+  // ギフトタブ用のあげた/もらったボタン表示制御
+  const gaveBtn = document.getElementById('giftGaveBtn');
+  const recvBtn = document.getElementById('giftReceivedBtn');
+  if (gaveBtn && recvBtn) {
+    gaveBtn.style.display = currentTab==='gift' ? '' : 'none';
+    recvBtn.style.display = currentTab==='gift' ? '' : 'none';
+    gaveBtn.classList.toggle('active', currentLabel==='gave');
+    recvBtn.classList.toggle('active', currentLabel==='received');
+  }
 
   // Gift tab: もらった＋あげた統合ビュー
   if (currentTab === 'gift') {

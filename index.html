@@ -913,7 +913,7 @@ const SEASON_KEY = 'awai_season';
 const ANN_POPUP_KEY = 'awai_ann_popup_date';
 const VERSION_KEY = 'awai_last_version';
 const TABS = ['wish','received','gave','place','people','groups'];
-const MODAL_TITLES = { wish:'アイテム', received:'もらった', gave:'あげた', place:'行きたい', people:'友だち', groups:'グループ' };
+const MODAL_TITLES = { wish:'お気に入り', received:'もらった', gave:'あげた', place:'行きたい', people:'友だち', groups:'グループ' };
 const SEASON_ICONS = { spring:'🌸', summer:'🌊', autumn:'🍂', winter:'❄️' };
 const LABEL_COLORS = ['#e8a598','#7a9ad4','#8abf7a','#c49a6c','#b07acc','#d4956a','#7ec8d9','#d48a7a','#8ea4bf','#6bab8a'];
 
@@ -3149,7 +3149,7 @@ function render() {
       });
     });
     if (!allFiltered.length) {
-      cardList.innerHTML = `<div class="empty-msg">「${esc(currentLabel)}」のアイテムはまだありません</div>`;
+      cardList.innerHTML = `<div class="empty-msg">「${esc(currentLabel)}」のお気に入りはまだありません</div>`;
       return;
     }
     allFiltered.sort((a,b) => {
@@ -3196,7 +3196,7 @@ function render() {
     // Item tab: filter by category
     const filtered = items.filter(i => i.itemCategory === currentLabel);
     if (!filtered.length) {
-      cardList.innerHTML = `<div class="empty-msg">「${esc(currentLabel)}」のアイテムはまだありません</div>`;
+      cardList.innerHTML = `<div class="empty-msg">「${esc(currentLabel)}」のお気に入りはまだありません</div>`;
       return;
     }
     renderItems(filtered, cardList);
@@ -3208,7 +3208,7 @@ function render() {
       return ln && text.includes(ln);
     });
     if (!filtered.length) {
-      cardList.innerHTML = `<div class="empty-msg">「${esc(currentLabel)}」のアイテムはまだありません</div>`;
+      cardList.innerHTML = `<div class="empty-msg">「${esc(currentLabel)}」のお気に入りはまだありません</div>`;
       return;
     }
     renderItems(filtered, cardList);
@@ -3311,7 +3311,7 @@ function toggleItemDetail(id) {
 
 function renderItems(items, cardList) {
   if (!items.length) {
-    const msgs = { wish:'✨ 気になるアイテムを追加してみましょう', received:'🎀 もらった贈り物を記録しましょう',
+    const msgs = { wish:'✨ お気に入りを追加してみましょう', received:'🎀 もらった贈り物を記録しましょう',
       gave:'🎁 あげた贈り物を記録しましょう', place:'📍 行きたい場所を追加しましょう' };
     cardList.innerHTML = `<div class="empty-msg">${msgs[currentTab]||''}<br>下の ＋ ボタンから追加できます</div>`;
     return;
@@ -3408,7 +3408,7 @@ function openItemModal(id) {
 
   // Title
   const titlePlaceholders = {wish:'例：ワイヤレスイヤホン、日本酒 獺祭',received:'例：バースデーケーキ、ネクタイ',gave:'例：ハンドクリーム、お菓子詰め合わせ'};
-  html += `<div class="form-group"><label>アイテム名 *</label><input id="fTitle" placeholder="${titlePlaceholders[currentTab]||'例：アイテム名'}" value="${esc(item?.title||'')}"></div>`;
+  html += `<div class="form-group"><label>名前 *</label><input id="fTitle" placeholder="${titlePlaceholders[currentTab]||'例：商品名'}" value="${esc(item?.title||'')}"></div>`;
 
   // Person (received/gave)
   if (showPerson) {
@@ -4351,7 +4351,7 @@ function savePerson() {
 // ===== Save Item =====
 function saveItem() {
   const title = document.getElementById('fTitle').value.trim();
-  if (!title) { alert('アイテム名を入力してください'); return; }
+  if (!title) { alert('名前を入力してください'); return; }
   const fileInput = getPhotoData('fImg');
   // Combine selected genre tags + typed tags
   const selectedItemTags = document.getElementById('fItemSelectedTags')?.value.split(',').filter(Boolean) || [];
@@ -6152,7 +6152,7 @@ const HELP_TEXTS = {
     title: '好きなもの・趣味',
     desc: 'その人の趣味や興味があることを記録します。カンマ区切りで複数登録できます。',
     examples: ['ゴルフ', '料理', 'ワイン', '旅行', 'K-POP', '釣り'],
-    tip: 'ここに登録した情報は、アイテムのタグと自動でマッチングされます。「この商品、あの人が喜びそう」とAWAIが教えてくれます。'
+    tip: 'ここに登録した情報は、お気に入りのタグと自動でマッチングされます。「この商品、あの人が喜びそう」とAWAIが教えてくれます。'
   },
   brands: {
     title: 'ブランド・色',
@@ -6198,7 +6198,7 @@ const HELP_TEXTS = {
   },
   itemTitle: {
     title: 'タイトル',
-    desc: 'アイテムの名前を入力します。',
+    desc: 'お気に入りの名前を入力します。',
     examples: ['ヴィンテージのワイングラス', '松阪牛のカタログギフト', '名入れ万年筆'],
     tip: '気になった商品をとりあえず登録しておくだけでOK。後から写真やURLを追加できます。'
   },

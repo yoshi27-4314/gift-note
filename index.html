@@ -929,6 +929,7 @@ function matchesSearch(item, tab) {
 function findMatchingPeople(tags) {
   if (!tags||!tags.length) return [];
   return data.people.filter(p => {
+    if (p.isMemory) return false;
     const allPrefs = [...(p.interests||[]), ...(p.foodLike||[]), ...(p.brands||[]), ...(p.oshi||[])];
     if (!allPrefs.length) return false;
     return tags.some(t => allPrefs.some(i => t.toLowerCase().includes(i.toLowerCase())||i.toLowerCase().includes(t.toLowerCase())));

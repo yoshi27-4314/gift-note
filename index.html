@@ -329,6 +329,18 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
   margin-top: 2px; padding-top: 10px;
 }
 .person-section-title { font-size: 13px; color: var(--text); margin-bottom: 6px; font-weight: 500; }
+/* Chat bubbles */
+.chat-messages { max-height: 200px; overflow-y: auto; padding: 4px 0; -webkit-overflow-scrolling: touch; }
+.chat-bubble { max-width: 80%; padding: 8px 12px; border-radius: 14px; margin-bottom: 6px; font-size: 13px; line-height: 1.5; word-break: break-word; }
+.chat-bubble-mine { margin-left: auto; background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }
+.chat-bubble-other { margin-right: auto; background: var(--border); color: var(--text); border-bottom-left-radius: 4px; }
+.chat-sender { font-size: 10px; color: var(--sub); margin-bottom: 2px; }
+.chat-time { font-size: 10px; opacity: 0.7; margin-top: 2px; text-align: right; }
+.chat-bubble-other .chat-time { color: var(--sub); }
+.chat-input-row { display: flex; gap: 6px; margin-top: 6px; }
+.chat-input-row input { flex: 1; font-size: 14px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 12px; font-family: 'Zen Maru Gothic', sans-serif; background: var(--card); color: var(--text); outline: none; }
+.chat-input-row input:focus { border-color: var(--accent); }
+.chat-input-row button { padding: 8px 14px; border-radius: 12px; border: none; background: var(--accent); color: #fff; font-size: 13px; font-weight: 500; cursor: pointer; font-family: 'Zen Maru Gothic', sans-serif; white-space: nowrap; }
 .person-anniversaries {}
 .person-ann {
   display: flex; align-items: center; gap: 6px; padding: 3px 0; font-size: 13px;
@@ -2234,6 +2246,9 @@ function renderPersonCard(p) {
     </div>`;
   }
 
+  // Chat section
+  html += renderChatSection(p.id);
+
   html += `<div style="padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
     <button onclick="event.stopPropagation();sharePerson('${p.id}')" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border-radius:14px;border:1px solid #bdd8f0;background:linear-gradient(135deg,#e8f2fc,#daeaf8);color:#4a7aaa;font-size:13px;font-weight:500;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">📤 共有</button>
     <button onclick="event.stopPropagation();sendShareRequest('${p.id}')" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border-radius:14px;border:1px solid #c8b8e8;background:linear-gradient(135deg,#f0eaf8,#e8e0f4);color:#7a6aaa;font-size:13px;font-weight:500;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">📩 カード共有</button>
@@ -2288,6 +2303,167 @@ function togglePersonDetail(id) {
       if (detail) detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
   }
+}
+
+// ===== Card Chat =====
+const _chatChannels = {};
+
+function renderChatSection(cardId) {
+  const secId = 'chatSec_' + cardId;
+  const bodyId = 'chatBody_' + cardId;
+  const msgsId = 'chatMsgs_' + cardId;
+  const inputId = 'chatInput_' + cardId;
+  return `<div class="person-section">
+    <div class="person-section-title" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;" onclick="event.stopPropagation();toggleChatSection('${cardId}')">
+      <span>💬 チャット</span>
+      <span id="chatToggle_${cardId}" class="sec-toggle" style="font-size:12px;color:var(--sub);">▶</span>
+    </div>
+    <div id="${bodyId}" style="display:none;">
+      <div id="${msgsId}" class="chat-messages"><div style="font-size:12px;color:var(--sub);text-align:center;padding:12px 0;">読み込み中…</div></div>
+      <div class="chat-input-row" onclick="event.stopPropagation();">
+        <input id="${inputId}" type="text" placeholder="メッセージを入力…" data-chat-input="true" onkeydown="if(event.key==='Enter'){event.preventDefault();sendCardChat('${cardId}');}" autocomplete="off">
+        <button onclick="event.stopPropagation();sendCardChat('${cardId}')">送信</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function toggleChatSection(cardId) {
+  const body = document.getElementById('chatBody_' + cardId);
+  const toggle = document.getElementById('chatToggle_' + cardId);
+  if (!body) return;
+  if (body.style.display === 'none') {
+    body.style.display = '';
+    if (toggle) toggle.textContent = '▼';
+    loadCardChat(cardId);
+    subscribeCardChat(cardId);
+  } else {
+    body.style.display = 'none';
+    if (toggle) toggle.textContent = '▶';
+    unsubscribeCardChat(cardId);
+  }
+}
+
+async function loadCardChat(cardId) {
+  const msgsEl = document.getElementById('chatMsgs_' + cardId);
+  if (!msgsEl) return;
+  if (!_sb || !_sbUser) {
+    msgsEl.innerHTML = '<div style="font-size:12px;color:var(--sub);text-align:center;padding:12px 0;">ログインが必要です</div>';
+    return;
+  }
+  try {
+    const { data: msgs, error } = await _sb.from('card_chats')
+      .select('*')
+      .eq('card_id', cardId)
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    renderChatMessages(cardId, msgs || []);
+  } catch (e) {
+    console.error('loadCardChat error:', e);
+    msgsEl.innerHTML = '<div style="font-size:12px;color:#c07070;text-align:center;padding:12px 0;">読み込みに失敗しました</div>';
+  }
+}
+
+function renderChatMessages(cardId, msgs) {
+  const msgsEl = document.getElementById('chatMsgs_' + cardId);
+  if (!msgsEl) return;
+  if (!msgs.length) {
+    msgsEl.innerHTML = '<div style="font-size:12px;color:var(--sub);text-align:center;padding:12px 0;">まだメッセージがありません</div>';
+    return;
+  }
+  const myId = _sbUser ? _sbUser.id : null;
+  const recent = msgs.slice(-50);
+  let html = '';
+  recent.forEach(m => {
+    const isMine = m.user_id === myId;
+    const time = m.created_at ? new Date(m.created_at).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }) : '';
+    html += `<div style="display:flex;flex-direction:column;align-items:${isMine ? 'flex-end' : 'flex-start'};">`;
+    if (!isMine) {
+      html += `<div class="chat-sender">${esc(m.sender_name || 'ゲスト')}</div>`;
+    }
+    html += `<div class="chat-bubble ${isMine ? 'chat-bubble-mine' : 'chat-bubble-other'}">${esc(m.message)}</div>`;
+    html += `<div class="chat-time">${time}</div>`;
+    html += '</div>';
+  });
+  msgsEl.innerHTML = html;
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+}
+
+async function sendCardChat(cardId) {
+  const inputEl = document.getElementById('chatInput_' + cardId);
+  if (!inputEl) return;
+  const message = inputEl.value.trim();
+  if (!message) return;
+  if (!_sb || !_sbUser) { alert('ログインが必要です'); return; }
+  const profile = getMyProfile();
+  const senderName = (profile && profile.name) ? profile.name : 'ゲスト';
+  inputEl.value = '';
+  inputEl.disabled = true;
+  try {
+    const { error } = await _sb.from('card_chats').insert({
+      card_id: cardId,
+      user_id: _sbUser.id,
+      sender_name: senderName,
+      message: message
+    });
+    if (error) throw error;
+    await loadCardChat(cardId);
+  } catch (e) {
+    console.error('sendCardChat error:', e);
+    inputEl.value = message;
+    alert('送信に失敗しました');
+  } finally {
+    inputEl.disabled = false;
+    inputEl.focus();
+  }
+}
+
+function subscribeCardChat(cardId) {
+  if (_chatChannels[cardId]) return;
+  if (!_sb) return;
+  try {
+    const channel = _sb.channel('card-chat-' + cardId)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'card_chats',
+        filter: 'card_id=eq.' + cardId
+      }, payload => {
+        appendChatMessage(cardId, payload.new);
+      })
+      .subscribe();
+    _chatChannels[cardId] = channel;
+  } catch (e) {
+    console.error('subscribeCardChat error:', e);
+  }
+}
+
+function unsubscribeCardChat(cardId) {
+  if (_chatChannels[cardId]) {
+    try { _sb.removeChannel(_chatChannels[cardId]); } catch(e) {}
+    delete _chatChannels[cardId];
+  }
+}
+
+function appendChatMessage(cardId, msg) {
+  const msgsEl = document.getElementById('chatMsgs_' + cardId);
+  if (!msgsEl) return;
+  // If it's the "no messages" placeholder, clear it
+  if (msgsEl.querySelector('.chat-sender') === null && msgsEl.querySelector('.chat-bubble') === null) {
+    msgsEl.innerHTML = '';
+  }
+  const myId = _sbUser ? _sbUser.id : null;
+  const isMine = msg.user_id === myId;
+  const time = msg.created_at ? new Date(msg.created_at).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }) : '';
+  let html = `<div style="display:flex;flex-direction:column;align-items:${isMine ? 'flex-end' : 'flex-start'};">`;
+  if (!isMine) {
+    html += `<div class="chat-sender">${esc(msg.sender_name || 'ゲスト')}</div>`;
+  }
+  html += `<div class="chat-bubble ${isMine ? 'chat-bubble-mine' : 'chat-bubble-other'}">${esc(msg.message)}</div>`;
+  html += `<div class="chat-time">${time}</div>`;
+  html += '</div>';
+  msgsEl.insertAdjacentHTML('beforeend', html);
+  msgsEl.scrollTop = msgsEl.scrollHeight;
 }
 
 // ===== Group render =====
@@ -7387,6 +7563,8 @@ if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().t
   // iOS キーボード対策: 入力フォーカス時にスクロール＋モーダル高さ調整
   document.addEventListener('focusin', e => {
     if (e.target.matches('input,textarea,select')) {
+      // チャット入力欄はスクロール制御をスキップ
+      if (e.target.dataset.chatInput) return;
       // モーダル内の場合、モーダル自体をスクロール
       const modal = e.target.closest('.modal');
       if (modal) {

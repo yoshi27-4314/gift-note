@@ -1330,13 +1330,20 @@ function renderLabelBar() {
   });
   html += `<div class="label-chip add" onclick="openLabelModal()">＋</div>`;
   bar.innerHTML = html;
-  // スクロールリセット＋ヒントアニメーション再実行
+  // スクロールリセット＋ヒントアニメーション（スクロール可能な場合のみ）
   bar.scrollLeft = 0;
   bar.classList.remove('hint-anim');
-  void bar.offsetHeight; // reflow
-  bar.classList.add('hint-anim');
   const wrap = bar.parentElement;
   if (wrap) wrap.classList.remove('scrolled-end');
+  requestAnimationFrame(() => {
+    if (bar.scrollWidth > bar.clientWidth + 10) {
+      void bar.offsetHeight;
+      bar.classList.add('hint-anim');
+      if (wrap) wrap.classList.remove('scrolled-end');
+    } else {
+      if (wrap) wrap.classList.add('scrolled-end');
+    }
+  });
 }
 function filterLabel(idx) { currentLabel=idx; render(); }
 // カテゴリ: データ保存はテキストのみ、表示時に絵文字を付与
@@ -2240,7 +2247,7 @@ function renderPersonCard(p) {
     const catColors = {gave:'#fdeee9', received:'#e9f0fd', wish:'#f5f0ed', wantgive:'#fdf0ed', place:'#edf7fa'};
     const catTextColors = {gave:'#d48a7a', received:'#7a9ad4', wish:'#9e8e88', wantgive:'#e8a598', place:'#7ec8d9'};
     const catToTab = {gave:'gave', received:'received', wish:'wish', wantgive:'wish', place:'place'};
-    html += collapsibleSection('📋', 'この人との記録', allHistory.length, 5, () => {
+    html += collapsibleSection('📋', '友だちとの記録', allHistory.length, 5, () => {
       let rh = '';
       allHistory.sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,10).forEach(h => {
         rh += `<div class="history-item" onclick="event.stopPropagation();jumpToItem('${catToTab[h.cat]}','${h.id}')" style="cursor:pointer;"><span class="history-dir" style="background:${catColors[h.cat]};color:${catTextColors[h.cat]};">${catLabels[h.cat]}</span><span style="flex:1;">${esc(h.title)}</span><span class="history-date">${h.date||''}</span><span style="color:var(--accent);font-size:12px;margin-left:4px;">→</span></div>`;

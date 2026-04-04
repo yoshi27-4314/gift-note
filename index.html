@@ -1136,7 +1136,7 @@ function openPlaceModal(id) {
     const active = currentCat === cat;
     html += `<div class="date-type-chip ${active?'active':''}" onclick="selectPlaceCatByIdx(this,${ci})" style="font-size:13px;padding:6px 14px;">${cat}</div>`;
   });
-  html += `</div><input type="hidden" id="fPlaceCategory" value="${esc(currentCat)}"></div>`;
+  html += `</div><input type="hidden" id="fPlaceCategory" value="${currentCat}"></div>`;
 
   html += `<div class="form-group"><label>ジャンル・目的</label>
     <div id="placeGenreTags" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;">`;
@@ -1337,7 +1337,7 @@ function openPlaceMemoryModal(id) {
     const active = currentCat === cat;
     html += `<div class="date-type-chip ${active?'active':''}" onclick="selectPlaceCatByIdx(this,${ci})" style="font-size:13px;padding:6px 14px;">${cat}</div>`;
   });
-  html += `</div><input type="hidden" id="fPlaceCategory" value="${esc(currentCat)}"></div>`;
+  html += `</div><input type="hidden" id="fPlaceCategory" value="${currentCat}"></div>`;
 
   html += `<div class="form-group"><label>ジャンル・目的</label>
     <div id="placeGenreTags" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;">`;
@@ -3064,7 +3064,7 @@ function openItemModal(id) {
     const active = currentCat === cat;
     html += `<div class="date-type-chip ${active?'active':''}" onclick="selectItemCatByIdx(this,${ci})" style="font-size:13px;padding:6px 14px;">${cat}</div>`;
   });
-  html += `</div><input type="hidden" id="fItemCategory" value="${esc(currentCat)}"></div>`;
+  html += `</div><input type="hidden" id="fItemCategory" value="${currentCat}"></div>`;
 
   // Genre tags (like place)
   html += `<div class="form-group"><label>ジャンル</label>
@@ -3124,10 +3124,7 @@ function setItemPurpose(purpose, el) {
 }
 
 function selectItemCatByIdx(el, ci) {
-  const cat = _itemCatList[ci];
-  console.log('selectItemCatByIdx:', ci, cat);
-  selectItemCategory(el, cat);
-  console.log('fItemCategory value after:', document.getElementById('fItemCategory')?.value);
+  selectItemCategory(el, _itemCatList[ci]);
 }
 
 function selectItemCategory(el, cat) {

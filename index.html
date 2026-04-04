@@ -677,7 +677,7 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 
 <div class="header">
   <div class="app-title">AWAI</div>
-  <div class="app-subtitle">大切な人と記憶がここに</div>
+  <div class="app-subtitle">友だちと記憶がここに</div>
   <button class="season-btn" id="seasonBtn" style="right:52px;">🌸</button>
   <button class="season-btn" id="settingsBtn" style="right:16px;font-size:12px;">⚙️</button>
 </div>
@@ -696,7 +696,7 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
   <div class="tab" data-tab="received">🎀 もらった</div>
   <div class="tab" data-tab="gave">🎁 あげた</div>
   <div class="tab" data-tab="place">📍 行きたい</div>
-  <div class="tab" data-tab="people">👤 大切な人</div>
+  <div class="tab" data-tab="people">👤 友だち</div>
   <div class="tab" data-tab="groups">👥 グループ</div>
 </div>
 
@@ -747,7 +747,7 @@ const SEASON_KEY = 'awai_season';
 const ANN_POPUP_KEY = 'awai_ann_popup_date';
 const VERSION_KEY = 'awai_last_version';
 const TABS = ['wish','received','gave','place','people','groups'];
-const MODAL_TITLES = { wish:'アイテム', received:'もらった', gave:'あげた', place:'行きたい', people:'大切な人', groups:'グループ' };
+const MODAL_TITLES = { wish:'アイテム', received:'もらった', gave:'あげた', place:'行きたい', people:'友だち', groups:'グループ' };
 const SEASON_ICONS = { spring:'🌸', summer:'🌊', autumn:'🍂', winter:'❄️' };
 const LABEL_COLORS = ['#e8a598','#7a9ad4','#8abf7a','#c49a6c','#b07acc','#d4956a','#7ec8d9','#d48a7a','#8ea4bf','#6bab8a'];
 
@@ -1040,8 +1040,8 @@ function renderLabelBar() {
   if (currentTab==='groups') { bar.innerHTML=''; return; }
   if (currentTab==='people') {
     let phtml = `<div class="label-chip ${currentLabel===null?'active':''}" style="color:var(--accent);${currentLabel===null?'border-color:var(--accent);':''}" onclick="filterLabel(null)"><span class="ldot" style="background:var(--accent);"></span> すべて</div>`;
-    phtml += `<div class="label-chip ${currentLabel==='individual'?'active':''}" style="color:#d48a7a;${currentLabel==='individual'?'border-color:#d48a7a;':''}" onclick="filterLabel('individual')"><span class="ldot" style="background:#d48a7a;"></span> 👤 個人</div>`;
-    phtml += `<div class="label-chip ${currentLabel==='corporate'?'active':''}" style="color:#6b88a8;${currentLabel==='corporate'?'border-color:#6b88a8;':''}" onclick="filterLabel('corporate')"><span class="ldot" style="background:#6b88a8;"></span> 🏢 法人</div>`;
+    phtml += `<div class="label-chip ${currentLabel==='individual'?'active':''}" style="color:#d48a7a;${currentLabel==='individual'?'border-color:#d48a7a;':''}" onclick="filterLabel('individual')"><span class="ldot" style="background:#d48a7a;"></span> 👤 友だち</div>`;
+    phtml += `<div class="label-chip ${currentLabel==='corporate'?'active':''}" style="color:#6b88a8;${currentLabel==='corporate'?'border-color:#6b88a8;':''}" onclick="filterLabel('corporate')"><span class="ldot" style="background:#6b88a8;"></span> 🏢 会社</div>`;
     phtml += `<div class="label-chip ${currentLabel==='memory'?'active':''}" style="color:#a09590;${currentLabel==='memory'?'border-color:#a09590;':''}" onclick="filterLabel('memory')"><span class="ldot" style="background:#a09590;"></span> 🤍 記憶</div>`;
     bar.innerHTML = phtml;
     return;
@@ -2077,7 +2077,7 @@ function renderPersonListItem(p) {
     }
   });
   if (!preview && p.interests?.length) preview = p.interests.slice(0,3).join(', ');
-  if (!preview) preview = isCorp ? (p.industry||'法人') : '大切な人';
+  if (!preview) preview = isCorp ? (p.industry||'会社') : '友だち';
 
   const isOpen = openPersonId === p.id;
 
@@ -2239,7 +2239,7 @@ function openGroupModal(id) {
   html += `<div class="form-group"><label>説明（任意）</label><input id="gDesc" placeholder="例：毎月第2土曜にラウンド" value="${esc(g?.description||'')}"></div>`;
   html += `<div class="form-group"><label>メンバー</label><div class="form-hint" style="margin-bottom:6px;">タップで選択・解除</div><div id="gMemberList" style="max-height:300px;overflow-y:auto;">`;
   if (!data.people.length) {
-    html += '<div style="font-size:12px;color:var(--sub);padding:12px;">大切な人を先に登録してください</div>';
+    html += '<div style="font-size:12px;color:var(--sub);padding:12px;">友だちを先に登録してください</div>';
   } else {
     data.people.forEach(p => {
       const checked = selectedIds.includes(p.id);
@@ -2550,7 +2550,7 @@ function openAddMemberModal(corpId, corpName) {
 
   let html = `<h2>👥 ${esc(corp.nickname)} にメンバーを追加</h2>`;
   if (!candidates.length) {
-    html += '<div style="padding:12px;color:var(--sub);text-align:center;">追加できる個人がいません<br>先に個人を登録してください</div>';
+    html += '<div style="padding:12px;color:var(--sub);text-align:center;">追加できる友だちがいません<br>先に友だちを登録してください</div>';
   } else {
     html += '<div style="max-height:60dvh;overflow-y:auto;">';
     candidates.forEach(c => {
@@ -2869,7 +2869,7 @@ function render() {
     else if (currentLabel === 'corporate') filteredPeople = items.filter(p=>p.type==='corporate'&&!p.isMemory);
     else filteredPeople = items.filter(p=>!p.isMemory);
     if (!filteredPeople.length) {
-      const msg = currentLabel==='memory' ? '🤍 記憶はまだ登録されていません' : currentLabel==='corporate' ? '🏢 法人はまだ登録されていません' : currentLabel==='individual' ? '👤 個人はまだ登録されていません' : '👤 大切な人を追加しましょう';
+      const msg = currentLabel==='memory' ? '🤍 記憶はまだ登録されていません' : currentLabel==='corporate' ? '🏢 会社はまだ登録されていません' : currentLabel==='individual' ? '👤 友だちはまだ登録されていません' : '👤 友だちを追加しましょう';
       cardList.innerHTML = `<div class="empty-msg">${msg}<br>下の ＋ ボタンから追加できます</div>`;
       return;
     }
@@ -3046,7 +3046,7 @@ function openItemModal(id) {
     const personLabel = currentTab==='received' ? '誰から？' : '誰に？';
     html += `<div class="form-group"><label>${personLabel}</label><input id="fPerson" placeholder="例：さとうさん" value="${esc(item?.person||'')}" list="peopleList">
     <datalist id="peopleList">${data.people.map(p=>`<option value="${esc(p.nickname||'')}">`).join('')}</datalist>
-    <div class="form-hint">大切な人に登録済みの名前が候補に出ます</div></div>`;
+    <div class="form-hint">友だちに登録済みの名前が候補に出ます</div></div>`;
   }
 
   // Category (like place)
@@ -3242,7 +3242,7 @@ function openPeopleModal(id) {
   const p = isEdit ? data.people.find(i=>i.id===editingId) : null;
 
   const isCorp = isEdit ? p?.type==='corporate' : currentLabel==='corporate';
-  let html = `<h2>${isCorp?'🏢 法人':'👤 大切な人'} を${isEdit?'編集':'追加'}</h2>`;
+  let html = `<h2>${isCorp?'🏢 会社':'👤 友だち'} を${isEdit?'編集':'追加'}</h2>`;
   html += `<input type="hidden" id="pType" value="${isCorp?'corporate':'individual'}">`;
 
   // Individual fields
@@ -3274,7 +3274,7 @@ function openPeopleModal(id) {
     </div><input type="hidden" id="pGender" value="${p?.gender||'unset'}">
   </div>`;
   html += `<div class="form-group"><label>関係 ${helpBtn('relation')}</label><input id="pRelation" placeholder="例：友人、同僚、取引先、家族" value="${esc(p?.relation||'')}"></div>`;
-  html += `<div class="form-group"><label>所属法人（任意）</label><input id="pCompanyLink" placeholder="登録済みの法人名" value="${esc(p?.companyLink||'')}" list="companyList">
+  html += `<div class="form-group"><label>所属会社（任意）</label><input id="pCompanyLink" placeholder="登録済みの会社名" value="${esc(p?.companyLink||'')}" list="companyList">
     <datalist id="companyList">${data.people.filter(x=>x.type==='corporate').map(x=>`<option value="${esc(x.nickname||'')}">`).join('')}</datalist></div>`;
   html += `<div class="form-group"><label>役職</label><input id="pPosition" placeholder="例：営業部長" value="${esc(p?.position||'')}"></div>`;
   html += `</div>`;
@@ -3370,7 +3370,7 @@ function openPeopleModal(id) {
     html += `<div class="form-group"><label>🤍 記憶の設定</label></div>`;
     html += `<div class="form-group"><label>種別</label>
       <div style="display:flex;gap:6px;margin-top:4px;">
-        <div class="date-type-chip ${memType==='person'?'active':''}" onclick="selectMemoryType('person',this)" style="flex:1;text-align:center;">👤 個人</div>
+        <div class="date-type-chip ${memType==='person'?'active':''}" onclick="selectMemoryType('person',this)" style="flex:1;text-align:center;">👤 友だち</div>
         <div class="date-type-chip ${memType==='pet'?'active':''}" onclick="selectMemoryType('pet',this)" style="flex:1;text-align:center;">🐾 ペット</div>
       </div><input type="hidden" id="mMemoryType" value="${memType}">
     </div>`;
@@ -3966,7 +3966,7 @@ function openSettings() {
         <div class="fsz-btn" data-sz="xlarge" style="flex:1;padding:12px;text-align:center;border-radius:12px;border:2px solid ${currentSize==='xlarge'?'var(--accent)':'var(--border)'};cursor:pointer;font-size:20px;" onclick="setFontSize('xlarge')">特大</div>
       </div></div>
     <div class="form-group"><label>🤍 プロフィール交換</label>
-      <div class="form-hint" style="margin-bottom:8px;">QRコードで大切な人と情報を交換できます</div>
+      <div class="form-hint" style="margin-bottom:8px;">QRコードで友だちと情報を交換できます</div>
       <div style="display:flex;gap:8px;">
         <button class="card-btn" onclick="document.getElementById('settingsModalOverlay').classList.remove('open');openProfileShareScreen()" style="font-size:14px;padding:8px 16px;">📤 QRを表示</button>
         <button class="card-btn" onclick="document.getElementById('settingsModalOverlay').classList.remove('open');openQRScanner()" style="font-size:14px;padding:8px 16px;">📷 QR読み取り</button>
@@ -4440,7 +4440,7 @@ function shareItem(tab, id) {
 function shareApp() {
   const url = getAppUrl();
   if (navigator.share) {
-    navigator.share({ title: 'AWAI — 大切な人と記憶がここに', text: '大切な人への贈り物管理アプリ', url }).catch(()=>{});
+    navigator.share({ title: 'AWAI — 友だちと記憶がここに', text: '友だちへの贈り物管理アプリ', url }).catch(()=>{});
   } else {
     navigator.clipboard.writeText(url).then(() => alert('URLをコピーしました！')).catch(() => prompt('このURLをシェアしてください:', url));
   }
@@ -4967,7 +4967,7 @@ const HELP_TEXTS = {
   },
   counter: {
     title: 'カウンター',
-    desc: '大切な人との記録を数えます。名前は自由に決められます。',
+    desc: '友だちとの記録を数えます。名前は自由に決められます。',
     examples: ['一緒に食事した', '会った', '電話した', '旅行に行った'],
     tip: '2人だけが意味を知っているものを数える。50回目が自動で新しい記念日になります。ボタンを押すだけ。日付も自動で記録されます。'
   },
@@ -5151,7 +5151,7 @@ function moveToMemory(id) {
 }
 
 function restoreFromMemory(id) {
-  if (!confirm('この人を大切な人に戻しますか？')) return;
+  if (!confirm('この人を友だちに戻しますか？')) return;
   const p = data.people.find(x=>x.id===id);
   if (!p) return;
   p.isMemory = false;
@@ -5159,7 +5159,7 @@ function restoreFromMemory(id) {
   openPersonId = null;
   currentLabel = null;
   render();
-  showToast('大切な人に戻しました');
+  showToast('友だちに戻しました');
 }
 
 function closePlacePrompt(id) {
@@ -5197,7 +5197,7 @@ function openMemoryModal(id) {
   const memType = p?.memoryType||'person';
   html += `<div class="form-group"><label>種別</label>
     <div style="display:flex;gap:6px;margin-top:4px;">
-      <div class="date-type-chip ${memType==='person'?'active':''}" onclick="selectMemoryType('person',this)" style="flex:1;text-align:center;">👤 個人</div>
+      <div class="date-type-chip ${memType==='person'?'active':''}" onclick="selectMemoryType('person',this)" style="flex:1;text-align:center;">👤 友だち</div>
       <div class="date-type-chip ${memType==='pet'?'active':''}" onclick="selectMemoryType('pet',this)" style="flex:1;text-align:center;">🐾 ペット</div>
     </div><input type="hidden" id="mMemoryType" value="${memType}">
   </div>`;
@@ -5585,7 +5585,7 @@ function createSampleData() {
     foodDislike: ['パクチー'],
     family: [{name:'花子（奥さん）', note:'料理好き'}, {name:'太一（長男）', note:'高校2年'}],
     personality: ['気配り上手', '話し上手'],
-    memo: 'これはサンプルです。編集や削除して、自分の大切な人を登録してください。\n\n各項目の？ボタンを押すと使い方のヒントが見れます。',
+    memo: 'これはサンプルです。編集や削除して、自分の友だちを登録してください。\n\n各項目の？ボタンを押すと使い方のヒントが見れます。',
     counters: [{name:'一緒に食事した', count:3, logs:['2026-03-15','2026-02-20','2026-01-10']}],
     isSample: true,
     createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
@@ -6107,7 +6107,7 @@ let isDummyMode = false;
 function showDummyMode() {
   isDummyMode = true;
   // Hide all data, show empty app
-  document.getElementById('cardList').innerHTML = '<div class="empty-msg">👤 大切な人を追加しましょう<br>下の ＋ ボタンから追加できます</div>';
+  document.getElementById('cardList').innerHTML = '<div class="empty-msg">👤 友だちを追加しましょう<br>下の ＋ ボタンから追加できます</div>';
   document.getElementById('reminderZone').innerHTML = '';
   document.getElementById('pickupZone').innerHTML = '';
   document.getElementById('annSection').innerHTML = '';

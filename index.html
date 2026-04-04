@@ -2869,7 +2869,7 @@ function renderItems(items, cardList) {
 
 // ===== Tab =====
 function switchTab(tab) {
-  currentTab = tab; currentLabel = null; searchQuery = ''; rankMode = false; openPersonId = null; openItemId = null; openGroupId = null; openAllRecordId = null;
+  currentTab = tab; currentLabel = tab==='people' ? 'individual' : null; searchQuery = ''; rankMode = false; openPersonId = null; openItemId = null; openGroupId = null; openAllRecordId = null;
   document.getElementById('searchInput').value = '';
   document.querySelectorAll('.tab').forEach(el => el.classList.toggle('active', el.dataset.tab===tab));
   render();

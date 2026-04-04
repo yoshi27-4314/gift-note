@@ -1777,15 +1777,21 @@ function renderItemCard(item, tab, rank) {
   if (item.googleMapUrl) html += `<a class="card-url" href="${esc(item.googleMapUrl)}" target="_blank" rel="noopener" style="margin-top:6px;font-size:15px;">🗺 Googleマップで開く</a>`;
   if (item.mapUrl) html += `<a class="card-url" href="${esc(item.mapUrl)}" target="_blank" rel="noopener" style="margin-top:6px;font-size:15px;">🔗 ホームページを開く</a>`;
   else if (item.url) html += `<a class="card-url" href="${esc(item.url)}" target="_blank" rel="noopener" style="font-size:15px;">🔗 ${esc(truncUrl(item.url))}</a>`;
-  html += `<div class="card-actions">
-    <button class="card-btn" onclick="event.stopPropagation();togglePin('${tab}','${item.id}')">${item.pinned?'📌 固定中':'📌 固定'}</button>
-    <button class="card-btn" onclick="event.stopPropagation();regiftItem('${tab}','${item.id}')" style="background:var(--pickup);border-color:var(--pickup-border);">🎁 プレゼントする</button>
-    ${tab==='place'&&!item.isClosed?`<button class="card-btn" onclick="event.stopPropagation();markVisited('${item.id}')" style="background:${item.visited?'#e8f5e9':'var(--pickup)'};border-color:${item.visited?'#a5d6a7':'var(--pickup-border)'};">${item.visited?'✅ 行った！':'📍 行った！'}</button>`:''}
-    ${tab==='place'&&!item.isClosed?`<button class="card-btn" onclick="event.stopPropagation();closePlacePrompt('${item.id}')" style="background:#f5f0eb;border-color:#c5c0ba;">🤍 記憶に移す</button>`:''}
-    ${tab==='place'&&item.isClosed?`<button class="card-btn" onclick="event.stopPropagation();reopenPlace('${item.id}')" style="background:#f0f8ff;border-color:#90caf9;">↩ 戻す</button>`:''}
-    ${tab!=='received'&&tab!=='gave'?`<button class="card-btn" onclick="event.stopPropagation();shareItem('${tab}','${item.id}')" style="background:#e3f2fd;border-color:#90caf9;">📤 共有</button>`:''}
-    <button class="card-btn" onclick="event.stopPropagation();editItem('${tab}','${item.id}')">✏️ 編集</button>
-    <button class="card-btn delete" onclick="event.stopPropagation();deleteItem('${tab}','${item.id}')">🗑 削除</button>
+  const _bs = 'display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border-radius:14px;font-size:13px;font-weight:500;cursor:pointer;font-family:"Zen Maru Gothic",sans-serif;';
+  html += `<div style="display:flex;gap:12px;justify-content:flex-end;margin-top:10px;">
+    <label style="font-size:11px;color:var(--sub);display:flex;align-items:center;gap:4px;cursor:pointer;" onclick="event.stopPropagation();">
+      <input type="checkbox" ${item.pinned?'checked':''} onchange="event.stopPropagation();togglePin('${tab}','${item.id}')">
+      <span>${item.pinned?'📌 固定中':'📌 固定'}</span>
+    </label>
+  </div>`;
+  html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+    <button onclick="event.stopPropagation();regiftItem('${tab}','${item.id}')" style="${_bs}border:1px solid var(--pickup-border);background:linear-gradient(135deg,var(--pickup),#fff4e6);color:var(--text);">🎁 プレゼントする</button>
+    ${tab==='place'&&!item.isClosed?`<button onclick="event.stopPropagation();markVisited('${item.id}')" style="${_bs}border:1px solid ${item.visited?'#a5d6a7':'var(--pickup-border)'};background:linear-gradient(135deg,${item.visited?'#e8f5e9':'var(--pickup)'},${item.visited?'#d4ecd6':'#fff4e6'});color:var(--text);">${item.visited?'✅ 行った！':'📍 行った！'}</button>`:''}
+    ${tab==='place'&&!item.isClosed?`<button onclick="event.stopPropagation();closePlacePrompt('${item.id}')" style="${_bs}border:1px solid #d8d0c8;background:linear-gradient(135deg,#f5f0eb,#ece5dd);color:#8a7e74;">🤍 記憶に移す</button>`:''}
+    ${tab==='place'&&item.isClosed?`<button onclick="event.stopPropagation();reopenPlace('${item.id}')" style="${_bs}border:1px solid #90caf9;background:linear-gradient(135deg,#e8f4ff,#d6ebfc);color:#4a7aaa;">↩ 戻す</button>`:''}
+    ${tab!=='received'&&tab!=='gave'?`<button onclick="event.stopPropagation();shareItem('${tab}','${item.id}')" style="${_bs}border:1px solid #bdd8f0;background:linear-gradient(135deg,#e8f2fc,#daeaf8);color:#4a7aaa;">📤 共有</button>`:''}
+    <button onclick="event.stopPropagation();editItem('${tab}','${item.id}')" style="${_bs}border:1px solid var(--border);background:linear-gradient(135deg,#faf8f6,#f3eeea);color:var(--text);">✏️ 編集</button>
+    <button onclick="event.stopPropagation();deleteItem('${tab}','${item.id}')" style="${_bs}border:1px solid #e8c0c0;background:linear-gradient(135deg,#fdf0f0,#f8e4e4);color:#c07070;">🗑 削除</button>
   </div></div>`;
   return html;
 }
@@ -4091,10 +4097,10 @@ function openDevMemo() {
         <div style="font-size:14px;font-weight:600;margin-bottom:4px;">${esc(m.title||'無題')}</div>
         ${m.text ? `<div style="font-size:13px;color:var(--text);white-space:pre-wrap;margin-bottom:6px;">${esc(m.text)}</div>` : ''}
         ${m.img ? `<div style="margin-bottom:8px;"><img src="${m.img}" style="max-width:100%;border-radius:10px;cursor:pointer;" onclick="window.open(this.src,'_blank')"></div>` : ''}
-        <div style="display:flex;gap:6px;flex-wrap:wrap;">
-          <button class="card-btn" onclick="toggleDevMemoDone(${i})" style="font-size:12px;">${m.done?'⬜ 未完了に':'✅ 完了'}</button>
-          <button class="card-btn" onclick="openDevMemoEdit(${i})" style="font-size:12px;">✏️ 編集</button>
-          <button class="card-btn delete" onclick="deleteDevMemo(${i})" style="font-size:12px;">🗑 削除</button>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:4px;">
+          <button onclick="toggleDevMemoDone(${i})" style="display:flex;align-items:center;justify-content:center;gap:4px;padding:8px;border-radius:12px;border:1px solid ${m.done?'#a5d6a7':'var(--border)'};background:linear-gradient(135deg,${m.done?'#e8f5e9':'#faf8f6'},${m.done?'#d4ecd6':'#f3eeea'});color:var(--text);font-size:12px;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">${m.done?'⬜ 未完了':'✅ 完了'}</button>
+          <button onclick="openDevMemoEdit(${i})" style="display:flex;align-items:center;justify-content:center;gap:4px;padding:8px;border-radius:12px;border:1px solid var(--border);background:linear-gradient(135deg,#faf8f6,#f3eeea);color:var(--text);font-size:12px;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">✏️ 編集</button>
+          <button onclick="deleteDevMemo(${i})" style="display:flex;align-items:center;justify-content:center;gap:4px;padding:8px;border-radius:12px;border:1px solid #e8c0c0;background:linear-gradient(135deg,#fdf0f0,#f8e4e4);color:#c07070;font-size:12px;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">🗑 削除</button>
         </div>
       </div>`;
     });

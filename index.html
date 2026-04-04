@@ -48,7 +48,7 @@ body {
   font-family: 'Zen Maru Gothic', sans-serif;
   background: var(--bg); color: var(--text);
   max-width: 480px; margin: 0 auto;
-  min-height: 100dvh; padding-bottom: 90px;
+  min-height: 100dvh; padding-bottom: 100px;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: none;
   font-size: 16px;
@@ -214,7 +214,7 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
   position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
   width: 100%; max-width: 480px;
   display: flex; justify-content: space-around; align-items: stretch;
-  padding: 6px 0 env(safe-area-inset-bottom, 6px);
+  padding: 10px 0 env(safe-area-inset-bottom, 10px);
   background: var(--card);
   border-top: 1px solid var(--border);
   box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
@@ -222,19 +222,19 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 }
 .tab {
   flex: 1; display: flex; flex-direction: column; align-items: center;
-  justify-content: center; gap: 2px;
-  padding: 6px 2px 4px; border-radius: 0; border: none;
+  justify-content: center; gap: 4px;
+  padding: 8px 2px 6px; border-radius: 0; border: none;
   background: transparent; color: var(--sub);
-  font-size: 10px; cursor: pointer;
+  font-size: 11px; cursor: pointer;
   transition: color 0.2s ease;
   white-space: nowrap; font-family: 'Zen Maru Gothic', sans-serif;
   position: relative;
   -webkit-tap-highlight-color: transparent;
 }
-.tab .tab-icon { font-size: 22px; line-height: 1; transition: transform 0.2s ease; }
-.tab .tab-label { font-size: 10px; font-weight: 500; }
+.tab .tab-icon { font-size: 26px; line-height: 1; transition: transform 0.2s ease; }
+.tab .tab-label { font-size: 11px; font-weight: 500; }
 .tab.active { color: var(--accent); }
-.tab.active .tab-icon { transform: scale(1.1); }
+.tab.active .tab-icon { transform: scale(1.15); }
 .tab:active .tab-icon { transform: scale(0.9); }
 
 /* Labels */

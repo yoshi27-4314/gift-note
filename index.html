@@ -7448,12 +7448,8 @@ if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().t
     else openItemModal();
   });
 
-  document.getElementById('modalOverlay').addEventListener('click', e => {
-    if (e.target===e.currentTarget) closeModal();
-  });
-  document.getElementById('labelModalOverlay').addEventListener('click', e => {
-    if (e.target===e.currentTarget) closeModal();
-  });
+  // 背景タップでモーダルを閉じない（入力中の誤タップ防止）
+  // 閉じるのは「キャンセル」「閉じる」ボタンのみ
 
   let _searchTimer;
   document.getElementById('searchInput').addEventListener('input', e => {

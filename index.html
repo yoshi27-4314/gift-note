@@ -4858,40 +4858,59 @@ function openSettings() {
   const modal = document.getElementById('settingsModal');
   const currentSize = localStorage.getItem(FONTSIZE_KEY) || 'normal';
   const emailLinked = _sbUser && _sbUser.email;
-  modal.innerHTML = `<h2>⚙️ 設定</h2>
-    <div class="form-group"><label>文字サイズ</label>
-      <div style="display:flex;gap:8px;margin-top:4px;">
-        <div class="fsz-btn" data-sz="normal" style="flex:1;padding:12px;text-align:center;border-radius:12px;border:2px solid ${currentSize==='normal'?'var(--accent)':'var(--border)'};cursor:pointer;font-size:14px;" onclick="setFontSize('normal')">標準</div>
-        <div class="fsz-btn" data-sz="large" style="flex:1;padding:12px;text-align:center;border-radius:12px;border:2px solid ${currentSize==='large'?'var(--accent)':'var(--border)'};cursor:pointer;font-size:17px;" onclick="setFontSize('large')">大きめ</div>
-        <div class="fsz-btn" data-sz="xlarge" style="flex:1;padding:12px;text-align:center;border-radius:12px;border:2px solid ${currentSize==='xlarge'?'var(--accent)':'var(--border)'};cursor:pointer;font-size:20px;" onclick="setFontSize('xlarge')">特大</div>
-      </div></div>
-    <div class="form-group"><label>🤍 プロフィール交換</label>
-      <div class="form-hint" style="margin-bottom:8px;">QRコードで友だちと情報を交換できます</div>
-      <div style="display:flex;gap:8px;">
-        <button class="card-btn" onclick="document.getElementById('settingsModalOverlay').classList.remove('open');openProfileShareScreen()" style="font-size:14px;padding:8px 16px;">📤 QRを表示</button>
-        <button class="card-btn" onclick="document.getElementById('settingsModalOverlay').classList.remove('open');openQRScanner()" style="font-size:14px;padding:8px 16px;">📷 QR読み取り</button>
+  const _sc = 'background:var(--card);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 1px 6px var(--shadow);';
+  const _sl = 'font-size:15px;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:8px;';
+  const _sb2 = 'display:flex;align-items:center;gap:12px;padding:12px;border-radius:14px;cursor:pointer;transition:background 0.2s;';
+  modal.innerHTML = `<h2 style="font-size:20px;margin-bottom:20px;">⚙️ 設定</h2>
+
+    <!-- プロフィール -->
+    <div style="${_sc}">
+      <div style="${_sl}">👤 プロフィール</div>
+      <div style="${_sb2}border:1px solid var(--border);" onclick="document.getElementById('settingsModalOverlay').classList.remove('open');openMyProfile()">
+        <span style="font-size:24px;">✏️</span>
+        <div><div style="font-size:14px;font-weight:500;">マイプロフィールを編集</div><div style="font-size:11px;color:var(--sub);">コンシェルジュAIが活用します</div></div>
+        <span style="margin-left:auto;color:var(--sub);">→</span>
       </div>
     </div>
-    <div class="form-group"><label>🔍 友だち検索</label>
-      <div class="form-hint" style="margin-bottom:8px;">共有コードで友だちを検索して追加できます</div>
-      <div id="myShareCodeDisplay" style="padding:8px 14px;background:var(--accent-light);border:1px solid var(--accent);border-radius:10px;margin-bottom:10px;text-align:center;">
-        <span style="font-size:12px;color:var(--sub);">あなたの共有コード:</span>
-        <span id="myShareCodeValue" style="font-size:18px;font-weight:700;letter-spacing:3px;color:var(--accent);margin-left:8px;">読込中...</span>
-        <button onclick="navigator.clipboard.writeText(document.getElementById('myShareCodeValue').textContent.trim()).then(()=>showToast('コピーしました'))" style="margin-left:8px;background:none;border:1px solid var(--accent);border-radius:8px;padding:2px 8px;font-size:11px;color:var(--accent);cursor:pointer;">コピー</button>
+
+    <!-- 友だち -->
+    <div style="${_sc}">
+      <div style="${_sl}">🤝 友だち</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <div style="${_sb2}flex:1;border:1px solid var(--border);justify-content:center;" onclick="document.getElementById('settingsModalOverlay').classList.remove('open');openProfileShareScreen()">
+          <span style="font-size:20px;">📤</span><span style="font-size:13px;">QR表示</span>
+        </div>
+        <div style="${_sb2}flex:1;border:1px solid var(--border);justify-content:center;" onclick="document.getElementById('settingsModalOverlay').classList.remove('open');openQRScanner()">
+          <span style="font-size:20px;">📷</span><span style="font-size:13px;">QR読取</span>
+        </div>
       </div>
-      <div style="display:flex;gap:8px;margin-bottom:4px;">
-        <input id="friendSearchCode" placeholder="共有コードを入力" maxlength="6" style="flex:1;padding:10px 14px;font-size:14px;border:1px solid var(--border);border-radius:10px;text-transform:uppercase;">
+      <div id="myShareCodeDisplay" style="padding:10px 14px;background:var(--accent-light);border-radius:12px;margin-bottom:10px;text-align:center;">
+        <div style="font-size:11px;color:var(--sub);margin-bottom:4px;">あなたの共有コード</div>
+        <span id="myShareCodeValue" style="font-size:22px;font-weight:700;letter-spacing:4px;color:var(--accent);">読込中...</span>
+        <button onclick="navigator.clipboard.writeText(document.getElementById('myShareCodeValue').textContent.trim()).then(()=>showToast('コピーしました'))" style="margin-left:8px;background:none;border:1px solid var(--accent);border-radius:8px;padding:3px 10px;font-size:11px;color:var(--accent);cursor:pointer;">コピー</button>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <input id="friendSearchCode" placeholder="共有コードを入力" maxlength="6" style="flex:1;padding:10px 14px;font-size:14px;border:1px solid var(--border);border-radius:12px;text-transform:uppercase;">
         <button class="card-btn" onclick="doFriendSearch()" style="font-size:14px;padding:8px 16px;">検索</button>
       </div>
       <div id="friendSearchResult"></div>
     </div>
-    <div class="form-group"><label>👤 マイプロフィール</label>
-      <div class="form-hint" style="margin-bottom:8px;">自分の情報を登録しておくとコンシェルジュAIが活用します</div>
-      <button class="card-btn" onclick="document.getElementById('settingsModalOverlay').classList.remove('open');openMyProfile()" style="font-size:14px;padding:8px 20px;">✏️ プロフィールを編集</button>
+
+    <!-- 表示 -->
+    <div style="${_sc}">
+      <div style="${_sl}">🎨 表示</div>
+      <div style="font-size:13px;color:var(--sub);margin-bottom:8px;">文字サイズ</div>
+      <div style="display:flex;gap:8px;">
+        <div class="fsz-btn" data-sz="normal" style="flex:1;padding:12px;text-align:center;border-radius:12px;border:2px solid ${currentSize==='normal'?'var(--accent)':'var(--border)'};cursor:pointer;font-size:14px;" onclick="setFontSize('normal')">標準</div>
+        <div class="fsz-btn" data-sz="large" style="flex:1;padding:12px;text-align:center;border-radius:12px;border:2px solid ${currentSize==='large'?'var(--accent)':'var(--border)'};cursor:pointer;font-size:17px;" onclick="setFontSize('large')">大きめ</div>
+        <div class="fsz-btn" data-sz="xlarge" style="flex:1;padding:12px;text-align:center;border-radius:12px;border:2px solid ${currentSize==='xlarge'?'var(--accent)':'var(--border)'};cursor:pointer;font-size:20px;" onclick="setFontSize('xlarge')">特大</div>
+      </div>
     </div>
-    <div class="form-group"><label>🔒 ロック設定</label>
-      <div class="form-hint" style="margin-bottom:8px;">アプリを開くとき・復帰時に認証を求めます</div>
-      <div style="display:flex;gap:6px;margin-bottom:8px;">
+
+    <!-- セキュリティ -->
+    <div style="${_sc}">
+      <div style="${_sl}">🔒 セキュリティ</div>
+      <div style="display:flex;gap:6px;margin-bottom:10px;">
         <div class="date-type-chip ${(localStorage.getItem(LOCK_METHOD_KEY)||'pin')==='pin'?'active':''}" onclick="setLockMethod('pin',this)" style="flex:1;text-align:center;">🔢 パスコード</div>
         <div class="date-type-chip ${localStorage.getItem(LOCK_METHOD_KEY)==='biometric'?'active':''}" onclick="setLockMethod('biometric',this)" style="flex:1;text-align:center;">🔐 生体認証</div>
       </div>
@@ -4902,27 +4921,31 @@ function openSettings() {
         </div>
       </div>
       <div id="lockBioSection" style="display:${localStorage.getItem(LOCK_METHOD_KEY)==='biometric'?'':'none'};">
-        <div class="form-hint">Face ID / Touch ID / 画面ロックで認証します</div>
-        <div style="display:flex;gap:8px;margin-top:8px;">
-          <button class="card-btn" onclick="setupBiometricFromSettings()" style="font-size:14px;padding:8px 16px;">🔐 生体認証を設定</button>
+        <div style="display:flex;gap:8px;">
+          <button class="card-btn" onclick="setupBiometricFromSettings()" style="font-size:14px;padding:8px 16px;">🔐 設定</button>
           <button class="card-btn delete" onclick="removeBiometric()" style="font-size:14px;padding:8px 16px;">解除</button>
         </div>
       </div>
+      ${localStorage.getItem(PIN_KEY)?`<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
+        <div style="font-size:13px;color:var(--sub);margin-bottom:8px;">偽装モード</div>
+        <div style="display:flex;gap:8px;">
+          <button class="card-btn" onclick="document.getElementById('settingsModalOverlay').classList.remove('open');setupDummyPin()" style="font-size:13px;padding:6px 14px;">${localStorage.getItem(DUMMY_PIN_KEY)?'ダミーPIN変更':'ダミーPIN設定'}</button>
+          ${localStorage.getItem(DUMMY_PIN_KEY)?`<button class="card-btn delete" onclick="removeDummyPin()" style="font-size:13px;padding:6px 14px;">解除</button>`:''}
+        </div>
+      </div>`:''}
     </div>
-    ${localStorage.getItem(PIN_KEY)?`<div class="form-group"><label>🔒 偽装モード</label>
-      <div class="form-hint" style="margin-bottom:8px;">ダミーのパスコードを設定すると、そのコードで開いた時に空のアプリが表示されます</div>
-      <div style="display:flex;gap:8px;">
-        <button class="card-btn" onclick="document.getElementById('settingsModalOverlay').classList.remove('open');setupDummyPin()" style="font-size:14px;padding:8px 16px;">${localStorage.getItem(DUMMY_PIN_KEY)?'ダミーPIN変更':'ダミーPIN設定'}</button>
-        ${localStorage.getItem(DUMMY_PIN_KEY)?`<button class="card-btn delete" onclick="removeDummyPin()" style="font-size:14px;padding:8px 16px;">解除</button>`:''}
-      </div>
-    </div>`:''}
-    <div class="form-group"><label>📲 AWAIを友達に紹介する</label>
-      <div id="qrArea" style="text-align:center;padding:12px 0;"></div>
+
+    <!-- 紹介 -->
+    <div style="${_sc}">
+      <div style="${_sl}">📲 友達に紹介</div>
+      <div id="qrArea" style="text-align:center;padding:8px 0;"></div>
       <div style="text-align:center;margin-bottom:8px;">
-        <button class="card-btn" onclick="shareApp()" style="font-size:14px;padding:8px 20px;">🔗 URLをシェア</button>
+        <button class="card-btn" onclick="shareApp()" style="font-size:14px;padding:10px 24px;">🔗 URLをシェア</button>
       </div>
-      <div class="form-hint" style="text-align:center;">紹介した人数: <strong id="referralCount">0</strong>人</div>
-      <div class="form-hint" style="text-align:center;margin-top:4px;">紹介ポイント: <strong id="referralPoints">0</strong>pt <span style="font-size:11px;color:var(--sub);">（1紹介 = 10pt）</span></div>
+      <div style="display:flex;justify-content:center;gap:16px;font-size:13px;color:var(--sub);">
+        <span>紹介 <strong id="referralCount">0</strong>人</span>
+        <span><strong id="referralPoints">0</strong>pt</span>
+      </div>
     </div>
     <div class="form-group"><label>🔐 アカウント連携</label>
       <div class="form-hint" style="margin-bottom:12px;">連携すると端末を変えてもデータを引き継げます</div>

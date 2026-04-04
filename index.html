@@ -3959,15 +3959,11 @@ function openDevMemoEdit(idx) {
   </div>`;
 
   // Screenshot
-  html += `<div class="form-group"><label>📷 スクリーンショット</label>
-    <div style="display:flex;gap:8px;margin-top:6px;">
-      <input type="file" id="devImgCamera" accept="image/*" capture="environment" style="display:none;" onchange="previewDevImg(this)">
-      <input type="file" id="devImgFile" accept="image/*" style="display:none;" onchange="previewDevImg(this)">
-      <button class="card-btn" onclick="document.getElementById('devImgCamera').click()" style="font-size:13px;">📷 カメラ</button>
-      <button class="card-btn" onclick="document.getElementById('devImgFile').click()" style="font-size:13px;">📁 ファイル</button>
-      ${m?.img ? `<button class="card-btn delete" onclick="document.getElementById('devImgPreview').innerHTML='';document.getElementById('devImgRemove').value='1'" style="font-size:13px;">✕ 削除</button>` : ''}
-    </div>
+  html += `<div class="form-group">
+    <input type="file" id="devImgFile" accept="image/*" style="display:none;" onchange="previewDevImg(this)">
     <input type="hidden" id="devImgRemove" value="">
+    <button class="card-btn" onclick="document.getElementById('devImgFile').click()" style="font-size:14px;padding:8px 16px;">📷 スクリーンショット添付</button>
+    ${m?.img ? `<button class="card-btn delete" onclick="document.getElementById('devImgPreview').innerHTML='';document.getElementById('devImgRemove').value='1'" style="font-size:13px;margin-left:8px;">✕ 削除</button>` : ''}
     <div id="devImgPreview" style="margin-top:8px;">${m?.img ? `<img src="${m.img}" style="max-width:100%;border-radius:10px;">` : ''}</div>
   </div>`;
 

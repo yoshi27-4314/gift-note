@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>AWAI Icon Generator</title></head>
+<body style="background:#333;color:#fff;font-family:sans-serif;text-align:center;padding:40px;">
+<h2>AWAI Maskable Icon Generator</h2>
+<p>下のアイコンを長押し（または右クリック）→「画像を保存」してください</p>
+
+<div style="margin:20px;">
+<h3>512x512 (maskable)</h3>
+<canvas id="c512" width="512" height="512" style="border:1px solid #666;border-radius:50%;"></canvas>
+</div>
+<div style="margin:20px;">
+<h3>192x192 (maskable)</h3>
+<canvas id="c192" width="192" height="192" style="border:1px solid #666;border-radius:50%;"></canvas>
+</div>
+
+<div style="margin:20px;">
+<button onclick="download('c512','icon-maskable-512.png')" style="padding:12px 24px;font-size:16px;cursor:pointer;">512px ダウンロード</button>
+<button onclick="download('c192','icon-maskable-192.png')" style="padding:12px 24px;font-size:16px;cursor:pointer;">192px ダウンロード</button>
+</div>
+
+<script>
+const img = new Image();
+img.crossOrigin = 'anonymous';
+img.onload = function() {
+  [['c512',512],['c192',192]].forEach(([id,size]) => {
+    const canvas = document.getElementById(id);
+    const ctx = canvas.getContext('2d');
+    // 背景色
+    ctx.fillStyle = '#fdf8f3';
+    ctx.fillRect(0, 0, size, size);
+    // 桜画像を中央に配置（セーフゾーン80%に収める）
+    const padding = size * 0.1; // 10% padding each side
+    const drawSize = size - padding * 2;
+    // 画像を正方形にクロップして描画
+    const srcSize = Math.min(img.width, img.height);
+    const sx = (img.width - srcSize) / 2;
+    const sy = (img.height - srcSize) / 2;
+    ctx.drawImage(img, sx, sy, srcSize, srcSize, padding, padding, drawSize, drawSize);
+  });
+};
+img.src = 'icon-512.png';
+
+function download(canvasId, filename) {
+  const canvas = document.getElementById(canvasId);
+  const link = document.createElement('a');
+  link.download = filename;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+</script>
+</body></html>

@@ -987,27 +987,27 @@ function renderPickup() {
     const catName = currentLabel.replace(/^[^\s]+\s/, '');
     searchTags.push(catName);
     const placeCategories = {
-      '🍽 食事': ['和食','イタリアン','フレンチ','中華','焼肉','寿司','ラーメン','カレー','居酒屋','バー','カフェ'],
-      '🎮 遊び': ['カラオケ','ボウリング','テーマパーク','映画館','ライブ','スポーツ観戦','キャンプ','ゴルフ'],
-      '📸 観光': ['神社','お寺','温泉','絶景','公園','美術館','博物館','水族館','動物園'],
-      '🛍 買い物': ['ショッピングモール','アウトレット','商店街','百貨店'],
-      '🏨 宿泊': ['ホテル','旅館','民宿','グランピング'],
-      '💆 リラックス': ['スパ','マッサージ','エステ','サウナ','岩盤浴','ヨガ'],
-      '📋 その他': []
+      '食事': ['和食','イタリアン','フレンチ','中華','焼肉','寿司','ラーメン','カレー','居酒屋','バー','カフェ'],
+      '遊び': ['カラオケ','ボウリング','テーマパーク','映画館','ライブ','スポーツ観戦','キャンプ','ゴルフ'],
+      '観光': ['神社','お寺','温泉','絶景','公園','美術館','博物館','水族館','動物園'],
+      '買い物': ['ショッピングモール','アウトレット','商店街','百貨店'],
+      '宿泊': ['ホテル','旅館','民宿','グランピング'],
+      'リラックス': ['スパ','マッサージ','エステ','サウナ','岩盤浴','ヨガ'],
+      'その他': []
     };
     (placeCategories[currentLabel]||[]).forEach(g => searchTags.push(g));
   }
   if (isCategoryFilter && ['wish','received','gave'].includes(currentTab)) {
     const itemCategories = {
-      '👕 ファッション': ['服','靴','バッグ','アクセサリー','時計','帽子','財布','ストール','ネクタイ','サングラス'],
-      '🍽 グルメ': ['お酒','コーヒー','紅茶','調味料','お取り寄せ','フルーツ','ワイン','日本酒'],
-      '🍪 お菓子': ['チョコレート','焼き菓子','和菓子','ケーキ','クッキー','ゼリー','アイス','おせんべい','ナッツ'],
-      '💄 美容・健康': ['コスメ','スキンケア','香水','ヘアケア','入浴剤','サプリ','マッサージ','アロマ'],
-      '🏠 インテリア': ['雑貨','キッチン用品','食器','花','観葉植物','キャンドル','タオル','寝具','文房具'],
-      '📱 家電・ガジェット': ['イヤホン','スピーカー','充電器','スマホケース','カメラ','家電','ゲーム'],
-      '📚 趣味・体験': ['本','音楽','映画','チケット','体験ギフト','習い事','旅行券','スポーツ用品'],
-      '🎁 ギフト券': ['Amazonギフト','商品券','カタログギフト','QUOカード','食事券','旅行券'],
-      '📋 その他': []
+      'ファッション': ['服','靴','バッグ','アクセサリー','時計','帽子','財布','ストール','ネクタイ','サングラス'],
+      'グルメ': ['お酒','コーヒー','紅茶','調味料','お取り寄せ','フルーツ','ワイン','日本酒'],
+      'お菓子': ['チョコレート','焼き菓子','和菓子','ケーキ','クッキー','ゼリー','アイス','おせんべい','ナッツ'],
+      '美容・健康': ['コスメ','スキンケア','香水','ヘアケア','入浴剤','サプリ','マッサージ','アロマ'],
+      'インテリア': ['雑貨','キッチン用品','食器','花','観葉植物','キャンドル','タオル','寝具','文房具'],
+      '家電・ガジェット': ['イヤホン','スピーカー','充電器','スマホケース','カメラ','家電','ゲーム'],
+      '趣味・体験': ['本','音楽','映画','チケット','体験ギフト','習い事','旅行券','スポーツ用品'],
+      'ギフト券': ['Amazonギフト','商品券','カタログギフト','QUOカード','食事券','旅行券'],
+      'その他': []
     };
     const catName = currentLabel.replace(/^[^\s]+\s/, '');
     searchTags.push(catName);
@@ -1048,22 +1048,20 @@ function renderLabelBar() {
   }
   // Item tabs: category-based filter
   if (['wish','received','gave'].includes(currentTab)) {
-    const itemCatNames = ['👕 ファッション','🍽 グルメ','🍪 お菓子','💄 美容・健康','🏠 インテリア','📱 家電・ガジェット','📚 趣味・体験','🎁 ギフト券','📋 その他'];
     let html = `<div class="label-chip ${currentLabel===null?'active':''}" style="color:var(--accent);${currentLabel===null?'border-color:var(--accent);':''}" onclick="filterLabel(null)"><span class="ldot" style="background:var(--accent);"></span> すべて</div>`;
-    itemCatNames.forEach((cat, ci) => {
+    _itemCatData.forEach((cat, ci) => {
       const active = currentLabel === cat;
-      html += `<div class="label-chip ${active?'active':''}" style="color:var(--text);${active?'border-color:var(--accent);background:var(--accent-light);':''}" onclick="filterItemCat(${ci})">${cat}</div>`;
+      html += `<div class="label-chip ${active?'active':''}" style="color:var(--text);${active?'border-color:var(--accent);background:var(--accent-light);':''}" onclick="filterItemCat(${ci})">${_itemCatEmoji[ci]} ${cat}</div>`;
     });
     bar.innerHTML = html;
     return;
   }
   // Place tab: category-based filter + 記憶
   if (currentTab==='place') {
-    const placeCatNames = ['🍽 食事','🎮 遊び','📸 観光','🛍 買い物','🏨 宿泊','💆 リラックス','📋 その他'];
     let html = `<div class="label-chip ${currentLabel===null?'active':''}" style="color:var(--accent);${currentLabel===null?'border-color:var(--accent);':''}" onclick="filterLabel(null)"><span class="ldot" style="background:var(--accent);"></span> すべて</div>`;
-    placeCatNames.forEach((cat, ci) => {
+    _placeCatData.forEach((cat, ci) => {
       const active = currentLabel === cat;
-      html += `<div class="label-chip ${active?'active':''}" style="color:var(--text);${active?'border-color:var(--accent);background:var(--accent-light);':''}" onclick="filterPlaceCat(${ci})">${cat}</div>`;
+      html += `<div class="label-chip ${active?'active':''}" style="color:var(--text);${active?'border-color:var(--accent);background:var(--accent-light);':''}" onclick="filterPlaceCat(${ci})">${_placeCatEmoji[ci]} ${cat}</div>`;
     });
     html += `<div class="label-chip ${currentLabel==='closed'?'active':''}" style="color:#a09590;${currentLabel==='closed'?'border-color:#a09590;':''}" onclick="filterLabel('closed')"><span class="ldot" style="background:#a09590;"></span> 🤍 記憶</div>`;
     bar.innerHTML = html;
@@ -1078,10 +1076,14 @@ function renderLabelBar() {
   bar.innerHTML = html;
 }
 function filterLabel(idx) { currentLabel=idx; render(); }
-const _itemCatList = ['👕 ファッション','🍽 グルメ','🍪 お菓子','💄 美容・健康','🏠 インテリア','📱 家電・ガジェット','📚 趣味・体験','🎁 ギフト券','📋 その他'];
-const _placeCatList = ['🍽 食事','🎮 遊び','📸 観光','🛍 買い物','🏨 宿泊','💆 リラックス','📋 その他'];
-function filterItemCat(ci) { currentLabel = _itemCatList[ci]; render(); }
-function filterPlaceCat(ci) { currentLabel = _placeCatList[ci]; render(); }
+// カテゴリ: データ保存はテキストのみ、表示時に絵文字を付与
+const _itemCatData = ['ファッション','グルメ','お菓子','美容・健康','インテリア','家電・ガジェット','趣味・体験','ギフト券','その他'];
+const _itemCatEmoji = ['👕','🍽','🍪','💄','🏠','📱','📚','🎁','📋'];
+const _placeCatData = ['食事','遊び','観光','買い物','宿泊','リラックス','その他'];
+const _placeCatEmoji = ['🍽','🎮','📸','🛍','🏨','💆','📋'];
+function catDisplay(data, emoji, idx) { return emoji[idx] + ' ' + data[idx]; }
+function filterItemCat(ci) { currentLabel = _itemCatData[ci]; render(); }
+function filterPlaceCat(ci) { currentLabel = _placeCatData[ci]; render(); }
 
 // ===== Render items =====
 function renderStars(rating, itemId, tab) {
@@ -1117,13 +1119,13 @@ function openPlaceModal(id) {
 
   // Category + Genre tags with association
   const placeCategories = {
-    '🍽 食事': ['和食','イタリアン','フレンチ','中華','焼肉','寿司','ラーメン','カレー','居酒屋','バー','カフェ','パン屋','スイーツ','ビュッフェ','鉄板焼き','海鮮','うどん・そば'],
-    '🎮 遊び': ['カラオケ','ボウリング','テーマパーク','ゲームセンター','映画館','ライブ','スポーツ観戦','釣り','キャンプ','BBQ','ドライブ','プール','スキー','ゴルフ'],
-    '📸 観光': ['神社','お寺','温泉','絶景','公園','美術館','博物館','水族館','動物園','城','庭園','展望台','街歩き','離島','世界遺産'],
-    '🛍 買い物': ['ショッピングモール','アウトレット','商店街','百貨店','セレクトショップ','お土産','市場','蚤の市'],
-    '🏨 宿泊': ['ホテル','旅館','民宿','グランピング','コテージ','ゲストハウス'],
-    '💆 リラックス': ['スパ','マッサージ','エステ','サウナ','岩盤浴','ヨガ','リトリート'],
-    '📋 その他': []
+    '食事': ['和食','イタリアン','フレンチ','中華','焼肉','寿司','ラーメン','カレー','居酒屋','バー','カフェ','パン屋','スイーツ','ビュッフェ','鉄板焼き','海鮮','うどん・そば'],
+    '遊び': ['カラオケ','ボウリング','テーマパーク','ゲームセンター','映画館','ライブ','スポーツ観戦','釣り','キャンプ','BBQ','ドライブ','プール','スキー','ゴルフ'],
+    '観光': ['神社','お寺','温泉','絶景','公園','美術館','博物館','水族館','動物園','城','庭園','展望台','街歩き','離島','世界遺産'],
+    '買い物': ['ショッピングモール','アウトレット','商店街','百貨店','セレクトショップ','お土産','市場','蚤の市'],
+    '宿泊': ['ホテル','旅館','民宿','グランピング','コテージ','ゲストハウス'],
+    'リラックス': ['スパ','マッサージ','エステ','サウナ','岩盤浴','ヨガ','リトリート'],
+    'その他': []
   };
   const allGenreSuggestions = [...new Set(Object.values(placeCategories).flat())];
   const currentTags = item?.tags || [];
@@ -1134,7 +1136,8 @@ function openPlaceModal(id) {
   const _pcKeys = Object.keys(placeCategories);
   _pcKeys.forEach((cat, ci) => {
     const active = currentCat === cat;
-    html += `<div class="date-type-chip ${active?'active':''}" onclick="selectPlaceCatByIdx(this,${ci})" style="font-size:13px;padding:6px 14px;">${cat}</div>`;
+    const _pEmoji = _placeCatEmoji[_placeCatData.indexOf(cat)] || '';
+    html += `<div class="date-type-chip ${active?'active':''}" onclick="selectPlaceCatByIdx(this,${ci})" style="font-size:13px;padding:6px 14px;">${_pEmoji} ${cat}</div>`;
   });
   html += `</div><input type="hidden" id="fPlaceCategory" value="${currentCat}"></div>`;
 
@@ -1220,7 +1223,7 @@ function openPlaceModal(id) {
   openModal();
 }
 
-const _placeCatFormList = ['🍽 食事','🎮 遊び','📸 観光','🛍 買い物','🏨 宿泊','💆 リラックス','📋 その他'];
+const _placeCatFormList = ['食事','遊び','観光','買い物','宿泊','リラックス','その他'];
 function selectPlaceCatByIdx(el, ci) {
   selectPlaceCategory(el, _placeCatFormList[ci]);
 }
@@ -1237,13 +1240,13 @@ function selectPlaceCategory(el, cat) {
   }
   // Update genre tags based on category
   const placeCategories = {
-    '🍽 食事': ['和食','イタリアン','フレンチ','中華','焼肉','寿司','ラーメン','カレー','居酒屋','バー','カフェ','パン屋','スイーツ','ビュッフェ','鉄板焼き','海鮮','うどん・そば'],
-    '🎮 遊び': ['カラオケ','ボウリング','テーマパーク','ゲームセンター','映画館','ライブ','スポーツ観戦','釣り','キャンプ','BBQ','ドライブ','プール','スキー','ゴルフ'],
-    '📸 観光': ['神社','お寺','温泉','絶景','公園','美術館','博物館','水族館','動物園','城','庭園','展望台','街歩き','離島','世界遺産'],
-    '🛍 買い物': ['ショッピングモール','アウトレット','商店街','百貨店','セレクトショップ','お土産','市場','蚤の市'],
-    '🏨 宿泊': ['ホテル','旅館','民宿','グランピング','コテージ','ゲストハウス'],
-    '💆 リラックス': ['スパ','マッサージ','エステ','サウナ','岩盤浴','ヨガ','リトリート'],
-    '📋 その他': []
+    '食事': ['和食','イタリアン','フレンチ','中華','焼肉','寿司','ラーメン','カレー','居酒屋','バー','カフェ','パン屋','スイーツ','ビュッフェ','鉄板焼き','海鮮','うどん・そば'],
+    '遊び': ['カラオケ','ボウリング','テーマパーク','ゲームセンター','映画館','ライブ','スポーツ観戦','釣り','キャンプ','BBQ','ドライブ','プール','スキー','ゴルフ'],
+    '観光': ['神社','お寺','温泉','絶景','公園','美術館','博物館','水族館','動物園','城','庭園','展望台','街歩き','離島','世界遺産'],
+    '買い物': ['ショッピングモール','アウトレット','商店街','百貨店','セレクトショップ','お土産','市場','蚤の市'],
+    '宿泊': ['ホテル','旅館','民宿','グランピング','コテージ','ゲストハウス'],
+    'リラックス': ['スパ','マッサージ','エステ','サウナ','岩盤浴','ヨガ','リトリート'],
+    'その他': []
   };
   const selectedTags = document.getElementById('fPlaceSelectedTags').value ? document.getElementById('fPlaceSelectedTags').value.split(',').filter(Boolean) : [];
   const showTags = input.value && placeCategories[input.value] ? placeCategories[input.value] : [...new Set(Object.values(placeCategories).flat())];
@@ -1318,13 +1321,13 @@ function openPlaceMemoryModal(id) {
 
   // Category + Genre tags
   const placeCategories = {
-    '🍽 食事': ['和食','イタリアン','フレンチ','中華','焼肉','寿司','ラーメン','カレー','居酒屋','バー','カフェ','パン屋','スイーツ','ビュッフェ','鉄板焼き','海鮮','うどん・そば'],
-    '🎮 遊び': ['カラオケ','ボウリング','テーマパーク','ゲームセンター','映画館','ライブ','スポーツ観戦','釣り','キャンプ','BBQ','ドライブ','プール','スキー','ゴルフ'],
-    '📸 観光': ['神社','お寺','温泉','絶景','公園','美術館','博物館','水族館','動物園','城','庭園','展望台','街歩き','離島','世界遺産'],
-    '🛍 買い物': ['ショッピングモール','アウトレット','商店街','百貨店','セレクトショップ','お土産','市場','蚤の市'],
-    '🏨 宿泊': ['ホテル','旅館','民宿','グランピング','コテージ','ゲストハウス'],
-    '💆 リラックス': ['スパ','マッサージ','エステ','サウナ','岩盤浴','ヨガ','リトリート'],
-    '📋 その他': []
+    '食事': ['和食','イタリアン','フレンチ','中華','焼肉','寿司','ラーメン','カレー','居酒屋','バー','カフェ','パン屋','スイーツ','ビュッフェ','鉄板焼き','海鮮','うどん・そば'],
+    '遊び': ['カラオケ','ボウリング','テーマパーク','ゲームセンター','映画館','ライブ','スポーツ観戦','釣り','キャンプ','BBQ','ドライブ','プール','スキー','ゴルフ'],
+    '観光': ['神社','お寺','温泉','絶景','公園','美術館','博物館','水族館','動物園','城','庭園','展望台','街歩き','離島','世界遺産'],
+    '買い物': ['ショッピングモール','アウトレット','商店街','百貨店','セレクトショップ','お土産','市場','蚤の市'],
+    '宿泊': ['ホテル','旅館','民宿','グランピング','コテージ','ゲストハウス'],
+    'リラックス': ['スパ','マッサージ','エステ','サウナ','岩盤浴','ヨガ','リトリート'],
+    'その他': []
   };
   const allGenreSuggestions = [...new Set(Object.values(placeCategories).flat())];
   const currentTags = item?.tags || [];
@@ -1335,7 +1338,8 @@ function openPlaceMemoryModal(id) {
   const _pcKeys = Object.keys(placeCategories);
   _pcKeys.forEach((cat, ci) => {
     const active = currentCat === cat;
-    html += `<div class="date-type-chip ${active?'active':''}" onclick="selectPlaceCatByIdx(this,${ci})" style="font-size:13px;padding:6px 14px;">${cat}</div>`;
+    const _pEmoji = _placeCatEmoji[_placeCatData.indexOf(cat)] || '';
+    html += `<div class="date-type-chip ${active?'active':''}" onclick="selectPlaceCatByIdx(this,${ci})" style="font-size:13px;padding:6px 14px;">${_pEmoji} ${cat}</div>`;
   });
   html += `</div><input type="hidden" id="fPlaceCategory" value="${currentCat}"></div>`;
 
@@ -1766,8 +1770,8 @@ function renderItemCard(item, tab, rank) {
     const groupNames = item.withGroups.map(gid => data.groups.find(g=>g.id===gid)?.name).filter(Boolean);
     if (groupNames.length) html += `<div class="card-person">👥 ${groupNames.map(n=>esc(n)).join(', ')}</div>`;
   }
-  if (item.placeCategory) html += `<div style="font-size:13px;color:var(--accent);font-weight:600;margin-top:4px;">${esc(item.placeCategory)}</div>`;
-  if (item.itemCategory) html += `<div style="font-size:13px;color:var(--accent);font-weight:600;margin-top:4px;">${esc(item.itemCategory)}</div>`;
+  if (item.placeCategory) { const _pci=_placeCatData.indexOf(item.placeCategory); html += `<div style="font-size:13px;color:var(--accent);font-weight:600;margin-top:4px;">${_pci>=0?_placeCatEmoji[_pci]+' ':''}${esc(item.placeCategory)}</div>`; }
+  if (item.itemCategory) { const _ici=_itemCatData.indexOf(item.itemCategory); html += `<div style="font-size:13px;color:var(--accent);font-weight:600;margin-top:4px;">${_ici>=0?_itemCatEmoji[_ici]+' ':''}${esc(item.itemCategory)}</div>`; }
   if (item.withPeople?.length) {
     const peopleLinks = item.withPeople.map(pid => {
       const pp = data.people.find(x=>x.id===pid);
@@ -3030,15 +3034,15 @@ function openItemModal(id) {
 
   // Category + Genre (same structure as place)
   const itemCategories = {
-    '👕 ファッション': ['服','靴','バッグ','アクセサリー','時計','帽子','財布','ストール','ネクタイ','サングラス'],
-    '🍽 グルメ': ['お酒','コーヒー','紅茶','調味料','お取り寄せ','フルーツ','ワイン','日本酒'],
-    '🍪 お菓子': ['チョコレート','焼き菓子','和菓子','ケーキ','クッキー','ゼリー','アイス','おせんべい','ナッツ','ギフトボックス'],
-    '💄 美容・健康': ['コスメ','スキンケア','香水','ヘアケア','入浴剤','サプリ','マッサージ','アロマ'],
-    '🏠 インテリア': ['雑貨','キッチン用品','食器','花','観葉植物','キャンドル','タオル','寝具','文房具'],
-    '📱 家電・ガジェット': ['イヤホン','スピーカー','充電器','スマホケース','カメラ','家電','ゲーム'],
-    '📚 趣味・体験': ['本','音楽','映画','チケット','体験ギフト','習い事','旅行券','スポーツ用品'],
-    '🎁 ギフト券': ['Amazonギフト','商品券','カタログギフト','QUOカード','食事券','旅行券'],
-    '📋 その他': []
+    'ファッション': ['服','靴','バッグ','アクセサリー','時計','帽子','財布','ストール','ネクタイ','サングラス'],
+    'グルメ': ['お酒','コーヒー','紅茶','調味料','お取り寄せ','フルーツ','ワイン','日本酒'],
+    'お菓子': ['チョコレート','焼き菓子','和菓子','ケーキ','クッキー','ゼリー','アイス','おせんべい','ナッツ','ギフトボックス'],
+    '美容・健康': ['コスメ','スキンケア','香水','ヘアケア','入浴剤','サプリ','マッサージ','アロマ'],
+    'インテリア': ['雑貨','キッチン用品','食器','花','観葉植物','キャンドル','タオル','寝具','文房具'],
+    '家電・ガジェット': ['イヤホン','スピーカー','充電器','スマホケース','カメラ','家電','ゲーム'],
+    '趣味・体験': ['本','音楽','映画','チケット','体験ギフト','習い事','旅行券','スポーツ用品'],
+    'ギフト券': ['Amazonギフト','商品券','カタログギフト','QUOカード','食事券','旅行券'],
+    'その他': []
   };
   const allItemGenres = [...new Set(Object.values(itemCategories).flat())];
   const currentTags = item?.tags || [];
@@ -3065,7 +3069,8 @@ function openItemModal(id) {
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">`;
   itemCatKeys.forEach((cat, ci) => {
     const active = currentCat === cat;
-    html += `<div class="date-type-chip ${active?'active':''}" onclick="selectItemCatByIdx(this,${ci})" style="font-size:13px;padding:6px 14px;">${cat}</div>`;
+    const emoji = _itemCatEmoji[_itemCatData.indexOf(cat)] || '';
+    html += `<div class="date-type-chip ${active?'active':''}" onclick="selectItemCatByIdx(this,${ci})" style="font-size:13px;padding:6px 14px;">${emoji} ${cat}</div>`;
   });
   html += `</div><input type="hidden" id="fItemCategory" value="${currentCat}"></div>`;
 
@@ -3127,7 +3132,7 @@ function setItemPurpose(purpose, el) {
 }
 
 function selectItemCatByIdx(el, ci) {
-  selectItemCategory(el, _itemCatList[ci]);
+  selectItemCategory(el, _itemCatData[ci]);
 }
 
 function selectItemCategory(el, cat) {
@@ -3137,15 +3142,15 @@ function selectItemCategory(el, cat) {
   if (!wasActive) { el.classList.add('active'); input.value = cat; } else { input.value = ''; }
   // Update genre tags
   const itemCategories = {
-    '👕 ファッション': ['服','靴','バッグ','アクセサリー','時計','帽子','財布','ストール','ネクタイ','サングラス'],
-    '🍽 グルメ': ['お酒','コーヒー','紅茶','調味料','お取り寄せ','フルーツ','ワイン','日本酒'],
-    '🍪 お菓子': ['チョコレート','焼き菓子','和菓子','ケーキ','クッキー','ゼリー','アイス','おせんべい','ナッツ','ギフトボックス'],
-    '💄 美容・健康': ['コスメ','スキンケア','香水','ヘアケア','入浴剤','サプリ','マッサージ','アロマ'],
-    '🏠 インテリア': ['雑貨','キッチン用品','食器','花','観葉植物','キャンドル','タオル','寝具','文房具'],
-    '📱 家電・ガジェット': ['イヤホン','スピーカー','充電器','スマホケース','カメラ','家電','ゲーム'],
-    '📚 趣味・体験': ['本','音楽','映画','チケット','体験ギフト','習い事','旅行券','スポーツ用品'],
-    '🎁 ギフト券': ['Amazonギフト','商品券','カタログギフト','QUOカード','食事券','旅行券'],
-    '📋 その他': []
+    'ファッション': ['服','靴','バッグ','アクセサリー','時計','帽子','財布','ストール','ネクタイ','サングラス'],
+    'グルメ': ['お酒','コーヒー','紅茶','調味料','お取り寄せ','フルーツ','ワイン','日本酒'],
+    'お菓子': ['チョコレート','焼き菓子','和菓子','ケーキ','クッキー','ゼリー','アイス','おせんべい','ナッツ','ギフトボックス'],
+    '美容・健康': ['コスメ','スキンケア','香水','ヘアケア','入浴剤','サプリ','マッサージ','アロマ'],
+    'インテリア': ['雑貨','キッチン用品','食器','花','観葉植物','キャンドル','タオル','寝具','文房具'],
+    '家電・ガジェット': ['イヤホン','スピーカー','充電器','スマホケース','カメラ','家電','ゲーム'],
+    '趣味・体験': ['本','音楽','映画','チケット','体験ギフト','習い事','旅行券','スポーツ用品'],
+    'ギフト券': ['Amazonギフト','商品券','カタログギフト','QUOカード','食事券','旅行券'],
+    'その他': []
   };
   const allGenres = [...new Set(Object.values(itemCategories).flat())];
   const selectedTags = (document.getElementById('fItemSelectedTags')?.value||'').split(',').filter(Boolean);
@@ -5637,7 +5642,7 @@ function createSampleData() {
   // サンプル場所
   data.place.push({
     id: 'sample_place', title: 'サンプル：京都の隠れ家カフェ',
-    placeCategory: '🍽 食事', person: 'サンプル太郎',
+    placeCategory: '食事', person: 'サンプル太郎',
     address: '京都市東山区', url: '',
     rating: 5, memo: 'これはサンプルです。行きたい場所を登録してみてください。',
     tags: ['カフェ', '京都'],

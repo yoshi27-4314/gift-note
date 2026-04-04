@@ -1013,9 +1013,14 @@ function renderPickup() {
     searchTags.push(catName);
     (itemCategories[currentLabel]||[]).forEach(g => searchTags.push(g));
   }
-  // Also include tags from filtered items
-  const items = (data[currentTab]||[]).filter(i => matchesSearch(i, currentTab));
-  items.forEach(i => (i.tags||[]).forEach(t => { if (!searchTags.includes(t)) searchTags.push(t); }));
+  // Also include tags from filtered items (only items matching current filter)
+  let filteredItems = (data[currentTab]||[]).filter(i => matchesSearch(i, currentTab));
+  if (isCategoryFilter && ['wish','received','gave'].includes(currentTab)) {
+    filteredItems = filteredItems.filter(i => i.itemCategory === currentLabel);
+  } else if (isCategoryFilter && currentTab === 'place') {
+    filteredItems = filteredItems.filter(i => i.placeCategory === currentLabel);
+  }
+  filteredItems.forEach(i => (i.tags||[]).forEach(t => { if (!searchTags.includes(t)) searchTags.push(t); }));
 
   const matches = findMatchingPeople(searchTags);
   if (!matches.length) { zone.innerHTML=''; return; }

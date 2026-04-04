@@ -760,12 +760,10 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 <div class="pickup-zone" id="pickupZone"></div>
 
 <div class="tabs" id="tabs">
-  <div class="tab active" data-tab="wish"><span class="tab-icon">✨</span><span class="tab-label">お気に入り</span></div>
-  <div class="tab" data-tab="received"><span class="tab-icon">🎀</span><span class="tab-label">もらった</span></div>
-  <div class="tab" data-tab="gave"><span class="tab-icon">🎁</span><span class="tab-label">あげた</span></div>
+  <div class="tab active" data-tab="people"><span class="tab-icon">👤</span><span class="tab-label">友だち</span></div>
+  <div class="tab" data-tab="wish"><span class="tab-icon">✨</span><span class="tab-label">お気に入り</span></div>
   <div class="tab" data-tab="place"><span class="tab-icon">📍</span><span class="tab-label">行きたい</span></div>
-  <div class="tab" data-tab="people"><span class="tab-icon">👤</span><span class="tab-label">友だち</span></div>
-  <div class="tab" data-tab="groups"><span class="tab-icon">👥</span><span class="tab-label">グループ</span></div>
+  <div class="tab" data-tab="gift"><span class="tab-icon">🎁</span><span class="tab-label">ギフト</span></div>
 </div>
 
 <div class="label-bar-wrap"><div class="label-bar hint-anim" id="labelBar"></div></div>
@@ -996,7 +994,7 @@ const LABEL_COLORS = ['#e8a598','#7a9ad4','#8abf7a','#c49a6c','#b07acc','#d4956a
 
 // ===== State =====
 let data = { wish:[], received:[], gave:[], place:[], people:[], groups:[], labels:{wish:[],received:[],gave:[],place:[]} };
-let currentTab = 'wish';
+let currentTab = 'people';
 let currentLabel = null; // null = all
 let editingId = null;
 let editPhotoAction = 'keep';
@@ -1283,13 +1281,25 @@ function autoLabelItem(item, tab) {
 }
 function renderLabelBar() {
   const bar = document.getElementById('labelBar');
-  if (currentTab==='groups') { bar.innerHTML=''; return; }
   if (currentTab==='people') {
     let phtml = `<div class="label-chip ${currentLabel===null?'active':''}" style="color:var(--accent);${currentLabel===null?'border-color:var(--accent);':''}" onclick="filterLabel(null)"><span class="ldot" style="background:var(--accent);"></span> すべて</div>`;
     phtml += `<div class="label-chip ${currentLabel==='individual'?'active':''}" style="color:#d48a7a;${currentLabel==='individual'?'border-color:#d48a7a;':''}" onclick="filterLabel('individual')"><span class="ldot" style="background:#d48a7a;"></span> 👤 友だち</div>`;
     phtml += `<div class="label-chip ${currentLabel==='corporate'?'active':''}" style="color:#6b88a8;${currentLabel==='corporate'?'border-color:#6b88a8;':''}" onclick="filterLabel('corporate')"><span class="ldot" style="background:#6b88a8;"></span> 🏢 会社</div>`;
+    phtml += `<div class="label-chip ${currentLabel==='groups'?'active':''}" style="color:#8a7acc;${currentLabel==='groups'?'border-color:#8a7acc;':''}" onclick="filterLabel('groups')"><span class="ldot" style="background:#8a7acc;"></span> 👥 グループ</div>`;
     phtml += `<div class="label-chip ${currentLabel==='memory'?'active':''}" style="color:#a09590;${currentLabel==='memory'?'border-color:#a09590;':''}" onclick="filterLabel('memory')"><span class="ldot" style="background:#a09590;"></span> 🤍 記憶</div>`;
     bar.innerHTML = phtml;
+    return;
+  }
+  // Gift tab: もらった/あげた + カテゴリ
+  if (currentTab==='gift') {
+    let html = `<div class="label-chip ${currentLabel===null?'active':''}" onclick="filterLabel(null)"><span class="ldot" style="background:var(--accent);"></span> すべて</div>`;
+    html += `<div class="label-chip ${currentLabel==='received'?'active':''}" onclick="filterLabel('received')">🎀 もらった</div>`;
+    html += `<div class="label-chip ${currentLabel==='gave'?'active':''}" onclick="filterLabel('gave')">🎁 あげた</div>`;
+    _itemCatData.forEach((cat, ci) => {
+      const active = currentLabel === cat;
+      html += `<div class="label-chip ${active?'active':''}" onclick="filterItemCat(${ci})">${_itemCatEmoji[ci]} ${cat}</div>`;
+    });
+    bar.innerHTML = html;
     return;
   }
   // Item tabs: category-based filter
@@ -3134,7 +3144,63 @@ function render() {
 
   // Show ranking toggle for item tabs
   const rankToggle = document.getElementById('rankingToggle');
-  rankToggle.style.display = ['wish','received','gave','place'].includes(currentTab) ? '' : 'none';
+  rankToggle.style.display = ['wish','received','gave','place','gift'].includes(currentTab) ? '' : 'none';
+
+  // Gift tab: もらった＋あげた統合ビュー
+  if (currentTab === 'gift') {
+    const allGifts = [];
+    const tabIcons = {received:'🎀', gave:'🎁'};
+    ['received','gave'].forEach(tab => {
+      (data[tab]||[]).forEach(item => {
+        if (matchesSearch(item, tab)) {
+          // フィルター: もらった/あげた
+          if (currentLabel === 'received' && tab !== 'received') return;
+          if (currentLabel === 'gave' && tab !== 'gave') return;
+          // カテゴリフィルター
+          if (currentLabel && currentLabel !== 'received' && currentLabel !== 'gave' && item.itemCategory !== currentLabel) return;
+          allGifts.push({...item, _tab:tab, _icon:tabIcons[tab]});
+        }
+      });
+    });
+    allGifts.sort((a,b) => {
+      if (a.pinned&&!b.pinned) return -1; if (!a.pinned&&b.pinned) return 1;
+      return (b.date||b.createdAt||'').localeCompare(a.date||a.createdAt||'');
+    });
+    if (!allGifts.length) {
+      cardList.innerHTML = '<div class="empty-msg">🎁 ギフトの記録はまだありません<br>下の ＋ ボタンから追加できます</div>';
+    } else {
+      const visibleGifts = allGifts.filter(i=>!i.hidden);
+      const hiddenGifts = allGifts.filter(i=>i.hidden);
+      const isOpenKey = openAllRecordId;
+      let giftHtml = visibleGifts.map(item => {
+        const key = item._tab + ':' + item.id;
+        const preview = item._icon + ' ' + (item.person?item.person+' ':'') + (item.occasion||'');
+        const active = isOpenKey === key;
+        return `<div class="list-item" onclick="toggleAllRecordDetail('${item._tab}','${item.id}')" style="${active?'background:var(--accent-light);':''}">
+          <div style="width:6px;height:40px;border-radius:3px;background:${item._tab==='gave'?'#d48a7a':'#7a9ad4'};flex-shrink:0;"></div>
+          <div class="list-body">
+            <div class="list-name">${item.pinned?'📌 ':''}${esc(item.title||'無題')}</div>
+            <div class="list-preview">${esc(preview)}</div>
+          </div>
+          <div class="list-meta"><div class="list-date">${item.date||''}</div></div>
+        </div>`;
+      }).join('');
+      if (hiddenGifts.length) {
+        const hid = 'hiddenGifts_'+Math.random().toString(36).slice(2);
+        giftHtml += `<div style="margin-top:12px;padding:8px 12px;cursor:pointer;color:var(--sub);font-size:13px;text-align:center;border:1px dashed var(--border);border-radius:12px;" onclick="const b=document.getElementById('${hid}');const t=this;if(b.style.display==='none'){b.style.display='';t.textContent='▲ 非表示を閉じる (${hiddenGifts.length}件)';}else{b.style.display='none';t.textContent='▼ 非表示を表示 (${hiddenGifts.length}件)';}">▼ 非表示を表示 (${hiddenGifts.length}件)</div>`;
+        giftHtml += `<div id="${hid}" style="display:none;opacity:0.5;">${hiddenGifts.map(item => {
+          const preview = (item._tab==='gave'?'🎁':'🎀') + ' ' + (item.person||'');
+          return `<div class="list-item" onclick="toggleAllRecordDetail('${item._tab}','${item.id}')"><div style="width:6px;height:40px;border-radius:3px;background:${item._tab==='gave'?'#d48a7a':'#7a9ad4'};flex-shrink:0;"></div><div class="list-body"><div class="list-name">${esc(item.title||'無題')}</div><div class="list-preview">${esc(preview)}</div></div></div>`;
+        }).join('')}</div>`;
+      }
+      cardList.innerHTML = giftHtml;
+      if (isOpenKey) {
+        const openItem = allGifts.find(x=>(x._tab+':'+x.id)===isOpenKey);
+        if (openItem) cardList.innerHTML += `<div id="allRecordDetail">${renderItemCard(openItem, openItem._tab)}</div>`;
+      }
+    }
+    return;
+  }
 
   // All records view (wish tab, label = null = "all")
   if (currentTab === 'wish' && currentLabel === null) {
@@ -3279,6 +3345,26 @@ function render() {
     return;
   } else if (currentTab === 'people') {
     // Filter by individual/corporate
+    // グループフィルター
+    if (currentLabel === 'groups') {
+      const groups = (data.groups||[]).filter(g => matchesSearch(g, 'groups'));
+      if (!groups.length) {
+        cardList.innerHTML = '<div class="empty-msg">👥 グループを作りましょう<br>下の ＋ ボタンから作成できます</div>';
+        return;
+      }
+      const visibleG = groups.filter(g=>!g.hidden);
+      const hiddenG = groups.filter(g=>g.hidden);
+      const sortedG = [...visibleG].sort((a,b) => { if(a.pinned&&!b.pinned)return -1; if(!a.pinned&&b.pinned)return 1; return (b.updatedAt||b.createdAt||'').localeCompare(a.updatedAt||a.createdAt||''); });
+      let gHtml = sortedG.map(g => renderGroupListItem(g)).join('');
+      if (hiddenG.length) {
+        const hid='hidG_'+Math.random().toString(36).slice(2);
+        gHtml += `<div style="margin-top:12px;padding:8px 12px;cursor:pointer;color:var(--sub);font-size:13px;text-align:center;border:1px dashed var(--border);border-radius:12px;" onclick="const b=document.getElementById('${hid}');const t=this;if(b.style.display==='none'){b.style.display='';t.textContent='▲ 非表示を閉じる (${hiddenG.length}件)';}else{b.style.display='none';t.textContent='▼ 非表示を表示 (${hiddenG.length}件)';}">▼ 非表示を表示 (${hiddenG.length}件)</div>`;
+        gHtml += `<div id="${hid}" style="display:none;opacity:0.5;">${hiddenG.map(g=>renderGroupListItem(g)).join('')}</div>`;
+      }
+      cardList.innerHTML = gHtml;
+      if (openGroupId) { const group=data.groups.find(x=>x.id===openGroupId); if(group) cardList.innerHTML+=`<div id="groupDetail">${renderGroupCard(group)}</div>`; }
+      return;
+    }
     let filteredPeople = items;
     if (currentLabel === 'memory') filteredPeople = items.filter(p=>p.isMemory);
     else if (currentLabel === 'individual') filteredPeople = items.filter(p=>p.type!=='corporate'&&!p.isMemory);
@@ -3406,7 +3492,15 @@ function renderItems(items, cardList) {
 
 // ===== Tab =====
 function switchTab(tab) {
-  currentTab = tab; currentLabel = tab==='people' ? 'individual' : null; searchQuery = ''; rankMode = false; openPersonId = null; openItemId = null; openGroupId = null; openAllRecordId = null;
+  // giftタブはreceived/gaveの統合ビュー
+  if (tab === 'gift') {
+    currentTab = 'gift';
+    currentLabel = null;
+  } else {
+    currentTab = tab;
+    currentLabel = tab==='people' ? 'individual' : null;
+  }
+  searchQuery = ''; rankMode = false; openPersonId = null; openItemId = null; openGroupId = null; openAllRecordId = null;
   document.getElementById('searchInput').value = '';
   document.querySelectorAll('.tab').forEach(el => el.classList.toggle('active', el.dataset.tab===tab));
   render();
@@ -7694,10 +7788,11 @@ if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().t
 
   document.getElementById('fabBtn').addEventListener('click', () => {
     if (currentTab==='people' && currentLabel==='memory') openMemoryModal();
+    else if (currentTab==='people' && currentLabel==='groups') openGroupModal();
     else if (currentTab==='people') openPeopleModal();
-    else if (currentTab==='groups') openGroupModal();
     else if (currentTab==='place' && currentLabel==='closed') openPlaceMemoryModal();
     else if (currentTab==='place') openPlaceModal();
+    else if (currentTab==='gift') { currentTab='gave'; openItemModal(); currentTab='gift'; }
     else openItemModal();
   });
 

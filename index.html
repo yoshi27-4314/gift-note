@@ -1969,13 +1969,12 @@ function renderPersonCard(p) {
     </div>`;
   }
 
-  html += `<hr style="border:none;border-top:1px solid var(--border);margin:20px 0 16px;">
-  <div class="person-actions">
-    <button class="card-btn" onclick="event.stopPropagation();sharePerson('${p.id}')" style="background:#e3f2fd;border-color:#90caf9;">📤 共有</button>
-    <button class="card-btn" onclick="event.stopPropagation();editItem('people','${p.id}')">✏️ 編集</button>
-    ${!p.isMemory?`<button class="card-btn" onclick="event.stopPropagation();moveToMemory('${p.id}')" style="background:#f5f0eb;border-color:#c5c0ba;">🤍 記憶に移す</button>`:''}
-    ${p.isMemory?`<button class="card-btn" onclick="event.stopPropagation();restoreFromMemory('${p.id}')" style="background:#f0f8ff;border-color:#90caf9;">↩ 戻す</button>`:''}
-    <button class="card-btn delete" onclick="event.stopPropagation();deleteItem('people','${p.id}')">🗑 削除</button>
+  html += `<div style="padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+    <button onclick="event.stopPropagation();sharePerson('${p.id}')" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border-radius:14px;border:1px solid #bdd8f0;background:linear-gradient(135deg,#e8f2fc,#daeaf8);color:#4a7aaa;font-size:13px;font-weight:500;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">📤 共有</button>
+    <button onclick="event.stopPropagation();editItem('people','${p.id}')" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border-radius:14px;border:1px solid var(--border);background:linear-gradient(135deg,#faf8f6,#f3eeea);color:var(--text);font-size:13px;font-weight:500;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">✏️ 編集</button>
+    ${!p.isMemory?`<button onclick="event.stopPropagation();moveToMemory('${p.id}')" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border-radius:14px;border:1px solid #d8d0c8;background:linear-gradient(135deg,#f5f0eb,#ece5dd);color:#8a7e74;font-size:13px;font-weight:500;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">🤍 記憶に移す</button>`:''}
+    ${p.isMemory?`<button onclick="event.stopPropagation();restoreFromMemory('${p.id}')" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border-radius:14px;border:1px solid #90caf9;background:linear-gradient(135deg,#e8f4ff,#d6ebfc);color:#4a7aaa;font-size:13px;font-weight:500;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">↩ 戻す</button>`:''}
+    <button onclick="event.stopPropagation();deleteItem('people','${p.id}')" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border-radius:14px;border:1px solid #e8c0c0;background:linear-gradient(135deg,#fdf0f0,#f8e4e4);color:#c07070;font-size:13px;font-weight:500;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">🗑 削除</button>
   </div></div>`;
   return html;
 }

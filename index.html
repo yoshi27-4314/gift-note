@@ -806,10 +806,26 @@ function loadData() {
       saveData();
     }
   } catch(e) { console.error('Load error', e); }
+  // セーフティネット: LocalStorageが空でsessionStorageにバックアップがある場合は復元
+  const hasData = data.people.length > 0 || data.wish.length > 0 || data.place.length > 0 || data.received.length > 0 || data.gave.length > 0;
+  if (!hasData) {
+    try {
+      const autoBackup = sessionStorage.getItem('awai_auto_backup');
+      if (autoBackup) {
+        const p = JSON.parse(autoBackup);
+        TABS.forEach(t => { if (Array.isArray(p[t])) data[t] = p[t]; });
+        if (p.labels) data.labels = {...data.labels, ...p.labels};
+        saveData();
+        showToast('自動バックアップからデータを復元しました');
+      }
+    } catch(e2) {}
+  }
 }
 function saveData() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    // 自動バックアップ: sessionStorageに一時保存（ブラウザ閉じるまで有効）
+    try { sessionStorage.setItem('awai_auto_backup', JSON.stringify(data)); } catch(e2) {}
   } catch(e) {
     console.error('Save error:', e);
     alert('保存に失敗しました。写真が多すぎる可能性があります。不要な写真を削除してください。');
@@ -5716,7 +5732,7 @@ function checkBackupReminder() {
     return;
   }
   const daysSince = Math.floor((Date.now() - new Date(lastBackup).getTime()) / (1000 * 60 * 60 * 24));
-  if (daysSince >= 7) {
+  if (daysSince >= 3) {
     showBackupBanner(daysSince + '日間バックアップされていません');
   }
 }

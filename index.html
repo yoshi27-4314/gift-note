@@ -2267,7 +2267,7 @@ function renderChatSection(cardId, isMemory) {
   const memoryFlag = isMemory ? 'true' : 'false';
   return `<div class="person-section">
     <div class="person-section-title" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;" onclick="event.stopPropagation();toggleChatSection('${cardId}',${memoryFlag})">
-      <span>${isMemory ? '🕯️ ひとこと' : '💬 チャット'}</span>
+      <span>${isMemory ? 'ひとこと' : '💬 チャット'}</span>
       <span id="chatToggle_${cardId}" class="sec-toggle" style="font-size:12px;color:var(--sub);">▶</span>
     </div>
     <div id="${bodyId}" style="display:none;">

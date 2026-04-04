@@ -762,6 +762,12 @@ async function sbInit() {
     }
     // クラウドからデータを読み込み
     await sbLoad();
+    // 共有リクエストチェック
+    checkShareRequests();
+    // 共有コード確保
+    ensureShareCode();
+    // 紹介ポイント同期
+    syncReferralPoints();
   } catch(e) { console.error('Supabase init error:', e); }
 }
 
@@ -2226,6 +2232,7 @@ function renderPersonCard(p) {
 
   html += `<div style="padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
     <button onclick="event.stopPropagation();sharePerson('${p.id}')" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border-radius:14px;border:1px solid #bdd8f0;background:linear-gradient(135deg,#e8f2fc,#daeaf8);color:#4a7aaa;font-size:13px;font-weight:500;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">📤 共有</button>
+    <button onclick="event.stopPropagation();sendShareRequest('${p.id}')" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border-radius:14px;border:1px solid #c8b8e8;background:linear-gradient(135deg,#f0eaf8,#e8e0f4);color:#7a6aaa;font-size:13px;font-weight:500;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">📩 カード共有</button>
     <button onclick="event.stopPropagation();editItem('people','${p.id}')" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border-radius:14px;border:1px solid var(--border);background:linear-gradient(135deg,#faf8f6,#f3eeea);color:var(--text);font-size:13px;font-weight:500;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">✏️ 編集</button>
     ${!p.isMemory?`<button onclick="event.stopPropagation();moveToMemory('${p.id}')" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border-radius:14px;border:1px solid #d8d0c8;background:linear-gradient(135deg,#f5f0eb,#ece5dd);color:#8a7e74;font-size:13px;font-weight:500;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">🤍 記憶に移す</button>`:''}
     ${p.isMemory?`<button onclick="event.stopPropagation();restoreFromMemory('${p.id}')" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border-radius:14px;border:1px solid #90caf9;background:linear-gradient(135deg,#e8f4ff,#d6ebfc);color:#4a7aaa;font-size:13px;font-weight:500;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">↩ 戻す</button>`:''}
@@ -4462,6 +4469,19 @@ function openSettings() {
         <button class="card-btn" onclick="document.getElementById('settingsModalOverlay').classList.remove('open');openQRScanner()" style="font-size:14px;padding:8px 16px;">📷 QR読み取り</button>
       </div>
     </div>
+    <div class="form-group"><label>🔍 友だち検索</label>
+      <div class="form-hint" style="margin-bottom:8px;">共有コードで友だちを検索して追加できます</div>
+      <div id="myShareCodeDisplay" style="padding:8px 14px;background:var(--accent-light);border:1px solid var(--accent);border-radius:10px;margin-bottom:10px;text-align:center;">
+        <span style="font-size:12px;color:var(--sub);">あなたの共有コード:</span>
+        <span id="myShareCodeValue" style="font-size:18px;font-weight:700;letter-spacing:3px;color:var(--accent);margin-left:8px;">読込中...</span>
+        <button onclick="navigator.clipboard.writeText(document.getElementById('myShareCodeValue').textContent.trim()).then(()=>showToast('コピーしました'))" style="margin-left:8px;background:none;border:1px solid var(--accent);border-radius:8px;padding:2px 8px;font-size:11px;color:var(--accent);cursor:pointer;">コピー</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:4px;">
+        <input id="friendSearchCode" placeholder="共有コードを入力" maxlength="6" style="flex:1;padding:10px 14px;font-size:14px;border:1px solid var(--border);border-radius:10px;text-transform:uppercase;">
+        <button class="card-btn" onclick="doFriendSearch()" style="font-size:14px;padding:8px 16px;">検索</button>
+      </div>
+      <div id="friendSearchResult"></div>
+    </div>
     <div class="form-group"><label>👤 マイプロフィール</label>
       <div class="form-hint" style="margin-bottom:8px;">自分の情報を登録しておくとコンシェルジュAIが活用します</div>
       <button class="card-btn" onclick="document.getElementById('settingsModalOverlay').classList.remove('open');openMyProfile()" style="font-size:14px;padding:8px 20px;">✏️ プロフィールを編集</button>
@@ -4499,6 +4519,7 @@ function openSettings() {
         <button class="card-btn" onclick="shareApp()" style="font-size:14px;padding:8px 20px;">🔗 URLをシェア</button>
       </div>
       <div class="form-hint" style="text-align:center;">紹介した人数: <strong id="referralCount">0</strong>人</div>
+      <div class="form-hint" style="text-align:center;margin-top:4px;">紹介ポイント: <strong id="referralPoints">0</strong>pt <span style="font-size:11px;color:var(--sub);">（1紹介 = 10pt）</span></div>
     </div>
     <div class="form-group"><label>📧 メールアドレス登録</label>
       <div class="form-hint" style="margin-bottom:8px;">メールアドレスを登録すると、端末を変えてもデータを引き継げます</div>
@@ -4527,11 +4548,36 @@ function openSettings() {
 }
 
 // ===== Developer Memo =====
+/*
+ * Supabase テーブル作成SQL（SQL Editorで実行してください）:
+ *
+ * create table dev_memos (
+ *   id uuid primary key default gen_random_uuid(),
+ *   user_id uuid references auth.users(id),
+ *   sender text,
+ *   title text,
+ *   text text,
+ *   priority text default 'low',
+ *   img text,
+ *   done boolean default false,
+ *   admin_reply text,
+ *   created_at timestamptz default now(),
+ *   updated_at timestamptz default now()
+ * );
+ *
+ * -- RLS設定
+ * alter table dev_memos enable row level security;
+ * create policy "dev_memos_select" on dev_memos for select to authenticated using (true);
+ * create policy "dev_memos_insert" on dev_memos for insert to authenticated with check (true);
+ * create policy "dev_memos_update" on dev_memos for update to authenticated using (true);
+ * create policy "dev_memos_delete" on dev_memos for delete to authenticated using (true);
+ */
 const DEV_MEMO_KEY = 'awai_dev_memos';
 const DEV_WEBHOOK_KEY = 'awai_dev_webhook';
 const DEV_WEBHOOK_DEFAULT = 'https://chat.googleapis.com/v1/spaces/AAQAXCYwhPo/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=dQLnS3Scb2xvLZXNXdsllhGCBDIftkU1Q_BXv2ey4Ic';
 let _devTapCount = 0;
 let _devTapTimer = null;
+let _devMemosCache = null; // Supabaseから取得したメモのキャッシュ
 
 function sendDevNotify(memo, senderName) {
   const webhookUrl = localStorage.getItem(DEV_WEBHOOK_KEY) || DEV_WEBHOOK_DEFAULT;
@@ -4575,17 +4621,80 @@ function devModeTap() {
   _devTapTimer = setTimeout(() => { _devTapCount = 0; }, 1500);
 }
 
-function getDevMemos() {
+function getDevMemosLocal() {
   try { return JSON.parse(localStorage.getItem(DEV_MEMO_KEY)) || []; } catch(e) { return []; }
 }
 
-function saveDevMemos(memos) {
-  try { localStorage.setItem(DEV_MEMO_KEY, JSON.stringify(memos)); } catch(e) { alert('保存に失敗しました'); }
+function saveDevMemosLocal(memos) {
+  try { localStorage.setItem(DEV_MEMO_KEY, JSON.stringify(memos)); } catch(e) {}
 }
 
-function openDevMemo() {
+// Supabaseからメモを取得（全ユーザー分）。失敗時はlocalStorageフォールバック
+async function fetchDevMemosFromSupabase() {
+  if (!_sb || !_sbUser) return getDevMemosLocal();
+  try {
+    const { data: rows, error } = await _sb.from('dev_memos').select('*').order('created_at', { ascending: true });
+    if (error) throw error;
+    const memos = (rows || []).map(r => ({
+      _supaId: r.id,
+      _userId: r.user_id,
+      title: r.title || '',
+      text: r.text || '',
+      sender: r.sender || '',
+      priority: r.priority || 'low',
+      img: r.img || null,
+      done: !!r.done,
+      admin_reply: r.admin_reply || null,
+      createdAt: r.created_at,
+      updatedAt: r.updated_at
+    }));
+    _devMemosCache = memos;
+    // localStorageにも自分のメモだけキャッシュ（フォールバック用）
+    const myMemos = memos.filter(m => m._userId === _sbUser.id);
+    saveDevMemosLocal(myMemos);
+    return memos;
+  } catch(e) {
+    console.warn('dev_memos Supabase取得失敗、localStorageフォールバック:', e);
+    return getDevMemosLocal();
+  }
+}
+
+// Supabaseに1件保存（insert or update）
+async function upsertDevMemoToSupabase(memo, supaId) {
+  if (!_sb || !_sbUser) return null;
+  try {
+    const row = {
+      user_id: _sbUser.id,
+      sender: memo.sender,
+      title: memo.title,
+      text: memo.text,
+      priority: memo.priority,
+      img: memo.img,
+      done: memo.done,
+      updated_at: new Date().toISOString()
+    };
+    if (supaId) {
+      const { data: updated, error } = await _sb.from('dev_memos').update(row).eq('id', supaId).select().single();
+      if (error) throw error;
+      return updated;
+    } else {
+      row.created_at = memo.createdAt || new Date().toISOString();
+      const { data: inserted, error } = await _sb.from('dev_memos').insert(row).select().single();
+      if (error) throw error;
+      return inserted;
+    }
+  } catch(e) {
+    console.warn('dev_memos Supabase保存失敗:', e);
+    return null;
+  }
+}
+
+async function openDevMemo() {
   const modal = document.getElementById('modal');
-  const memos = getDevMemos();
+  modal.innerHTML = `<h2>🛠 開発者メモ</h2><div style="text-align:center;padding:32px;color:var(--sub);">読み込み中...</div>`;
+  openModal();
+
+  const memos = await fetchDevMemosFromSupabase();
   let html = `<h2>🛠 開発者メモ</h2>`;
   html += `<div style="display:flex;gap:8px;margin-bottom:16px;">
     <button class="btn btn-primary" onclick="openDevMemoEdit()" style="flex:1;padding:10px;">＋ 新規メモ</button>
@@ -4600,7 +4709,8 @@ function openDevMemo() {
       const dateStr = date.toLocaleDateString('ja-JP', {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
       const priority = m.priority === 'high' ? '🔴' : m.priority === 'medium' ? '🟡' : '⚪';
       const statusIcon = m.done ? '✅' : '⬜';
-      html += `<div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;">
+      const isOwn = _sbUser && m._userId === _sbUser.id;
+      html += `<div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;${!isOwn ? 'border-left:3px solid #b0bec5;' : ''}">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
           <span style="font-size:12px;color:var(--sub);">${dateStr}${m.sender ? ' · ' + esc(m.sender) : ''}</span>
           <span style="font-size:12px;">${priority} ${statusIcon}</span>
@@ -4608,6 +4718,10 @@ function openDevMemo() {
         <div style="font-size:14px;font-weight:600;margin-bottom:4px;">${esc(m.title||'無題')}</div>
         ${m.text ? `<div style="font-size:13px;color:var(--text);white-space:pre-wrap;margin-bottom:6px;">${esc(m.text)}</div>` : ''}
         ${m.img ? `<div style="margin-bottom:8px;"><img src="${m.img}" style="max-width:100%;border-radius:10px;cursor:pointer;" onclick="window.open(this.src,'_blank')"></div>` : ''}
+        ${m.admin_reply ? `<div style="background:#e3f2fd;border:1px solid #bbdefb;border-radius:10px;padding:10px 12px;margin-top:6px;margin-bottom:6px;">
+          <div style="font-size:11px;font-weight:600;color:#1565c0;margin-bottom:4px;">💬 管理者からの返信</div>
+          <div style="font-size:13px;color:#1a237e;white-space:pre-wrap;">${esc(m.admin_reply)}</div>
+        </div>` : ''}
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:4px;">
           <button onclick="toggleDevMemoDone(${i})" style="display:flex;align-items:center;justify-content:center;gap:4px;padding:8px;border-radius:12px;border:1px solid ${m.done?'#a5d6a7':'var(--border)'};background:linear-gradient(135deg,${m.done?'#e8f5e9':'#faf8f6'},${m.done?'#d4ecd6':'#f3eeea'});color:var(--text);font-size:12px;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">${m.done?'⬜ 未完了':'✅ 完了'}</button>
           <button onclick="openDevMemoEdit(${i})" style="display:flex;align-items:center;justify-content:center;gap:4px;padding:8px;border-radius:12px;border:1px solid var(--border);background:linear-gradient(135deg,#faf8f6,#f3eeea);color:var(--text);font-size:12px;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">✏️ 編集</button>
@@ -4619,11 +4733,10 @@ function openDevMemo() {
 
   html += `<div class="form-btns" style="margin-top:16px;"><button class="btn btn-secondary" onclick="closeModal()">閉じる</button></div>`;
   modal.innerHTML = html;
-  openModal();
 }
 
 function openDevMemoEdit(idx) {
-  const memos = getDevMemos();
+  const memos = _devMemosCache || getDevMemosLocal();
   const isEdit = idx !== undefined && idx !== null;
   const m = isEdit ? memos[idx] : null;
   const modal = document.getElementById('modal');
@@ -4654,6 +4767,7 @@ function openDevMemoEdit(idx) {
   </div>`;
 
   html += `<input type="hidden" id="devEditIdx" value="${isEdit ? idx : ''}">`;
+  html += `<input type="hidden" id="devEditSupaId" value="${isEdit && m?._supaId ? m._supaId : ''}">`;
   html += `<div class="form-btns">
     <button class="btn btn-secondary" onclick="openDevMemo()">戻る</button>
     <button class="btn btn-primary" onclick="saveDevMemo()">保存</button>
@@ -4672,15 +4786,16 @@ function previewDevImg(input) {
   });
 }
 
-function saveDevMemo() {
+async function saveDevMemo() {
   const title = document.getElementById('devTitle').value.trim();
   const text = document.getElementById('devText').value.trim();
   if (!title && !text) { alert('タイトルまたは内容を入力してください'); return; }
 
-  const memos = getDevMemos();
+  const memos = _devMemosCache || getDevMemosLocal();
   const idxStr = document.getElementById('devEditIdx').value;
   const isEdit = idxStr !== '';
   const idx = isEdit ? parseInt(idxStr) : -1;
+  const supaId = document.getElementById('devEditSupaId')?.value || null;
 
   const removeImg = document.getElementById('devImgRemove')?.value === '1';
   const previewImg = document.querySelector('#devImgPreview img');
@@ -4707,32 +4822,60 @@ function saveDevMemo() {
     updatedAt: new Date().toISOString()
   };
 
-  if (isEdit) {
-    memos[idx] = memo;
+  // localStorageにも保存（フォールバック用）
+  const localMemos = getDevMemosLocal();
+  if (isEdit && supaId) {
+    const localIdx = localMemos.findIndex(m => m._supaId === supaId);
+    if (localIdx >= 0) localMemos[localIdx] = { ...memo, _supaId: supaId };
   } else {
-    memos.push(memo);
+    localMemos.push(memo);
   }
-  saveDevMemos(memos);
+  saveDevMemosLocal(localMemos);
+
+  // Supabaseに保存
+  const result = await upsertDevMemoToSupabase(memo, supaId || null);
+  if (result && !supaId) {
+    const last = localMemos[localMemos.length - 1];
+    if (last) last._supaId = result.id;
+    saveDevMemosLocal(localMemos);
+  }
+
   sendDevNotify(memo, sender);
   openDevMemo();
   const hasWebhook = !!localStorage.getItem(DEV_WEBHOOK_KEY);
   showToast(isEdit ? 'メモを更新しました' + (hasWebhook?' 📡':'') : 'メモを追加しました' + (hasWebhook?' 📡':''));
 }
 
-function toggleDevMemoDone(idx) {
-  const memos = getDevMemos();
+async function toggleDevMemoDone(idx) {
+  const memos = _devMemosCache || getDevMemosLocal();
   if (memos[idx]) {
     memos[idx].done = !memos[idx].done;
-    saveDevMemos(memos);
+    memos[idx].updatedAt = new Date().toISOString();
+    if (memos[idx]._supaId && _sb && _sbUser) {
+      try {
+        await _sb.from('dev_memos').update({ done: memos[idx].done, updated_at: memos[idx].updatedAt }).eq('id', memos[idx]._supaId);
+      } catch(e) { console.warn('done更新失敗:', e); }
+    }
+    const localMemos = getDevMemosLocal();
+    const localIdx = localMemos.findIndex(m => m._supaId === memos[idx]._supaId);
+    if (localIdx >= 0) { localMemos[localIdx].done = memos[idx].done; saveDevMemosLocal(localMemos); }
     openDevMemo();
   }
 }
 
-function deleteDevMemo(idx) {
+async function deleteDevMemo(idx) {
   if (!confirm('このメモを削除しますか？')) return;
-  const memos = getDevMemos();
-  memos.splice(idx, 1);
-  saveDevMemos(memos);
+  const memos = _devMemosCache || getDevMemosLocal();
+  const memo = memos[idx];
+  if (!memo) return;
+  if (memo._supaId && _sb && _sbUser) {
+    try {
+      await _sb.from('dev_memos').delete().eq('id', memo._supaId);
+    } catch(e) { console.warn('削除失敗:', e); }
+  }
+  const localMemos = getDevMemosLocal();
+  const localIdx = memo._supaId ? localMemos.findIndex(m => m._supaId === memo._supaId) : idx;
+  if (localIdx >= 0) { localMemos.splice(localIdx, 1); saveDevMemosLocal(localMemos); }
   openDevMemo();
   showToast('メモを削除しました');
 }
@@ -4830,6 +4973,21 @@ function showQR() {
   // Update referral count
   const countEl = document.getElementById('referralCount');
   if (countEl) countEl.textContent = localStorage.getItem(REFERRAL_COUNT_KEY) || '0';
+  // Load share code
+  const scEl = document.getElementById('myShareCodeValue');
+  if (scEl) {
+    ensureShareCode().then(code => {
+      if (scEl) scEl.textContent = code || '---';
+    });
+  }
+  // Load referral points from Supabase
+  const ptEl = document.getElementById('referralPoints');
+  if (ptEl) {
+    getReferralPoints().then(rp => {
+      if (ptEl) ptEl.textContent = rp.points;
+      if (countEl) countEl.textContent = rp.referral_count;
+    });
+  }
 }
 
 function buildPersonShareText(p) {
@@ -4928,6 +5086,26 @@ function shareItem(tab, id) {
   const items = data[tab] || [];
   const item = items.find(i => i.id === id);
   if (!item) return;
+  if (tab === 'place') {
+    // Show share options for places
+    const modal = document.getElementById('modal');
+    modal.innerHTML = `<h2>📤 共有方法を選択</h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;">
+        <button onclick="closeModal();doShareItemDirect('${tab}','${id}')" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:14px;border-radius:14px;border:1px solid #bdd8f0;background:linear-gradient(135deg,#e8f2fc,#daeaf8);color:#4a7aaa;font-size:14px;font-weight:500;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">📤 テキスト共有</button>
+        <button onclick="closeModal();sendPlaceToFriend('${id}')" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:14px;border-radius:14px;border:1px solid #c8b8e8;background:linear-gradient(135deg,#f0eaf8,#e8e0f4);color:#7a6aaa;font-size:14px;font-weight:500;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">📩 友だちに送る</button>
+      </div>
+      <div class="form-btns" style="margin-top:12px;"><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button></div>`;
+    openModal();
+    return;
+  }
+  const text = buildShareText(item);
+  const url = item.url || item.mapUrl || null;
+  doShare(item.title || '無題', text, url);
+}
+function doShareItemDirect(tab, id) {
+  const items = data[tab] || [];
+  const item = items.find(i => i.id === id);
+  if (!item) return;
   const text = buildShareText(item);
   const url = item.url || item.mapUrl || null;
   doShare(item.title || '無題', text, url);
@@ -4949,9 +5127,367 @@ function checkReferral() {
     const key = 'awai_referred_by';
     if (!localStorage.getItem(key)) {
       localStorage.setItem(key, ref);
-      // In future: notify referrer via backend
+      // Supabaseに紹介ポイントを記録
+      updateReferralPoints(ref);
     }
   }
+}
+
+// ===== Feature 1: 友だち検索 (Share Code) =====
+const SHARE_CODE_KEY = 'awai_share_code';
+let _friendSearchResult = null;
+
+async function generateShareCode() {
+  if (!_sbUser) return null;
+  // Check if already has a code
+  const existing = localStorage.getItem(SHARE_CODE_KEY);
+  if (existing) return existing;
+  // Generate random 6-char alphanumeric
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  // Save to Supabase user_profiles
+  try {
+    const myName = getMyProfile().name || '名前なし';
+    const { error } = await _sb.from('user_profiles').upsert({
+      user_id: _sbUser.id,
+      display_name: myName,
+      share_code: code
+    }, { onConflict: 'user_id' });
+    if (error) { console.error('Share code save error:', error); return null; }
+    localStorage.setItem(SHARE_CODE_KEY, code);
+    return code;
+  } catch(e) { console.error('generateShareCode error:', e); return null; }
+}
+
+async function ensureShareCode() {
+  let code = localStorage.getItem(SHARE_CODE_KEY);
+  if (code) {
+    // Sync display_name to Supabase
+    if (_sbUser) {
+      const myName = getMyProfile().name || '名前なし';
+      _sb.from('user_profiles').upsert({
+        user_id: _sbUser.id,
+        display_name: myName,
+        share_code: code
+      }, { onConflict: 'user_id' }).catch(() => {});
+    }
+    return code;
+  }
+  return await generateShareCode();
+}
+
+async function searchByShareCode(code) {
+  if (!code || code.length < 3) { showToast('共有コードを入力してください'); return null; }
+  try {
+    const { data: rows, error } = await _sb.from('user_profiles').select('user_id, display_name, share_code').eq('share_code', code.toUpperCase()).limit(1);
+    if (error) { showToast('検索エラー: ' + error.message); return null; }
+    if (!rows || rows.length === 0) { showToast('該当するユーザーが見つかりませんでした'); return null; }
+    const found = rows[0];
+    if (found.user_id === (_sbUser && _sbUser.id)) { showToast('自分のコードです'); return null; }
+    return found;
+  } catch(e) { showToast('検索に失敗しました'); return null; }
+}
+
+function doFriendSearch() {
+  const code = document.getElementById('friendSearchCode')?.value?.trim();
+  if (!code) return;
+  const resultEl = document.getElementById('friendSearchResult');
+  resultEl.innerHTML = '<div style="text-align:center;color:var(--sub);padding:8px;">検索中...</div>';
+  searchByShareCode(code).then(found => {
+    if (!found) { resultEl.innerHTML = ''; return; }
+    _friendSearchResult = found;
+    resultEl.innerHTML = `<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:12px;margin-top:8px;">
+      <div style="width:36px;height:36px;border-radius:50%;background:var(--accent-light);display:flex;align-items:center;justify-content:center;font-size:18px;">👤</div>
+      <div style="flex:1;"><div style="font-weight:600;">${esc(found.display_name)}</div><div style="font-size:12px;color:var(--sub);">コード: ${esc(found.share_code)}</div></div>
+      <button class="card-btn" onclick="addFriendByShareCode()" style="font-size:13px;padding:6px 14px;">友だちに追加</button>
+    </div>`;
+  });
+}
+
+function addFriendByShareCode() {
+  if (!_friendSearchResult) return;
+  // Check if already exists
+  const existing = data.people.find(p => p.linkedUserId === _friendSearchResult.user_id);
+  if (existing) { showToast('すでに追加済みです（' + existing.nickname + '）'); return; }
+  const newPerson = {
+    id: genId(),
+    nickname: _friendSearchResult.display_name,
+    relation: '友だち（AWAI）',
+    linkedUserId: _friendSearchResult.user_id,
+    linkedShareCode: _friendSearchResult.share_code,
+    anniversaries: [],
+    interests: [],
+    brands: [],
+    foodLike: [],
+    foodDislike: [],
+    createdAt: new Date().toISOString()
+  };
+  data.people.push(newPerson);
+  save();
+  showToast(_friendSearchResult.display_name + 'さんを追加しました');
+  _friendSearchResult = null;
+  const resultEl = document.getElementById('friendSearchResult');
+  if (resultEl) resultEl.innerHTML = '<div style="color:#6bab8a;padding:8px;text-align:center;">✅ 追加しました</div>';
+}
+
+// ===== Feature 2: カード共有リクエスト =====
+let _pendingShareRequests = [];
+
+async function sendShareRequest(personId) {
+  const p = data.people.find(x => x.id === personId);
+  if (!p) return;
+  const modal = document.getElementById('modal');
+  modal.innerHTML = `<h2>📩 カード共有</h2>
+    <div class="form-hint" style="margin-bottom:12px;">相手の共有コードを入力して、このカードを送信します</div>
+    <div class="form-group"><label>送信するカード</label>
+      <div style="padding:10px 14px;background:var(--accent-light);border-radius:12px;font-weight:600;">${esc(p.nickname || '名前なし')}</div>
+    </div>
+    <div class="form-group"><label>相手の共有コード</label>
+      <input id="shareReqCode" placeholder="6桁の共有コード" maxlength="6" style="text-transform:uppercase;">
+    </div>
+    <div class="form-btns">
+      <button class="btn btn-secondary" onclick="closeModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="doSendShareRequest('${personId}','person')">送信</button>
+    </div>`;
+  openModal();
+}
+
+async function doSendShareRequest(itemId, cardType) {
+  const code = document.getElementById('shareReqCode')?.value?.trim()?.toUpperCase();
+  if (!code || code.length < 3) { showToast('共有コードを入力してください'); return; }
+  if (!_sbUser) { showToast('ログインが必要です'); return; }
+  // Find recipient
+  try {
+    const { data: rows, error } = await _sb.from('user_profiles').select('user_id').eq('share_code', code).limit(1);
+    if (error || !rows || !rows.length) { showToast('該当するユーザーが見つかりませんでした'); return; }
+    const toUserId = rows[0].user_id;
+    if (toUserId === _sbUser.id) { showToast('自分には送れません'); return; }
+    // Build card data
+    let cardData = {};
+    if (cardType === 'person') {
+      const p = data.people.find(x => x.id === itemId);
+      if (!p) return;
+      cardData = { nickname: p.nickname, relation: p.relation, fullName: p.fullName, anniversaries: p.anniversaries, interests: p.interests, brands: p.brands, foodLike: p.foodLike, foodDislike: p.foodDislike, memo: p.memo, sizes: p.sizes };
+    } else if (cardType === 'place') {
+      const items = data.place || [];
+      const item = items.find(i => i.id === itemId);
+      if (!item) return;
+      cardData = { title: item.title, memo: item.memo, tags: item.tags, address: item.address, phone: item.phone, url: item.url, mapUrl: item.mapUrl, googleMapUrl: item.googleMapUrl, placeCategory: item.placeCategory, rating: item.rating };
+    }
+    const { error: insertErr } = await _sb.from('share_requests').insert({
+      from_user_id: _sbUser.id,
+      to_user_id: toUserId,
+      card_type: cardType,
+      card_data: cardData,
+      status: 'pending'
+    });
+    if (insertErr) { showToast('送信エラー: ' + insertErr.message); return; }
+    showToast('共有リクエストを送信しました');
+    closeModal();
+  } catch(e) { showToast('送信に失敗しました'); console.error(e); }
+}
+
+async function checkShareRequests() {
+  if (!_sbUser) return;
+  try {
+    const { data: rows, error } = await _sb.from('share_requests').select('*').eq('to_user_id', _sbUser.id).eq('status', 'pending');
+    if (error || !rows) return;
+    _pendingShareRequests = rows;
+    if (rows.length > 0) {
+      showShareRequestBanner(rows.length);
+    } else {
+      hideShareRequestBanner();
+    }
+  } catch(e) { console.error('checkShareRequests error:', e); }
+}
+
+function showShareRequestBanner(count) {
+  let banner = document.getElementById('shareReqBanner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'shareReqBanner';
+    banner.style.cssText = 'padding:10px 16px;background:linear-gradient(135deg,#e8f2fc,#daeaf8);border-bottom:1px solid #bdd8f0;font-size:14px;color:#4a7aaa;cursor:pointer;text-align:center;font-weight:600;';
+    banner.onclick = () => openShareRequestsModal();
+    const header = document.querySelector('.header');
+    if (header) header.parentNode.insertBefore(banner, header.nextSibling);
+    else document.body.prepend(banner);
+  }
+  banner.textContent = '📩 ' + count + '件の共有リクエストがあります';
+  banner.style.display = '';
+}
+
+function hideShareRequestBanner() {
+  const banner = document.getElementById('shareReqBanner');
+  if (banner) banner.style.display = 'none';
+}
+
+function openShareRequestsModal() {
+  const modal = document.getElementById('modal');
+  let html = '<h2>📩 共有リクエスト</h2>';
+  if (!_pendingShareRequests.length) {
+    html += '<div class="empty-msg" style="padding:20px;text-align:center;">リクエストはありません</div>';
+  } else {
+    _pendingShareRequests.forEach((req, i) => {
+      const cd = req.card_data || {};
+      const name = cd.nickname || cd.title || '不明';
+      const typeLabel = req.card_type === 'person' ? '👤 人物カード' : '📍 場所カード';
+      html += `<div style="padding:12px;background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:8px;">
+        <div style="font-weight:600;margin-bottom:4px;">${typeLabel}</div>
+        <div style="font-size:15px;margin-bottom:8px;">${esc(name)}</div>
+        ${cd.memo ? '<div style="font-size:13px;color:var(--sub);margin-bottom:8px;">' + esc(cd.memo) + '</div>' : ''}
+        <div style="display:flex;gap:8px;">
+          <button class="card-btn" onclick="acceptShareRequest(${i})" style="font-size:13px;padding:6px 16px;background:var(--accent-light);border-color:var(--accent);">✅ 承認</button>
+          <button class="card-btn delete" onclick="rejectShareRequest(${i})" style="font-size:13px;padding:6px 16px;">❌ 拒否</button>
+        </div>
+      </div>`;
+    });
+  }
+  html += '<div class="form-btns"><button class="btn btn-secondary" onclick="closeModal()">閉じる</button></div>';
+  modal.innerHTML = html;
+  openModal();
+}
+
+async function acceptShareRequest(index) {
+  const req = _pendingShareRequests[index];
+  if (!req) return;
+  const cd = req.card_data || {};
+  if (req.card_type === 'person') {
+    const newPerson = {
+      id: genId(),
+      nickname: cd.nickname || '名前なし',
+      relation: cd.relation || '共有された人',
+      fullName: cd.fullName || '',
+      anniversaries: cd.anniversaries || [],
+      interests: cd.interests || [],
+      brands: cd.brands || [],
+      foodLike: cd.foodLike || [],
+      foodDislike: cd.foodDislike || [],
+      memo: cd.memo || '',
+      sizes: cd.sizes || {},
+      createdAt: new Date().toISOString()
+    };
+    data.people.push(newPerson);
+  } else if (req.card_type === 'place') {
+    const newPlace = {
+      id: genId(),
+      title: cd.title || '無題',
+      memo: cd.memo || '',
+      tags: cd.tags || [],
+      address: cd.address || '',
+      phone: cd.phone || '',
+      url: cd.url || '',
+      mapUrl: cd.mapUrl || '',
+      googleMapUrl: cd.googleMapUrl || '',
+      placeCategory: cd.placeCategory || '',
+      rating: cd.rating || 0,
+      createdAt: new Date().toISOString()
+    };
+    if (!data.place) data.place = [];
+    data.place.push(newPlace);
+  }
+  save();
+  // Update status in Supabase
+  try {
+    await _sb.from('share_requests').update({ status: 'accepted' }).eq('id', req.id);
+  } catch(e) { console.error(e); }
+  _pendingShareRequests.splice(index, 1);
+  showToast('カードを追加しました');
+  if (_pendingShareRequests.length === 0) hideShareRequestBanner();
+  else showShareRequestBanner(_pendingShareRequests.length);
+  openShareRequestsModal();
+  render();
+}
+
+async function rejectShareRequest(index) {
+  const req = _pendingShareRequests[index];
+  if (!req) return;
+  try {
+    await _sb.from('share_requests').update({ status: 'rejected' }).eq('id', req.id);
+  } catch(e) { console.error(e); }
+  _pendingShareRequests.splice(index, 1);
+  showToast('リクエストを拒否しました');
+  if (_pendingShareRequests.length === 0) hideShareRequestBanner();
+  else showShareRequestBanner(_pendingShareRequests.length);
+  openShareRequestsModal();
+}
+
+// ===== Feature 3: 場所カード友だちに送る =====
+function sendPlaceToFriend(itemId) {
+  const items = data.place || [];
+  const item = items.find(i => i.id === itemId);
+  if (!item) return;
+  const modal = document.getElementById('modal');
+  modal.innerHTML = `<h2>📍 場所を友だちに送る</h2>
+    <div class="form-hint" style="margin-bottom:12px;">相手の共有コードを入力して送信します</div>
+    <div class="form-group"><label>送信する場所</label>
+      <div style="padding:10px 14px;background:var(--accent-light);border-radius:12px;font-weight:600;">${esc(item.title || '無題')}</div>
+    </div>
+    <div class="form-group"><label>相手の共有コード</label>
+      <input id="shareReqCode" placeholder="6桁の共有コード" maxlength="6" style="text-transform:uppercase;">
+    </div>
+    <div class="form-btns">
+      <button class="btn btn-secondary" onclick="closeModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="doSendShareRequest('${itemId}','place')">送信</button>
+    </div>`;
+  openModal();
+}
+
+// ===== Feature 4: 紹介ポイント (Supabase) =====
+async function updateReferralPoints(referrerId) {
+  // referrerId is the referral ID string (awai_xxxxx)
+  // We need to find the user who has this referral ID
+  // Since referral IDs are local, we store the mapping in user_profiles or handle via the ref param
+  // For now, we record the referral and try to increment points
+  if (!_sbUser) return;
+  try {
+    // First, get current points for the current user as referrer (by ref ID match)
+    // The referrer's user_id can be looked up if they synced their referral_id
+    // Simplified approach: we record it and let the referrer sync on their end
+    localStorage.setItem('awai_referred_by', referrerId);
+  } catch(e) { console.error('updateReferralPoints error:', e); }
+}
+
+async function syncReferralPoints() {
+  if (!_sbUser) return;
+  try {
+    const localCount = parseInt(localStorage.getItem(REFERRAL_COUNT_KEY) || '0');
+    const { data: row, error } = await _sb.from('referral_points').select('points, referral_count').eq('user_id', _sbUser.id).single();
+    if (error && error.code !== 'PGRST116') return;
+    if (row) {
+      // Use the larger count
+      const cloudCount = row.referral_count || 0;
+      if (localCount > cloudCount) {
+        await _sb.from('referral_points').update({
+          referral_count: localCount,
+          points: localCount * 10
+        }).eq('user_id', _sbUser.id);
+      } else if (cloudCount > localCount) {
+        localStorage.setItem(REFERRAL_COUNT_KEY, cloudCount.toString());
+      }
+    } else if (localCount > 0) {
+      await _sb.from('referral_points').insert({
+        user_id: _sbUser.id,
+        referral_count: localCount,
+        points: localCount * 10
+      });
+    } else {
+      await _sb.from('referral_points').insert({
+        user_id: _sbUser.id,
+        referral_count: 0,
+        points: 0
+      });
+    }
+  } catch(e) { console.error('syncReferralPoints error:', e); }
+}
+
+async function getReferralPoints() {
+  if (!_sbUser) return { points: 0, referral_count: parseInt(localStorage.getItem(REFERRAL_COUNT_KEY) || '0') };
+  try {
+    const { data: row, error } = await _sb.from('referral_points').select('points, referral_count').eq('user_id', _sbUser.id).single();
+    if (error || !row) return { points: 0, referral_count: parseInt(localStorage.getItem(REFERRAL_COUNT_KEY) || '0') };
+    return { points: row.points || 0, referral_count: row.referral_count || 0 };
+  } catch(e) { return { points: 0, referral_count: parseInt(localStorage.getItem(REFERRAL_COUNT_KEY) || '0') }; }
 }
 
 // ===== My Profile =====

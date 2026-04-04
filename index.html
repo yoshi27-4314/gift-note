@@ -1855,17 +1855,6 @@ function renderPersonCard(p) {
       return ah;
     });
   }
-  // Sizes
-  const sizes = p.sizes||{};
-  const sizeEntries = Object.entries(sizes).filter(([k,v])=>v);
-  if (sizeEntries.length) {
-    html += '<div class="person-section"><div class="person-section-title">📏 サイズ</div><div class="profile-grid">';
-    sizeEntries.forEach(([k,v]) => {
-      const labels = {tops:'服トップス',bottoms:'服ボトムス',shoes:'靴',ring:'指輪'};
-      html += `<div class="profile-item"><div class="profile-item-label">${labels[k]||k}</div><div class="profile-item-value">${esc(v)}</div></div>`;
-    });
-    html += '</div></div>';
-  }
   // Smoking/Drinking
   if (p.smoking||p.drinking) {
     html += '<div class="person-section"><div class="person-section-title">🚬 嗜好品</div><div class="profile-grid">';
@@ -1898,6 +1887,17 @@ function renderPersonCard(p) {
       fh += '</div>';
       return fh;
     });
+  }
+  // Sizes
+  const sizes = p.sizes||{};
+  const sizeEntries = Object.entries(sizes).filter(([k,v])=>v);
+  if (sizeEntries.length) {
+    html += '<div class="person-section"><div class="person-section-title">📏 サイズ</div><div class="profile-grid">';
+    sizeEntries.forEach(([k,v]) => {
+      const labels = {tops:'服トップス',bottoms:'服ボトムス',shoes:'靴',ring:'指輪'};
+      html += `<div class="profile-item"><div class="profile-item-label">${labels[k]||k}</div><div class="profile-item-value">${esc(v)}</div></div>`;
+    });
+    html += '</div></div>';
   }
   // Family
   if (p.family&&p.family.length) {

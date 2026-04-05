@@ -2703,7 +2703,7 @@ async function editChatMsg(cardId, msgId, oldText) {
 async function deleteChatMsg(cardId, msgId) {
   if (!confirm('このメッセージを削除しますか？')) return;
   try {
-    const { error } = await _sb.from('card_chats').delete().eq('id', msgId);
+    const { error } = await _sb.from('card_chats').delete().eq('id', msgId).eq('user_id', _sbUser.id);
     if (error) throw error;
     await loadCardChat(cardId);
   } catch(e) { alert('削除に失敗しました'); }

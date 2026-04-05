@@ -7421,25 +7421,20 @@ function renderCalendar(cardList) {
   html += '</div>';
   html += '</div>'; // 手帳風ラッパー閉じ
 
-  // カレンダー/リスト切り替え＋年月ダイヤル
-  html += `<div style="display:flex;align-items:center;justify-content:center;gap:12px;padding:10px 16px;">
-    <button onclick="toggleCalView()" style="background:none;border:1px solid var(--border);border-radius:12px;padding:8px 16px;font-size:13px;color:var(--accent);cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">
+  // カレンダー/リスト切り替え＋年月ダイヤル（統一デザイン）
+  html += `<div style="display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 16px;">
+    <span onclick="toggleCalView()" style="font-size:12px;color:var(--accent);cursor:pointer;padding:6px 10px;border:1px solid var(--border);border-radius:10px;background:var(--card);font-family:'Zen Maru Gothic',sans-serif;">
       ${calViewMode==='calendar' ? '📋 リスト' : '📅 カレンダー'}
-    </button>
-    <div style="display:flex;align-items:center;gap:2px;background:var(--card);border-radius:14px;border:1px solid var(--border);padding:4px 8px;box-shadow:0 1px 4px var(--shadow);">
-      <div style="display:flex;flex-direction:column;align-items:center;width:50px;">
-        <span onclick="dialYear(1)" style="font-size:14px;color:var(--sub);cursor:pointer;user-select:none;padding:2px;">▲</span>
-        <span id="dialYearVal" style="font-size:16px;font-weight:600;color:var(--text);">${_calYear}</span>
-        <span onclick="dialYear(-1)" style="font-size:14px;color:var(--sub);cursor:pointer;user-select:none;padding:2px;">▼</span>
-      </div>
-      <span style="font-size:16px;color:var(--sub);font-weight:300;">/</span>
-      <div style="display:flex;flex-direction:column;align-items:center;width:36px;">
-        <span onclick="dialMonth(1)" style="font-size:14px;color:var(--sub);cursor:pointer;user-select:none;padding:2px;">▲</span>
-        <span id="dialMonthVal" style="font-size:16px;font-weight:600;color:var(--text);">${_calMonth+1}</span>
-        <span onclick="dialMonth(-1)" style="font-size:14px;color:var(--sub);cursor:pointer;user-select:none;padding:2px;">▼</span>
-      </div>
-      <button onclick="calDialJump()" style="background:var(--accent);color:#fff;border:none;border-radius:10px;padding:6px 12px;font-size:12px;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;margin-left:4px;">移動</button>
-    </div>
+    </span>
+    <span style="color:var(--border);">|</span>
+    <span onclick="dialYear(1)" style="font-size:10px;color:var(--sub);cursor:pointer;user-select:none;">▲</span>
+    <span id="dialYearVal" style="font-size:13px;font-weight:600;color:var(--text);min-width:36px;text-align:center;">${_calYear}</span>
+    <span onclick="dialYear(-1)" style="font-size:10px;color:var(--sub);cursor:pointer;user-select:none;">▼</span>
+    <span style="font-size:12px;color:var(--border);">/</span>
+    <span onclick="dialMonth(1)" style="font-size:10px;color:var(--sub);cursor:pointer;user-select:none;">▲</span>
+    <span id="dialMonthVal" style="font-size:13px;font-weight:600;color:var(--text);min-width:20px;text-align:center;">${_calMonth+1}</span>
+    <span onclick="dialMonth(-1)" style="font-size:10px;color:var(--sub);cursor:pointer;user-select:none;">▼</span>
+    <span onclick="calDialJump()" style="font-size:11px;color:var(--accent);cursor:pointer;padding:4px 8px;border:1px solid var(--accent);border-radius:8px;font-family:'Zen Maru Gothic',sans-serif;">移動</span>
   </div>`;
 
   // リスト表示モードの場合、全記念日をリストで表示して終了

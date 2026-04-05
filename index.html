@@ -7165,6 +7165,20 @@ function renderCalendar(cardList) {
     if (events[d]) events[d].forEach(e => upcoming.push({...e, day:d}));
   }
 
+  // 非表示の記念日を収集
+  const hiddenEvents = [];
+  data.people.forEach(p => {
+    (p.anniversaries||[]).forEach((a,ai) => {
+      if (!a.date || !a.calendarHidden) return;
+      const parts = a.date.split('-').map(Number);
+      let em,ed;
+      if (a.dateType==='full'&&parts.length>=3) { if(parts[1]-1!==month) return; em=parts[1]-1; ed=parts[2]; }
+      else if (parts.length>=2) { em=parts[parts.length-2]-1; ed=parts[parts.length-1]; if(em!==month) return; }
+      else return;
+      hiddenEvents.push({emoji:(a.name||'').match(/[\p{Emoji}]/u)?.[0]||'📅',name:p.nickname,event:a.name,day:ed,_personId:p.id,_annIdx:ai});
+    });
+  });
+
   if (upcoming.length) {
     html += '<div style="padding:16px 16px 8px;font-size:13px;font-weight:600;color:var(--accent);">今月の予定</div>';
     upcoming.forEach(e => {
@@ -7181,6 +7195,23 @@ function renderCalendar(cardList) {
     });
   } else {
     html += '<div style="text-align:center;padding:24px;color:var(--sub);font-size:13px;">今月の予定はありません</div>';
+  }
+
+  // 非表示の記念日（折りたたみ）
+  if (hiddenEvents.length) {
+    const hid = 'hiddenCal_'+Math.random().toString(36).slice(2);
+    html += `<div style="margin:8px 16px;padding:8px 12px;cursor:pointer;color:var(--sub);font-size:13px;text-align:center;border:1px dashed var(--border);border-radius:12px;" onclick="const b=document.getElementById('${hid}');const t=this;if(b.style.display==='none'){b.style.display='';t.textContent='▲ 非表示を閉じる (${hiddenEvents.length}件)';}else{b.style.display='none';t.textContent='▼ 非表示を表示 (${hiddenEvents.length}件)';}">▼ 非表示を表示 (${hiddenEvents.length}件)</div>`;
+    html += `<div id="${hid}" style="display:none;opacity:0.5;">`;
+    hiddenEvents.forEach(e => {
+      html += `<div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border);">
+        <span style="font-size:20px;">${e.emoji}</span>
+        <div style="flex:1;"><div style="font-size:14px;font-weight:500;">${esc(e.name)} ${esc((e.event||'').replace(/[\p{Emoji}]/gu,'').trim())}</div><div style="font-size:11px;color:var(--sub);">${month+1}/${e.day}</div></div>
+        <label style="font-size:11px;color:var(--sub);display:flex;align-items:center;gap:2px;cursor:pointer;flex-shrink:0;" onclick="event.stopPropagation();">
+          <input type="checkbox" checked onchange="toggleCalendarHidden('${e._personId}',${e._annIdx},this.checked)"><span>👁</span>
+        </label>
+      </div>`;
+    });
+    html += '</div>';
   }
 
   // Quick add buttons

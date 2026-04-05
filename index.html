@@ -618,6 +618,9 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 .ranking-btn.active { background: #f0b040; color: #fff; box-shadow: 0 2px 8px rgba(240,176,64,0.3); }
 #giftGaveBtn.active { background: #d48a7a; color: #fff; box-shadow: 0 2px 8px rgba(212,138,122,0.3); }
 #giftReceivedBtn.active { background: #7a9ad4; color: #fff; box-shadow: 0 2px 8px rgba(122,154,212,0.3); }
+#annSortBtn.active { background: var(--accent); color: #fff; box-shadow: 0 2px 8px rgba(232,165,152,0.3); }
+#annSortBtn.desc { background: var(--accent); color: #fff; }
+#annSortBtn.asc { background: #8ea4bf; color: #fff; }
 .rank-number {
   font-size: 14px; font-weight: 700; color: var(--accent);
   min-width: 24px; text-align: center; flex-shrink: 0;
@@ -779,8 +782,9 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 </div>
 
 <div class="header">
-  <button class="season-btn" id="backBtn" style="left:16px;right:auto;position:absolute;display:none;font-size:16px;" onclick="goBack()">←</button>
-  <button class="season-btn" id="notifBtn" style="left:56px;right:auto;position:absolute;" onclick="openNotifications()">
+  <button class="season-btn" id="notifBtn" style="left:16px;right:auto;position:absolute;" onclick="openNotifications()">
+  </button>
+  <button class="season-btn" id="backBtn" style="left:56px;right:auto;position:absolute;font-size:16px;" onclick="goBack()">←</button>
     🔔<span id="notifBadge" style="display:none;position:absolute;top:-2px;right:-2px;background:#c97070;color:#fff;font-size:9px;width:16px;height:16px;border-radius:50%;display:none;align-items:center;justify-content:center;">0</span>
   </button>
   <div class="app-title">AWAI</div>
@@ -812,6 +816,7 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
   <div class="ranking-btn" id="rankOnBtn" onclick="setRankMode(!rankMode)">⭐ ランキング</div>
   <div class="ranking-btn" id="giftGaveBtn" style="display:none;" onclick="filterGiftType('gave')">🎁 あげた</div>
   <div class="ranking-btn" id="giftReceivedBtn" style="display:none;" onclick="filterGiftType('received')">🎀 もらった</div>
+  <div class="ranking-btn" id="annSortBtn" style="display:none;" onclick="toggleAnnSort()">📅 記念日順</div>
 </div>
 <div id="annSection"></div>
 <div class="card-list" id="cardList"></div>
@@ -1088,6 +1093,7 @@ let editingId = null;
 let editPhotoAction = 'keep';
 let searchQuery = '';
 let rankMode = false;
+let annSortMode = null; // null=off, 'asc'=近い順, 'desc'=遠い順
 let openPersonId = null;
 
 // ===== Data =====
@@ -2039,8 +2045,36 @@ function setRating(tab, id, rating) {
 
 function setRankMode(on) {
   rankMode = on;
+  annSortMode = null;
   document.getElementById('rankOnBtn').classList.toggle('active', on);
+  const annBtn = document.getElementById('annSortBtn');
+  if (annBtn) { annBtn.classList.remove('asc','desc','active'); annBtn.textContent = '📅 記念日順'; }
   render();
+}
+
+function toggleAnnSort() {
+  rankMode = false;
+  document.getElementById('rankOnBtn').classList.remove('active');
+  if (annSortMode === null) annSortMode = 'asc';
+  else if (annSortMode === 'asc') annSortMode = 'desc';
+  else annSortMode = null;
+  const btn = document.getElementById('annSortBtn');
+  if (btn) {
+    btn.classList.remove('asc','desc','active');
+    if (annSortMode === 'asc') { btn.classList.add('asc','active'); btn.textContent = '📅 近い順 ↑'; }
+    else if (annSortMode === 'desc') { btn.classList.add('desc','active'); btn.textContent = '📅 遠い順 ↓'; }
+    else { btn.textContent = '📅 記念日順'; }
+  }
+  render();
+}
+
+function getNearestAnnDays(person) {
+  let nearest = Infinity;
+  (person.anniversaries||[]).forEach(a => {
+    const d = daysUntil(a.date, a.dateType);
+    if (d !== null && d < nearest) nearest = d;
+  });
+  return nearest === Infinity ? 9999 : nearest;
 }
 
 function renderItemCard(item, tab, rank) {
@@ -3264,8 +3298,10 @@ function scheduleUpdateCheck() {
 function updateBackBtn() {
   const btn = document.getElementById('backBtn');
   if (!btn) return;
-  const show = openPersonId || openGroupId || openItemId || openAllRecordId;
-  btn.style.display = show ? '' : 'none';
+  const canGoBack = openPersonId || openGroupId || openItemId || openAllRecordId || history.length > 1;
+  const isDetail = openPersonId || openGroupId || openItemId || openAllRecordId;
+  btn.textContent = isDetail ? '←' : '→';
+  btn.style.opacity = isDetail ? '1' : '0.4';
 }
 
 function goBack() {
@@ -3299,9 +3335,14 @@ function render() {
     return;
   }
 
-  // Show ranking toggle for item tabs
+  // Show ranking toggle for all tabs (except calendar)
   const rankToggle = document.getElementById('rankingToggle');
-  rankToggle.style.display = ['wish','received','gave','place','gift'].includes(currentTab) ? '' : 'none';
+  rankToggle.style.display = currentTab !== 'calendar' ? '' : 'none';
+  // ランキングボタンはアイテム系タブのみ
+  document.getElementById('rankOnBtn').style.display = ['wish','received','gave','place','gift'].includes(currentTab) ? '' : 'none';
+  // 記念日ソートボタンは全タブ表示
+  const annSortBtn = document.getElementById('annSortBtn');
+  if (annSortBtn) annSortBtn.style.display = '';
   // ギフトタブ用のあげた/もらったボタン表示制御
   const gaveBtn = document.getElementById('giftGaveBtn');
   const recvBtn = document.getElementById('giftReceivedBtn');
@@ -3545,6 +3586,10 @@ function render() {
     const hiddenPeople = filteredPeople.filter(p=>p.hidden);
     const sortedPeople = [...visiblePeople].sort((a,b) => {
       if (a.pinned&&!b.pinned) return -1; if (!a.pinned&&b.pinned) return 1;
+      if (annSortMode) {
+        const da = getNearestAnnDays(a), db = getNearestAnnDays(b);
+        return annSortMode==='asc' ? da-db : db-da;
+      }
       return (a.nickname||'').localeCompare(b.nickname||'', 'ja');
     });
     let peopleHtml = sortedPeople.map(p => renderPersonListItem(p)).join('');

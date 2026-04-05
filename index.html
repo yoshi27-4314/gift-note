@@ -8339,6 +8339,16 @@ function renderAiCards(suggestions, personId, container) {
     const price = s.rakuten?.price ? `¥${Number(s.rakuten.price).toLocaleString()}` : (s.budget ? `約¥${Number(s.budget).toLocaleString()}` : '');
     const rakutenBtn = hasRakuten ? `<a href="${esc(s.rakuten.url)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:8px;background:#BF0000;color:#fff;font-size:12px;text-decoration:none;font-weight:500;">🛒 楽天</a>` : '';
     const amazonBtn = `<a href="${esc(s.amazonUrl)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:8px;background:#FF9900;color:#000;font-size:12px;text-decoration:none;font-weight:500;">🛒 Amazon</a>`;
+    const _ls = 'display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:8px;font-size:11px;text-decoration:none;font-weight:500;';
+    let webLinksHtml = '';
+    if (s.webLinks) {
+      const wl = s.webLinks;
+      if (wl.official) webLinksHtml += `<a href="${esc(wl.official)}" target="_blank" rel="noopener" style="${_ls}background:#4A90D9;color:#fff;">🔗 公式サイト</a>`;
+      if (wl.instagram) webLinksHtml += `<a href="${esc(wl.instagram)}" target="_blank" rel="noopener" style="${_ls}background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);color:#fff;">📸 Instagram</a>`;
+      if (wl.tabelog) webLinksHtml += `<a href="${esc(wl.tabelog)}" target="_blank" rel="noopener" style="${_ls}background:#F09000;color:#fff;">🍽 食べログ</a>`;
+      if (wl.hotpepper) webLinksHtml += `<a href="${esc(wl.hotpepper)}" target="_blank" rel="noopener" style="${_ls}background:#E60012;color:#fff;">🔥 ホットペッパー</a>`;
+      if (wl.gurunavi) webLinksHtml += `<a href="${esc(wl.gurunavi)}" target="_blank" rel="noopener" style="${_ls}background:#E2001A;color:#fff;">🍴 ぐるなび</a>`;
+    }
     const saveBtn = `<button onclick="saveAiSuggestion('wish','${personId}',${i})" style="padding:6px 12px;border-radius:8px;background:var(--pickup);border:1px solid var(--pickup-border);color:var(--text);font-size:12px;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">⭐ 保存</button>`;
     const placeBtn = s.isPlace ? `<button onclick="saveAiSuggestion('place','${personId}',${i})" style="padding:6px 12px;border-radius:8px;background:var(--pickup);border:1px solid var(--pickup-border);color:var(--text);font-size:12px;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">📍 行きたい</button>` : '';
 
@@ -8350,6 +8360,7 @@ function renderAiCards(suggestions, personId, container) {
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
         ${rakutenBtn}${amazonBtn}
       </div>
+      ${webLinksHtml ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">${webLinksHtml}</div>` : ''}
       <div style="display:flex;gap:6px;margin-top:8px;">
         ${saveBtn}${placeBtn}
       </div>

@@ -39,6 +39,52 @@ async function searchRakuten(keyword: string, appId: string, affiliateId: string
   }
 }
 
+async function searchPerplexity(keyword: string, apiKey: string) {
+  try {
+    const res = await fetch("https://api.perplexity.ai/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "sonar",
+        messages: [
+          {
+            role: "user",
+            content: `「${keyword}」の以下の情報を日本語で教えてください。URLが見つからない場合は空文字にしてください。必ずJSON形式のみで回答してください。
+{"official":"公式サイトURL","instagram":"InstagramURL","tabelog":"食べログURL","hotpepper":"ホットペッパーURL","gurunavi":"ぐるなびURL","description":"1行の説明"}`,
+          },
+        ],
+        max_tokens: 300,
+        temperature: 0.1,
+      }),
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    const text = json.choices?.[0]?.message?.content || "";
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      // 空文字やnullのフィールドを除去
+      const links: Record<string, string> = {};
+      if (parsed.official) links.official = parsed.official;
+      if (parsed.instagram) links.instagram = parsed.instagram;
+      if (parsed.tabelog) links.tabelog = parsed.tabelog;
+      if (parsed.hotpepper) links.hotpepper = parsed.hotpepper;
+      if (parsed.gurunavi) links.gurunavi = parsed.gurunavi;
+      return {
+        links,
+        description: parsed.description || "",
+      };
+    }
+    return null;
+  } catch (e) {
+    console.error("Perplexity search error:", e);
+    return null;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: CORS_HEADERS });
@@ -50,6 +96,7 @@ Deno.serve(async (req) => {
 
     const RAKUTEN_APP_ID = Deno.env.get("RAKUTEN_APP_ID") || "";
     const RAKUTEN_AFFILIATE_ID = Deno.env.get("RAKUTEN_AFFILIATE_ID") || "";
+    const PERPLEXITY_API_KEY = Deno.env.get("PERPLEXITY_API_KEY") || "";
 
     const { message, context, structured } = await req.json();
 
@@ -60,8 +107,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // structured=true: JSON形式でギフト提案＋楽天/Amazon リンク付き
-    // structured=false: 従来のテキスト応答
     const systemPrompt = structured
       ? `あなたはAWAI（アワイ）のAIギフトコンシェルジュです。
 
@@ -135,32 +180,48 @@ ${context ? "## ユーザーの登録情報\n" + context : ""}`;
       );
     }
 
-    // 構造化モード: JSON解析 → 楽天/Amazonリンク付与
+    // 構造化モード: JSON解析 → 楽天/Amazon/Perplexityリンク付与
     let suggestions;
     try {
       const jsonMatch = aiText.match(/\[[\s\S]*\]/);
       suggestions = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
     } catch {
-      // JSON解析失敗 → テキストとして返す
       return new Response(
         JSON.stringify({ reply: aiText }),
         { headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
       );
     }
 
-    // 楽天API + Amazon検索URLで情報を付与
+    // 各提案を楽天 + Amazon + Perplexity で情報付与
     for (let i = 0; i < suggestions.length; i++) {
       const s = suggestions[i];
       s.amazonUrl = `https://www.amazon.co.jp/s?k=${encodeURIComponent(s.keyword || s.name)}`;
 
+      // 楽天とPerplexityを並列実行（速度最適化）
+      const promises: Promise<void>[] = [];
+
       if (RAKUTEN_APP_ID) {
-        if (i > 0) await new Promise((r) => setTimeout(r, 350));
-        s.rakuten = await searchRakuten(
-          s.keyword || s.name,
-          RAKUTEN_APP_ID,
-          RAKUTEN_AFFILIATE_ID
+        promises.push(
+          (async () => {
+            if (i > 0) await new Promise((r) => setTimeout(r, 350));
+            s.rakuten = await searchRakuten(s.keyword || s.name, RAKUTEN_APP_ID, RAKUTEN_AFFILIATE_ID);
+          })()
         );
       }
+
+      if (PERPLEXITY_API_KEY) {
+        promises.push(
+          (async () => {
+            const pplx = await searchPerplexity(s.shop || s.name, PERPLEXITY_API_KEY);
+            if (pplx) {
+              s.webLinks = pplx.links;
+              if (pplx.description) s.webDescription = pplx.description;
+            }
+          })()
+        );
+      }
+
+      await Promise.all(promises);
     }
 
     return new Response(

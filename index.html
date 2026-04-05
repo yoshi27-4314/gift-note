@@ -1107,6 +1107,7 @@ let editPhotoAction = 'keep';
 let searchQuery = '';
 let rankMode = false;
 let annSortMode = null; // null=off, 'asc'=近い順, 'desc'=遠い順
+let calViewMode = 'calendar'; // 'calendar' or 'list'
 let openPersonId = null;
 
 // ===== Data =====
@@ -7388,6 +7389,50 @@ function renderCalendar(cardList) {
   html += '</div>';
   html += '</div>'; // 手帳風ラッパー閉じ
 
+  // カレンダー/リスト切り替えボタン
+  html += `<div style="text-align:center;padding:10px 16px;">
+    <button onclick="toggleCalView()" style="background:none;border:1px solid var(--border);border-radius:12px;padding:8px 20px;font-size:13px;color:var(--accent);cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">
+      ${calViewMode==='calendar' ? '📋 記念日をリストで表示' : '📅 カレンダーで表示'}
+    </button>
+  </div>`;
+
+  // リスト表示モードの場合、全記念日をリストで表示して終了
+  if (calViewMode === 'list') {
+    const allAnns = [];
+    data.people.forEach(p => {
+      (p.anniversaries||[]).forEach((a,ai) => {
+        if (!a.date || a.calendarHidden) return;
+        const days = daysUntil(a.date, a.dateType);
+        const emoji = (a.name||'').match(/[\p{Emoji}]/u)?.[0]||'📅';
+        const label = (a.name||'').replace(/[\p{Emoji}]/gu,'').trim();
+        allAnns.push({emoji, name:p.nickname, event:label, days:days!==null?days:9999, date:a.date, dateType:a.dateType, personId:p.id, annIdx:ai});
+      });
+    });
+    allAnns.sort((a,b) => a.days - b.days);
+
+    if (allAnns.length) {
+      html += '<div style="padding:8px 16px 4px;font-size:13px;font-weight:600;color:var(--accent);">すべての記念日（近い順）</div>';
+      allAnns.forEach(a => {
+        const badge = a.days===0 ? '🎉 今日！' : a.days<=7 ? `あと${a.days}日` : a.days<=30 ? `あと${a.days}日` : `あと${a.days}日`;
+        const badgeColor = a.days===0 ? 'var(--accent)' : a.days<=7 ? '#c97070' : a.days<=30 ? 'var(--accent)' : 'var(--sub)';
+        html += `<div style="display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;" onclick="jumpToPerson('${a.personId}')">
+          <span style="font-size:22px;">${a.emoji}</span>
+          <div style="flex:1;">
+            <div style="font-size:14px;font-weight:500;">${esc(a.name)}</div>
+            <div style="font-size:12px;color:var(--sub);">${esc(a.event)} · ${formatAnnDate(a.date,a.dateType)}</div>
+          </div>
+          <span style="font-size:13px;color:${badgeColor};font-weight:600;">${badge}</span>
+        </div>`;
+      });
+    } else {
+      html += '<div style="text-align:center;padding:24px;color:var(--sub);font-size:13px;">記念日はまだ登録されていません</div>';
+    }
+
+    cardList.innerHTML = html;
+    setTimeout(initCalSwipe, 100);
+    return;
+  }
+
   // Event list for today or selected
   const todayEvents = events[today.getDate()] || [];
   // Upcoming events this month
@@ -7465,6 +7510,11 @@ async function toggleCalendarHidden(personId, annIdx, hidden) {
   await sbSave();
   render();
   showToast(hidden ? '記念日から非表示にしました' : '記念日に表示しました');
+}
+
+function toggleCalView() {
+  calViewMode = calViewMode === 'calendar' ? 'list' : 'calendar';
+  render();
 }
 
 function calPrev() {

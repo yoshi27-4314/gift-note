@@ -7372,6 +7372,7 @@ function renderCalendar(cardList) {
   </div>`;
 
   cardList.innerHTML = html;
+  setTimeout(initCalSwipe, 100);
 }
 
 async function toggleCalendarHidden(personId, annIdx, hidden) {
@@ -7386,6 +7387,23 @@ async function toggleCalendarHidden(personId, annIdx, hidden) {
 
 function calPrev() { _calMonth--; if(_calMonth<0){_calMonth=11;_calYear--;} render(); }
 function calNext() { _calMonth++; if(_calMonth>11){_calMonth=0;_calYear++;} render(); }
+
+// カレンダースワイプで月切り替え
+let _calSwipeX = 0;
+function initCalSwipe() {
+  const el = document.getElementById('cardList');
+  if (!el || currentTab !== 'calendar') return;
+  el.addEventListener('touchstart', calSwipeStart, {passive:true});
+  el.addEventListener('touchend', calSwipeEnd, {passive:true});
+}
+function calSwipeStart(e) { _calSwipeX = e.touches[0].clientX; }
+function calSwipeEnd(e) {
+  if (currentTab !== 'calendar') return;
+  const diff = e.changedTouches[0].clientX - _calSwipeX;
+  if (Math.abs(diff) < 60) return; // 60px未満は無視
+  if (diff > 0) calPrev(); // 右スワイプ→前月
+  else calNext(); // 左スワイプ→次月
+}
 function calDayTap(y,m,d) {
   const dateStr = y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
   const modal = document.getElementById('modal');

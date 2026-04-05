@@ -1021,8 +1021,12 @@ const LABEL_COLORS = ['#e8a598','#7a9ad4','#8abf7a','#c49a6c','#b07acc','#d4956a
 
 // ===== State =====
 let data = { wish:[], received:[], gave:[], place:[], people:[], groups:[], labels:{wish:[],received:[],gave:[],place:[]} };
-let currentTab = 'people';
-let currentLabel = 'individual';
+let currentTab = localStorage.getItem('awai_last_tab') || 'people';
+let currentLabel = localStorage.getItem('awai_last_label') || (currentTab==='people'?'individual':null);
+// 復元後にクリア（次回は通常起動）
+localStorage.removeItem('awai_last_tab');
+localStorage.removeItem('awai_last_label');
+if (currentLabel === '') currentLabel = null;
 let editingId = null;
 let editPhotoAction = 'keep';
 let searchQuery = '';
@@ -8168,6 +8172,7 @@ if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().t
 
   document.querySelectorAll('.tab').forEach(el => {
     el.addEventListener('click', () => switchTab(el.dataset.tab));
+    el.classList.toggle('active', el.dataset.tab===currentTab);
   });
 
   document.getElementById('fabBtn').addEventListener('click', () => {
@@ -8318,6 +8323,8 @@ if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().t
   document.addEventListener('touchend', () => {
     if (_ptr_el.classList.contains('visible') && _ptr_el.textContent.includes('離して')) {
       _ptr_el.textContent = '更新中...';
+      localStorage.setItem('awai_last_tab', currentTab);
+      localStorage.setItem('awai_last_label', currentLabel === null ? '' : currentLabel);
       setTimeout(() => { location.reload(); }, 300);
     } else {
       _ptr_el.classList.remove('visible');

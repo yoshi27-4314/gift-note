@@ -16,7 +16,7 @@ async function searchRakuten(keyword: string, appId: string, affiliateId: string
     if (affiliateId) params.set("affiliateId", affiliateId);
 
     const res = await fetch(
-      `https://app.rakuten.co.jp/services/api/IchibaItem/Search/20220601?${params}`
+      `https://openapi.rakuten.co.jp/ichibams/api/IchibaItem/Search/20220601/?${params}`
     );
     if (!res.ok) return null;
     const json = await res.json();

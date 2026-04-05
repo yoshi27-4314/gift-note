@@ -9095,12 +9095,15 @@ function startOcr(mode) {
 
   modal.innerHTML = `<h2>${title}</h2>
     <div style="font-size:13px;color:var(--sub);margin-bottom:12px;">${hint}</div>
-    <div style="display:flex;gap:8px;margin-bottom:12px;">
-      <button onclick="document.getElementById('ocrCamera').click()" style="flex:1;padding:12px;border-radius:12px;border:1px solid var(--border);background:var(--bg);cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;font-size:13px;">📷 カメラ</button>
-      <button onclick="document.getElementById('ocrFile').click()" style="flex:1;padding:12px;border-radius:12px;border:1px solid var(--border);background:var(--bg);cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;font-size:13px;">📁 ファイル</button>
+    ${mode==='line_friends' ? `<div style="margin-bottom:12px;">
+      <button onclick="document.getElementById('ocrFile').click()" style="width:100%;padding:14px;border-radius:12px;border:1px solid var(--accent);background:var(--card);cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;font-size:14px;font-weight:500;color:var(--accent);">📁 スクショを選ぶ（複数枚OK）</button>
+    </div>
+    <input type="file" id="ocrFile" accept="image/*" multiple style="display:none;" onchange="processOcrImage(this,'${mode}')">` : `<div style="display:flex;gap:8px;margin-bottom:12px;">
+      <button onclick="document.getElementById('ocrCamera').click()" style="flex:1;padding:14px;border-radius:12px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;font-size:14px;font-weight:500;">📷 撮影する</button>
+      <button onclick="document.getElementById('ocrFile').click()" style="flex:1;padding:14px;border-radius:12px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;font-size:14px;font-weight:500;">📁 写真を選ぶ</button>
     </div>
     <input type="file" id="ocrCamera" accept="image/*" capture="environment" style="display:none;" onchange="processOcrImage(this,'${mode}')">
-    <input type="file" id="ocrFile" accept="image/*" ${mode==='line_friends'?'multiple':''} style="display:none;" onchange="processOcrImage(this,'${mode}')">
+    <input type="file" id="ocrFile" accept="image/*" style="display:none;" onchange="processOcrImage(this,'${mode}')">`}
     <div id="ocrPreview" style="text-align:center;margin-bottom:12px;"></div>
     <div id="ocrResult"></div>
     <div class="form-btns">

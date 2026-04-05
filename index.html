@@ -779,7 +779,8 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 </div>
 
 <div class="header">
-  <button class="season-btn" id="notifBtn" style="left:16px;right:auto;position:absolute;" onclick="openNotifications()">
+  <button class="season-btn" id="backBtn" style="left:16px;right:auto;position:absolute;display:none;font-size:16px;" onclick="goBack()">←</button>
+  <button class="season-btn" id="notifBtn" style="left:56px;right:auto;position:absolute;" onclick="openNotifications()">
     🔔<span id="notifBadge" style="display:none;position:absolute;top:-2px;right:-2px;background:#c97070;color:#fff;font-size:9px;width:16px;height:16px;border-radius:50%;display:none;align-items:center;justify-content:center;">0</span>
   </button>
   <div class="app-title">AWAI</div>
@@ -3260,7 +3261,23 @@ function scheduleUpdateCheck() {
   }
 }
 
+function updateBackBtn() {
+  const btn = document.getElementById('backBtn');
+  if (!btn) return;
+  const show = openPersonId || openGroupId || openItemId || openAllRecordId;
+  btn.style.display = show ? '' : 'none';
+}
+
+function goBack() {
+  if (openPersonId) { openPersonId = null; render(); return; }
+  if (openGroupId) { openGroupId = null; render(); return; }
+  if (openItemId) { openItemId = null; render(); return; }
+  if (openAllRecordId) { openAllRecordId = null; render(); return; }
+  history.back();
+}
+
 function render() {
+  updateBackBtn();
   const cardList = document.getElementById('cardList');
   if (isDummyMode) {
     cardList.innerHTML = '<div class="empty-msg">データがありません<br>下の ＋ ボタンから追加できます</div>';

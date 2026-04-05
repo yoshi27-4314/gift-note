@@ -5113,7 +5113,7 @@ function saveDevMemosLocal(memos) {
 async function fetchDevMemosFromSupabase() {
   if (!_sb || !_sbUser) return getDevMemosLocal();
   try {
-    const { data: rows, error } = await _sb.from('dev_memos').select('*').order('created_at', { ascending: true });
+    const { data: rows, error } = await _sb.from('dev_memos').select('*').eq('user_id', _sbUser.id).order('created_at', { ascending: true });
     if (error) throw error;
     const memos = (rows || []).map(r => ({
       _supaId: r.id,
@@ -5350,33 +5350,18 @@ async function deleteDevMemo(idx) {
   const memo = memos[idx];
   if (!memo) return;
 
-  let deleted = false;
   if (memo._supaId && _sb && _sbUser) {
     try {
-      // user_idが自分のものか確認
-      const isMine = memo._userId === _sbUser.id;
-      if (isMine) {
-        const { error } = await _sb.from('dev_memos').delete().eq('id', memo._supaId).eq('user_id', _sbUser.id);
-        if (error) { alert('削除エラー: ' + error.message); return; }
-        deleted = true;
-      } else {
-        alert('他のユーザーのメモは削除できません');
-        return;
-      }
+      const { error } = await _sb.from('dev_memos').delete().eq('id', memo._supaId).eq('user_id', _sbUser.id);
+      if (error) { alert('削除に失敗しました'); return; }
     } catch(e) { alert('削除に失敗しました'); return; }
-  } else {
-    deleted = true;
   }
-
-  if (deleted) {
-    const localMemos = getDevMemosLocal();
-    const localIdx = memo._supaId ? localMemos.findIndex(m => m._supaId === memo._supaId) : idx;
-    if (localIdx >= 0) { localMemos.splice(localIdx, 1); saveDevMemosLocal(localMemos); }
-    // キャッシュからも削除
-    if (_devMemosCache) { _devMemosCache.splice(idx, 1); }
-    openDevMemo();
-    showToast('メモを削除しました');
-  }
+  const localMemos = getDevMemosLocal();
+  const localIdx = memo._supaId ? localMemos.findIndex(m => m._supaId === memo._supaId) : idx;
+  if (localIdx >= 0) { localMemos.splice(localIdx, 1); saveDevMemosLocal(localMemos); }
+  if (_devMemosCache) { _devMemosCache.splice(idx, 1); }
+  openDevMemo();
+  showToast('メモを削除しました');
 }
 
 // ===== Contact Import (Android Contact Picker API) =====

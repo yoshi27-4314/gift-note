@@ -9150,7 +9150,7 @@ async function processOcrImage(input, mode) {
         } else if (mode === 'business_card' && json.result) {
           renderOcrBusinessCard(json.result);
         } else {
-          resultDiv.innerHTML = '<div style="color:#c97070;padding:12px;">読み取れませんでした。別の画像で試してください。</div>';
+          resultDiv.innerHTML = '<div style="color:#c97070;padding:12px;line-height:1.6;">読み取れませんでした。<br>📌 名刺はできるだけ近くで、明るい場所で撮影してみてください。<br>📌 スクショは文字がはっきり見える画像を選んでください。</div>';
         }
       } catch (err) {
         resultDiv.innerHTML = `<div style="color:#c97070;padding:12px;">エラー: ${esc(err.message)}</div>`;

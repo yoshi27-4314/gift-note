@@ -139,7 +139,7 @@ Deno.serve(async (req) => {
 
     if (!result) {
       return new Response(
-        JSON.stringify({ error: "画像の読み取りに失敗しました。別の画像で試してください。", raw: aiText }),
+        JSON.stringify({ error: "文字を読み取れませんでした。名刺をできるだけ近くで、明るい場所で撮影してみてください。", raw: aiText }),
         { status: 200, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
       );
     }
@@ -151,7 +151,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error("Edge Function error:", error);
     return new Response(
-      JSON.stringify({ error: "画像解析に失敗しました。しばらくしてからお試しください。" }),
+      JSON.stringify({ error: "画像解析に失敗しました。名刺を近くで撮り直すか、明るい場所でもう一度お試しください。" }),
       { status: 500, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
     );
   }

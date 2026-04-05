@@ -770,6 +770,7 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
     🔔<span id="notifBadge" style="display:none;position:absolute;top:-2px;right:-2px;background:#c97070;color:#fff;font-size:9px;width:16px;height:16px;border-radius:50%;display:none;align-items:center;justify-content:center;">0</span>
   </button>
   <div class="app-title">AWAI</div>
+  <div class="app-subtitle">友だちと記憶がここに</div>
   <button class="season-btn" id="seasonBtn" style="right:52px;">🌸</button>
   <button class="season-btn" id="settingsBtn" style="right:16px;font-size:12px;">⚙️</button>
 </div>
@@ -1042,9 +1043,6 @@ const LABEL_COLORS = ['#e8a598','#7a9ad4','#8abf7a','#c49a6c','#b07acc','#d4956a
 let data = { wish:[], received:[], gave:[], place:[], people:[], groups:[], labels:{wish:[],received:[],gave:[],place:[]} };
 let currentTab = localStorage.getItem('awai_last_tab') || 'people';
 let currentLabel = localStorage.getItem('awai_last_label') || (currentTab==='people'?'individual':null);
-// 復元後にクリア（次回は通常起動）
-localStorage.removeItem('awai_last_tab');
-localStorage.removeItem('awai_last_label');
 if (currentLabel === '') currentLabel = null;
 let editingId = null;
 let editPhotoAction = 'keep';
@@ -3575,6 +3573,9 @@ function switchTab(tab) {
   searchQuery = ''; rankMode = false; openPersonId = null; openItemId = null; openGroupId = null; openAllRecordId = null;
   document.getElementById('searchInput').value = '';
   document.querySelectorAll('.tab').forEach(el => el.classList.toggle('active', el.dataset.tab===tab));
+  // タブ状態を常時保存（リロード時復元用）
+  localStorage.setItem('awai_last_tab', currentTab);
+  localStorage.setItem('awai_last_label', currentLabel === null ? '' : currentLabel);
   render();
   showTabGuide(tab);
 }

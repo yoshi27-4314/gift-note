@@ -823,8 +823,8 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
   <button id="notifBtn" style="position:absolute;left:16px;top:18px;background:none;border:none;font-size:22px;cursor:pointer;padding:4px;" onclick="openNotifications()">🔔<span id="notifBadge" style="display:none;position:absolute;top:-2px;right:-4px;background:#c97070;color:#fff;font-size:9px;min-width:16px;height:16px;border-radius:50%;align-items:center;justify-content:center;">0</span></button>
   <button id="navBackBtn" style="position:absolute;left:50px;top:18px;background:none;border:none;font-size:22px;cursor:pointer;padding:4px;color:var(--sub);" onclick="goBack()">←</button>
   <button id="navFwdBtn" style="position:absolute;left:76px;top:18px;background:none;border:none;font-size:22px;cursor:pointer;padding:4px;color:var(--sub);" onclick="goForward()">→</button>
-  <div class="app-title">AWAI</div>
-  <div class="app-subtitle">友だちと記憶がここに</div>
+  <div class="app-title">AWAI <span id="awaiStageIcon" style="font-size:18px;vertical-align:middle;"></span></div>
+  <div class="app-subtitle" id="awaiSubtitle">友だちと記憶がここに</div>
   <button class="season-btn" id="seasonBtn" style="right:52px;">🌸</button>
   <button class="season-btn" id="settingsBtn" style="right:16px;font-size:12px;">⚙️</button>
 </div>
@@ -8669,6 +8669,137 @@ function dismissSimilarNotif(key) {
   } catch {}
 }
 
+// ===== AWAI Personality Engine =====
+const AWAI_STATS_KEY = 'awai_personality_stats';
+
+function getAwaiStats() {
+  try {
+    return JSON.parse(localStorage.getItem(AWAI_STATS_KEY) || '{}');
+  } catch { return {}; }
+}
+
+function saveAwaiStats(stats) {
+  localStorage.setItem(AWAI_STATS_KEY, JSON.stringify(stats));
+}
+
+function trackAppOpen() {
+  const stats = getAwaiStats();
+  if (!stats.createdAt) stats.createdAt = new Date().toISOString();
+  if (!stats.openCount) stats.openCount = 0;
+  // 1日1回だけカウント（同じ日に何回開いても1回）
+  const today = new Date().toISOString().split('T')[0];
+  if (stats.lastOpenDate !== today) {
+    stats.openCount++;
+    stats.lastOpenDate = today;
+  }
+  saveAwaiStats(stats);
+}
+
+function calcCardDepth(person) {
+  if (!person || person.isMemory) return 0;
+  let score = 0;
+  // 基本情報 (10点)
+  if (person.nickname) score += 5;
+  if (person.relation) score += 5;
+  // 好み (15点)
+  const likeCount = (person.interests?.length||0) + (person.brands?.length||0) + (person.foodLike?.length||0);
+  if (likeCount >= 5) score += 15;
+  else if (likeCount >= 3) score += 10;
+  else if (likeCount >= 1) score += 5;
+  // 苦手 (5点)
+  if (person.foodDislike?.length) score += 5;
+  // 記念日 (15点)
+  const annCount = person.anniversaries?.length || 0;
+  if (annCount >= 3) score += 15;
+  else if (annCount >= 1) score += annCount * 5;
+  // 性格 (10点)
+  if (person.personality?.length) score += 10;
+  // サイズ (5点)
+  if (person.sizes && Object.values(person.sizes).some(v=>v)) score += 5;
+  // メモ (5点)
+  if (person.memo) score += 5;
+  // ギフト履歴 (20点)
+  const giftCount = [...(data.gave||[]), ...(data.received||[])].filter(
+    item => item.person && person.nickname && item.person.includes(person.nickname)
+  ).length;
+  if (giftCount >= 4) score += 20;
+  else score += giftCount * 5;
+  // コンシェルジュ利用 (10点)
+  if (person.aiHistory?.length) score += 10;
+  // 写真 (5点)
+  if (person.avatar) score += 5;
+  return Math.min(score, 100);
+}
+
+function getDeeplyCaredCount() {
+  return data.people.filter(p => !p.isMemory && p.type !== 'corporate' && calcCardDepth(p) >= 50).length;
+}
+
+function getGiftCount() {
+  return (data.gave?.length || 0);
+}
+
+function getAwaiStage() {
+  const stats = getAwaiStats();
+  const daysSinceCreation = stats.createdAt
+    ? Math.floor((Date.now() - new Date(stats.createdAt).getTime()) / (1000*60*60*24))
+    : 0;
+  const openCount = stats.openCount || 0;
+  const caredCount = getDeeplyCaredCount();
+  const giftCount = getGiftCount();
+
+  // 各条件で到達可能な最大ステージを計算
+  const dayStage = daysSinceCreation >= 365 ? 4 : daysSinceCreation >= 180 ? 3 : daysSinceCreation >= 60 ? 2 : daysSinceCreation >= 14 ? 1 : 0;
+  const caredStage = caredCount >= 30 ? 4 : caredCount >= 20 ? 3 : caredCount >= 10 ? 2 : caredCount >= 3 ? 1 : 0;
+  const openStage = openCount >= 1000 ? 4 : openCount >= 500 ? 3 : openCount >= 200 ? 2 : openCount >= 50 ? 1 : 0;
+  const giftStage = giftCount >= 50 ? 4 : giftCount >= 30 ? 3 : giftCount >= 10 ? 2 : giftCount >= 3 ? 1 : 0;
+
+  // 全条件の最小値 = 実際のステージ（全てが揃って初めて上がる）
+  const stage = Math.min(dayStage, caredStage, openStage, giftStage);
+
+  const stages = [
+    { icon: '🌱', name: 'はじまり', sub: 'AWAIとの出会い' },
+    { icon: '🌿', name: 'なじみ', sub: 'AWAIが少しずつあなたを知り始めました' },
+    { icon: '🌸', name: '信頼', sub: 'AWAIはあなたの大切な人を覚えています' },
+    { icon: '🌳', name: '絆', sub: 'AWAIはあなたの想いを深く理解しています' },
+    { icon: '💎', name: 'かけがえのない', sub: 'AWAIはあなたにとって、なくてはならない存在' },
+  ];
+
+  return {
+    level: stage,
+    ...stages[stage],
+    days: daysSinceCreation,
+    openCount,
+    caredCount,
+    giftCount,
+    // 次のステージへの進捗
+    nextRequirements: stage < 4 ? {
+      days: [0, 14, 60, 180, 365][stage+1],
+      cared: [0, 3, 10, 20, 30][stage+1],
+      opens: [0, 50, 200, 500, 1000][stage+1],
+      gifts: [0, 3, 10, 30, 50][stage+1],
+    } : null
+  };
+}
+
+function updateAwaiStageDisplay() {
+  const stage = getAwaiStage();
+  const iconEl = document.getElementById('awaiStageIcon');
+  const subEl = document.getElementById('awaiSubtitle');
+  if (iconEl) iconEl.textContent = stage.icon;
+  if (subEl) subEl.textContent = stage.sub;
+
+  // ステージアップ検知
+  const stats = getAwaiStats();
+  if (stats.lastStage !== undefined && stats.lastStage < stage.level) {
+    setTimeout(() => {
+      showToast(`${stage.icon} AWAIが「${stage.name}」に成長しました！`, 5000);
+    }, 1000);
+  }
+  stats.lastStage = stage.level;
+  saveAwaiStats(stats);
+}
+
 function deleteAiHistory(personId, idx) {
   if (!confirm('この提案履歴を削除しますか？')) return;
   const person = data.people.find(p=>p.id===personId);
@@ -9750,6 +9881,10 @@ if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().t
   checkReferral();
   const savedSeason = localStorage.getItem(SEASON_KEY);
   setSeason(savedSeason || getAutoSeason());
+
+  // AWAI Personality Engine
+  trackAppOpen();
+  setTimeout(updateAwaiStageDisplay, 500);
 
   // Supabase初期化（クラウド同期開始）
   sbInit();

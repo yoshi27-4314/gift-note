@@ -292,6 +292,8 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 }
 .cal-page-left { animation: calPageLeft 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
 .cal-page-right { animation: calPageRight 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+@keyframes dialUp { from { transform:translateY(8px); opacity:0.3; } to { transform:translateY(0); opacity:1; } }
+@keyframes dialDown { from { transform:translateY(-8px); opacity:0.3; } to { transform:translateY(0); opacity:1; } }
 }
 .card-title {
   font-family: 'Shippori Mincho', serif; font-size: 17px; font-weight: 600;
@@ -1393,12 +1395,46 @@ function calGoToday() {
   render();
 }
 
+let _dialYear, _dialMonth;
+
 function calJumpToDate() {
   const y = document.getElementById('calJumpYear')?.value;
   const m = document.getElementById('calJumpMonth')?.value;
   if (m) {
     _calMonth = parseInt(m) - 1;
     if (y) _calYear = parseInt(y);
+    render();
+  }
+}
+
+function dialYear(dir) {
+  const el = document.getElementById('dialYearVal');
+  if (!el) return;
+  let v = parseInt(el.textContent) + dir;
+  if (v < 1900) v = 1900;
+  if (v > 2100) v = 2100;
+  el.textContent = v;
+  el.style.animation = 'none'; void el.offsetHeight;
+  el.style.animation = dir > 0 ? 'dialUp 0.15s ease' : 'dialDown 0.15s ease';
+}
+
+function dialMonth(dir) {
+  const el = document.getElementById('dialMonthVal');
+  if (!el) return;
+  let v = parseInt(el.textContent) + dir;
+  if (v < 1) v = 12;
+  if (v > 12) v = 1;
+  el.textContent = v;
+  el.style.animation = 'none'; void el.offsetHeight;
+  el.style.animation = dir > 0 ? 'dialUp 0.15s ease' : 'dialDown 0.15s ease';
+}
+
+function calDialJump() {
+  const y = parseInt(document.getElementById('dialYearVal')?.textContent);
+  const m = parseInt(document.getElementById('dialMonthVal')?.textContent);
+  if (y && m) {
+    _calYear = y;
+    _calMonth = m - 1;
     render();
   }
 }
@@ -7385,15 +7421,24 @@ function renderCalendar(cardList) {
   html += '</div>';
   html += '</div>'; // 手帳風ラッパー閉じ
 
-  // カレンダー/リスト切り替え＋年月ジャンプ
-  html += `<div style="display:flex;align-items:center;justify-content:center;gap:8px;padding:10px 16px;flex-wrap:wrap;">
+  // カレンダー/リスト切り替え＋年月ダイヤル
+  html += `<div style="display:flex;align-items:center;justify-content:center;gap:12px;padding:10px 16px;">
     <button onclick="toggleCalView()" style="background:none;border:1px solid var(--border);border-radius:12px;padding:8px 16px;font-size:13px;color:var(--accent);cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">
-      ${calViewMode==='calendar' ? '📋 リスト表示' : '📅 カレンダー表示'}
+      ${calViewMode==='calendar' ? '📋 リスト' : '📅 カレンダー'}
     </button>
-    <div style="display:flex;align-items:center;gap:4px;">
-      <input id="calJumpYear" type="number" min="1900" max="2100" placeholder="年" value="${_calYear}" style="width:56px;padding:6px;font-size:12px;border:1px solid var(--border);border-radius:10px;text-align:center;font-family:'Zen Maru Gothic',sans-serif;">
-      <input id="calJumpMonth" type="number" min="1" max="12" placeholder="月" style="width:40px;padding:6px;font-size:12px;border:1px solid var(--border);border-radius:10px;text-align:center;font-family:'Zen Maru Gothic',sans-serif;">
-      <button onclick="calJumpToDate()" style="background:none;border:1px solid var(--border);border-radius:10px;padding:6px 10px;font-size:12px;color:var(--accent);cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">移動</button>
+    <div style="display:flex;align-items:center;gap:2px;background:var(--card);border-radius:14px;border:1px solid var(--border);padding:4px 8px;box-shadow:0 1px 4px var(--shadow);">
+      <div style="display:flex;flex-direction:column;align-items:center;width:50px;">
+        <span onclick="dialYear(1)" style="font-size:14px;color:var(--sub);cursor:pointer;user-select:none;padding:2px;">▲</span>
+        <span id="dialYearVal" style="font-size:16px;font-weight:600;color:var(--text);">${_calYear}</span>
+        <span onclick="dialYear(-1)" style="font-size:14px;color:var(--sub);cursor:pointer;user-select:none;padding:2px;">▼</span>
+      </div>
+      <span style="font-size:16px;color:var(--sub);font-weight:300;">/</span>
+      <div style="display:flex;flex-direction:column;align-items:center;width:36px;">
+        <span onclick="dialMonth(1)" style="font-size:14px;color:var(--sub);cursor:pointer;user-select:none;padding:2px;">▲</span>
+        <span id="dialMonthVal" style="font-size:16px;font-weight:600;color:var(--text);">${_calMonth+1}</span>
+        <span onclick="dialMonth(-1)" style="font-size:14px;color:var(--sub);cursor:pointer;user-select:none;padding:2px;">▼</span>
+      </div>
+      <button onclick="calDialJump()" style="background:var(--accent);color:#fff;border:none;border-radius:10px;padding:6px 12px;font-size:12px;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;margin-left:4px;">移動</button>
     </div>
   </div>`;
 
@@ -7532,14 +7577,14 @@ function calNext() {
 }
 
 // カレンダースワイプで月切り替え
-let _calSwipeX = 0;
+let _calSwipeX = 0, _calSwipeY = 0;
 function initCalSwipe() {
   const el = document.getElementById('cardList');
   if (!el || currentTab !== 'calendar') return;
   el.addEventListener('touchstart', calSwipeStart, {passive:true});
   el.addEventListener('touchend', calSwipeEnd, {passive:true});
 }
-function calSwipeStart(e) { _calSwipeX = e.touches[0].clientX; }
+function calSwipeStart(e) { _calSwipeX = e.touches[0].clientX; _calSwipeY = e.touches[0].clientY; }
 function calSwipeEnd(e) {
   if (currentTab !== 'calendar') return;
   const diff = e.changedTouches[0].clientX - _calSwipeX;

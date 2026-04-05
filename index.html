@@ -848,31 +848,34 @@ async function sbInit() {
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const hasOAuthToken = hashParams.has('access_token') || window.location.search.includes('code=');
 
-    // セッション復元 or 匿名ログイン
+    // セッション復元（匿名ログインは行わない）
     const { data: { session } } = await _sb.auth.getSession();
-    if (session) {
+    if (session && session.user) {
       _sbUser = session.user;
       if (hasOAuthToken && _sbUser.email) {
-        // OAuthリダイレクト直後
         window.history.replaceState({}, '', window.location.pathname);
-        setTimeout(() => showToast('✅ ' + _sbUser.email + ' で連携しました'), 500);
+        setTimeout(() => showToast('✅ ' + _sbUser.email + ' でログインしました'), 500);
+      }
+      // ログイン済み（メールあり）の場合のみクラウド同期
+      if (_sbUser.email) {
+        await sbLoad();
+        await sbSave(); // ローカルデータがクラウドにない場合の初回保存
+        checkShareRequests();
+        ensureShareCode();
+        syncReferralPoints();
+        showLoginWarningHide();
       }
     } else {
-      const { data: authData, error } = await _sb.auth.signInAnonymously();
-      if (error) { console.error('Auth error:', error); return; }
-      _sbUser = authData.user;
+      _sbUser = null;
     }
-    // クラウドからデータを読み込み
-    await sbLoad();
-    // 共有リクエストチェック
-    checkShareRequests();
-    // 共有コード確保
-    ensureShareCode();
-    // 紹介ポイント同期
-    syncReferralPoints();
     // 未ログイン警告
     showLoginWarning();
   } catch(e) { console.error('Supabase init error:', e); }
+}
+
+function showLoginWarningHide() {
+  const banner = document.getElementById('loginWarningBanner');
+  if (banner) banner.innerHTML = '';
 }
 
 function showLoginWarning() {
@@ -892,11 +895,17 @@ function showLoginWarning() {
 }
 
 async function sbLoad() {
-  if (!_sbUser) return;
+  // ログイン済み（メールあり）のユーザーのみクラウドから読み込む
+  if (!_sbUser || !_sbUser.email) return;
   try {
-    const { data: row, error } = await _sb.from('user_data').select('data,profile').eq('user_id', _sbUser.id).single();
+    const { data: row, error } = await _sb.from('user_data').select('data,profile,user_id').eq('user_id', _sbUser.id).single();
     if (error && error.code !== 'PGRST116') { console.error('Load error:', error); return; }
     if (row && row.data) {
+      // 二重チェック：取得したデータのuser_idが自分のものか確認
+      if (row.user_id !== _sbUser.id) {
+        console.error('SECURITY: user_id mismatch. Expected:', _sbUser.id, 'Got:', row.user_id);
+        return;
+      }
       // クラウドのデータとローカルを比較し、新しい方を採用
       const localRaw = localStorage.getItem('awai_data');
       const localData = localRaw ? JSON.parse(localRaw) : null;
@@ -904,7 +913,6 @@ async function sbLoad() {
       const cloudCount = Object.values(row.data).reduce((s,v) => s + (Array.isArray(v)?v.length:0), 0);
 
       if (cloudCount > 0 && cloudCount >= localCount) {
-        // クラウドのデータを採用
         TABS.forEach(t => { if (Array.isArray(row.data[t])) data[t] = row.data[t]; });
         if (row.data.labels) data.labels = {...data.labels, ...row.data.labels};
         localStorage.setItem('awai_data', JSON.stringify(data));
@@ -918,7 +926,8 @@ async function sbLoad() {
 }
 
 async function sbSave() {
-  if (!_sbUser || _sbSyncing) return;
+  // ログイン済み（メールあり）のユーザーのみクラウドに保存
+  if (!_sbUser || !_sbUser.email || _sbSyncing) return;
   _sbSyncing = true;
   try {
     const dataObj = JSON.parse(localStorage.getItem('awai_data') || '{}');
@@ -985,11 +994,14 @@ async function doLogin() {
     const { data: res, error } = await _sb.auth.signInWithPassword({ email, password });
     if (error) { alert('ログインエラー: ' + error.message); return; }
     _sbUser = res.user;
+    // ログイン後：クラウドにデータがあれば読み込み、なければローカルデータをクラウドに保存
     await sbLoad();
+    await sbSave(); // ローカルデータをクラウドに初回保存
     render();
     document.getElementById('loginOverlay')?.remove();
     document.getElementById('onboardingOverlay').style.display = 'none';
     localStorage.setItem(OB_KEY, '1');
+    showLoginWarningHide();
     showToast('ログインしました');
   } catch(e) { alert('ログインに失敗しました: ' + e.message); }
 }

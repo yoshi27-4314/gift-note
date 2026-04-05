@@ -2335,26 +2335,46 @@ function renderPersonCard(p) {
     html += `<div class="person-section"><div class="person-section-title">📝 メモ</div>
     <div style="font-size:12px;line-height:1.6;white-space:pre-wrap;">${esc(p.memo)}</div></div>`;
   }
-  // Full history: gave, received, wish, place
-  const allHistory = [];
-  const nameMatch = (itemPerson) => itemPerson && p.nickname && (itemPerson.includes(p.nickname) || (p.fullName && itemPerson.includes(p.fullName)));
-  data.gave.forEach(item => { if (nameMatch(item.person)) allHistory.push({...item, cat:'gave'}); });
-  data.received.forEach(item => { if (nameMatch(item.person)) allHistory.push({...item, cat:'received'}); });
-  data.wish.forEach(item => {
-    const matched = nameMatch(item.person) || nameMatch(item.giftTarget) || (item.memo && p.nickname && item.memo.includes(p.nickname));
-    if (matched) allHistory.push({...item, cat: item.purpose==='gift'?'wantgive':'wish'});
-  });
-  data.place.forEach(item => { if (nameMatch(item.person) || (item.memo && p.nickname && item.memo.includes(p.nickname))) allHistory.push({...item, cat:'place'}); });
+  // === 🔗 つながり（確定リンクのみ。推測しない。） ===
+  const links = [];
 
-  if (allHistory.length) {
-    const catLabels = {gave:'🎁 あげた', received:'🎀 もらった', wish:'💭 気になる', wantgive:'🎁 あげたい', place:'📍 行きたい'};
-    const catColors = {gave:'#fdeee9', received:'#e9f0fd', wish:'#f5f0ed', wantgive:'#fdf0ed', place:'#edf7fa'};
-    const catTextColors = {gave:'#d48a7a', received:'#7a9ad4', wish:'#9e8e88', wantgive:'#e8a598', place:'#7ec8d9'};
-    const catToTab = {gave:'gave', received:'received', wish:'wish', wantgive:'wish', place:'place'};
-    html += collapsibleSection('📋', '友だちとの記録', allHistory.length, 5, () => {
+  // グループ（明示的に追加された紐づけ）
+  data.groups.forEach(g => {
+    if ((g.memberIds||[]).includes(p.id)) {
+      links.push({type:'group', icon:'👥', label:'グループ', name:g.name, onclick:`jumpToGroup('${g.id}')`});
+    }
+  });
+
+  // 会社（明示的に登録された所属）
+  if (p.companyLink) {
+    const corp = data.people.find(x=>x.type==='corporate'&&(x.nickname===p.companyLink||x.corpNickname===p.companyLink||x.corpFullName===p.companyLink));
+    if (corp) links.push({type:'company', icon:'🏢', label:'会社', name:p.companyLink, onclick:`jumpToPerson('${corp.id}')`});
+  }
+
+  // 行きたい場所（明示的に「誰と」に登録された場所）
+  data.place.forEach(item => {
+    if (item.withPeople && item.withPeople.includes(p.nickname)) {
+      links.push({type:'place', icon:'📍', label:'一緒に行きたい', name:item.title, onclick:`jumpToItem('place','${item.id}')`});
+    }
+  });
+
+  // ギフト履歴（明示的に相手として登録されたもの）
+  const nameMatch = (itemPerson) => itemPerson && p.nickname && itemPerson === p.nickname;
+  data.gave.forEach(item => { if (nameMatch(item.person)) links.push({type:'gave', icon:'🎁', label:'あげた', name:item.title, date:item.date, onclick:`jumpToItem('gave','${item.id}')`}); });
+  data.received.forEach(item => { if (nameMatch(item.person)) links.push({type:'received', icon:'🎀', label:'もらった', name:item.title, date:item.date, onclick:`jumpToItem('received','${item.id}')`}); });
+
+  if (links.length) {
+    html += collapsibleSection('🔗', 'つながり', links.length, 5, () => {
       let rh = '';
-      allHistory.sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,10).forEach(h => {
-        rh += `<div class="history-item" onclick="event.stopPropagation();jumpToItem('${catToTab[h.cat]}','${h.id}')" style="cursor:pointer;"><span class="history-dir" style="background:${catColors[h.cat]};color:${catTextColors[h.cat]};">${catLabels[h.cat]}</span><span style="flex:1;">${esc(h.title)}</span><span class="history-date">${h.date||''}</span><span style="color:var(--accent);font-size:12px;margin-left:4px;">→</span></div>`;
+      const typeColors = {group:'#f0eaf8', company:'#e8f0ff', place:'#edf7fa', gave:'#fdeee9', received:'#e9f0fd'};
+      const typeTextColors = {group:'#8a7acc', company:'#6b88a8', place:'#7ec8d9', gave:'#d48a7a', received:'#7a9ad4'};
+      links.forEach(l => {
+        rh += `<div class="history-item" onclick="event.stopPropagation();${l.onclick}" style="cursor:pointer;">
+          <span class="history-dir" style="background:${typeColors[l.type]||'var(--bg)'};color:${typeTextColors[l.type]||'var(--sub)'};">${l.icon} ${l.label}</span>
+          <span style="flex:1;">${esc(l.name)}</span>
+          ${l.date?`<span class="history-date">${l.date}</span>`:''}
+          <span style="color:var(--accent);font-size:12px;margin-left:4px;">→</span>
+        </div>`;
       });
       return rh;
     });
@@ -3684,9 +3704,22 @@ function jumpToPerson(id) {
 function jumpToItem(tab, id) {
   switchTab(tab);
   openItemId = id;
+  history.pushState({item:id, tab:tab}, '');
   render();
   setTimeout(() => {
     const detail = document.getElementById('itemDetail');
+    if (detail) detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 150);
+}
+
+function jumpToGroup(id) {
+  switchTab('people');
+  currentLabel = 'groups';
+  openGroupId = id;
+  history.pushState({group:id, tab:'people'}, '');
+  render();
+  setTimeout(() => {
+    const detail = document.getElementById('groupDetail');
     if (detail) detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, 150);
 }

@@ -7239,25 +7239,52 @@ async function toggleCalendarHidden(personId, annIdx, hidden) {
 function calPrev() { _calMonth--; if(_calMonth<0){_calMonth=11;_calYear--;} render(); }
 function calNext() { _calMonth++; if(_calMonth>11){_calMonth=0;_calYear++;} render(); }
 function calDayTap(y,m,d) {
-  // Show events for the tapped day
+  const dateStr = y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+  const modal = document.getElementById('modal');
   const events = [];
   data.people.forEach(p => {
     (p.anniversaries||[]).forEach(a => {
-      if (!a.date) return;
+      if (!a.date || a.calendarHidden) return;
       const parts = a.date.split('-').map(Number);
       let em,ed;
       if (a.dateType==='full'&&parts.length>=3) { em=parts[1]-1; ed=parts[2]; }
       else if (parts.length>=2) { em=parts[parts.length-2]-1; ed=parts[parts.length-1]; }
       else return;
-      if (em===m && ed===d) events.push({emoji:(a.name||'').match(/[\p{Emoji}]/u)?.[0]||'📅', text:p.nickname+' '+a.name});
+      if (em===m && ed===d) events.push({emoji:(a.name||'').match(/[\p{Emoji}]/u)?.[0]||'📅', text:p.nickname+' '+a.name, personId:p.id});
     });
   });
-  data.gave.forEach(item => { const p=item.date?.split('-').map(Number); if(p&&p[0]===y&&p[1]-1===m&&p[2]===d) events.push({emoji:'🎁',text:(item.person||'')+' '+item.title}); });
-  data.received.forEach(item => { const p=item.date?.split('-').map(Number); if(p&&p[0]===y&&p[1]-1===m&&p[2]===d) events.push({emoji:'🎀',text:(item.person||'')+' '+item.title}); });
+  data.gave.forEach(item => { const p=item.date?.split('-').map(Number); if(p&&p[0]===y&&p[1]-1===m&&p[2]===d) events.push({emoji:'🎁',text:(item.person||'')+' '+item.title,tab:'gave',id:item.id}); });
+  data.received.forEach(item => { const p=item.date?.split('-').map(Number); if(p&&p[0]===y&&p[1]-1===m&&p[2]===d) events.push({emoji:'🎀',text:(item.person||'')+' '+item.title,tab:'received',id:item.id}); });
+
+  let html = `<h2>${m+1}月${d}日</h2>`;
+
   if (events.length) {
-    const msg = events.map(e=>e.emoji+' '+e.text).join('\n');
-    alert((m+1)+'/'+d+'の予定:\n\n'+msg);
+    html += '<div style="margin-bottom:16px;">';
+    events.forEach(e => {
+      const onclick = e.personId ? `closeModal();jumpToPerson('${e.personId}')` : e.tab ? `closeModal();switchTab('gift');openAllRecordId='${e.tab}:${e.id}';render()` : '';
+      html += `<div style="display:flex;align-items:center;gap:10px;padding:12px;border-bottom:1px solid var(--border);${onclick?'cursor:pointer;':''}" ${onclick?`onclick="${onclick}"`:''}>
+        <span style="font-size:22px;">${e.emoji}</span>
+        <div style="font-size:14px;font-weight:500;flex:1;">${esc(e.text)}</div>
+        ${onclick?'<span style="color:var(--accent);">→</span>':''}
+      </div>`;
+    });
+    html += '</div>';
+  } else {
+    html += '<div style="text-align:center;padding:16px;color:var(--sub);font-size:14px;">この日の予定はありません</div>';
   }
+
+  const _bs3 = 'display:flex;align-items:center;justify-content:center;gap:6px;padding:14px;border-radius:14px;font-size:14px;font-weight:500;cursor:pointer;font-family:"Zen Maru Gothic",sans-serif;';
+  html += `<div style="font-size:13px;color:var(--sub);margin-bottom:8px;text-align:center;">この日に登録する</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+    <button onclick="closeModal();switchTab('gift');currentTab='gave';openItemModal();document.getElementById('fDate')&&(document.getElementById('fDate').value='${dateStr}');currentTab='gift'" style="${_bs3}border:1px solid var(--pickup-border);background:linear-gradient(135deg,var(--pickup),#fff4e6);color:var(--text);">🎁 あげた</button>
+    <button onclick="closeModal();switchTab('gift');currentTab='received';openItemModal();document.getElementById('fDate')&&(document.getElementById('fDate').value='${dateStr}');currentTab='gift'" style="${_bs3}border:1px solid #bdd8f0;background:linear-gradient(135deg,#e8f2fc,#daeaf8);color:#4a7aaa;">🎀 もらった</button>
+    <button onclick="closeModal();switchTab('wish');openItemModal()" style="${_bs3}border:1px solid var(--border);background:linear-gradient(135deg,#faf8f6,#f3eeea);color:var(--text);">✨ お気に入り</button>
+    <button onclick="closeModal();switchTab('place');openPlaceModal()" style="${_bs3}border:1px solid var(--border);background:linear-gradient(135deg,#faf8f6,#f3eeea);color:var(--text);">📍 行きたい場所</button>
+  </div>`;
+
+  html += `<div class="form-btns" style="margin-top:16px;"><button class="btn btn-secondary" onclick="closeModal()">閉じる</button></div>`;
+  modal.innerHTML = html;
+  openModal();
 }
 
 // ===== Notifications (お知らせ) =====

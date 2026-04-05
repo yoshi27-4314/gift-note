@@ -281,17 +281,19 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
   to { opacity:1; transform:translateY(0); }
 }
 @keyframes calPageLeft {
-  0% { opacity:0; transform:translateX(30px) rotateY(-4deg); }
-  60% { opacity:0.8; transform:translateX(5px) rotateY(-1deg); }
-  100% { opacity:1; transform:translateX(0) rotateY(0); }
+  0% { opacity:0.2; transform:translateX(15px); }
+  40% { opacity:0.6; transform:translateX(6px); }
+  70% { opacity:0.9; transform:translateX(2px); }
+  100% { opacity:1; transform:translateX(0); }
 }
 @keyframes calPageRight {
-  0% { opacity:0; transform:translateX(-30px) rotateY(4deg); }
-  60% { opacity:0.8; transform:translateX(-5px) rotateY(1deg); }
-  100% { opacity:1; transform:translateX(0) rotateY(0); }
+  0% { opacity:0.2; transform:translateX(-15px); }
+  40% { opacity:0.6; transform:translateX(-6px); }
+  70% { opacity:0.9; transform:translateX(-2px); }
+  100% { opacity:1; transform:translateX(0); }
 }
-.cal-page-left { animation: calPageLeft 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
-.cal-page-right { animation: calPageRight 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+.cal-page-left { animation: calPageLeft 0.8s cubic-bezier(0.22, 0.61, 0.36, 1); }
+.cal-page-right { animation: calPageRight 0.8s cubic-bezier(0.22, 0.61, 0.36, 1); }
 @keyframes dialUp { from { transform:translateY(8px); opacity:0.3; } to { transform:translateY(0); opacity:1; } }
 @keyframes dialDown { from { transform:translateY(-8px); opacity:0.3; } to { transform:translateY(0); opacity:1; } }
 }

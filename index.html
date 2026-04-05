@@ -795,11 +795,9 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 </div>
 
 <div class="header">
-  <button class="season-btn" id="notifBtn" style="left:16px;right:auto;position:absolute;" onclick="openNotifications()">🔔<span id="notifBadge" style="display:none;position:absolute;top:-2px;right:-2px;background:#c97070;color:#fff;font-size:9px;width:16px;height:16px;border-radius:50%;align-items:center;justify-content:center;">0</span></button>
-  <div style="position:absolute;left:54px;top:20px;display:flex;gap:2px;">
-    <button class="season-btn" id="navBackBtn" style="position:static;font-size:20px;padding:4px 8px;" onclick="goBack()">◀</button>
-    <button class="season-btn" id="navFwdBtn" style="position:static;font-size:20px;padding:4px 8px;" onclick="goForward()">▶</button>
-  </div>
+  <button id="notifBtn" style="position:absolute;left:16px;top:18px;background:none;border:none;font-size:22px;cursor:pointer;padding:4px;" onclick="openNotifications()">🔔<span id="notifBadge" style="display:none;position:absolute;top:-2px;right:-4px;background:#c97070;color:#fff;font-size:9px;min-width:16px;height:16px;border-radius:50%;align-items:center;justify-content:center;">0</span></button>
+  <button id="navBackBtn" style="position:absolute;left:50px;top:18px;background:none;border:none;font-size:22px;cursor:pointer;padding:4px;color:var(--sub);" onclick="goBack()">←</button>
+  <button id="navFwdBtn" style="position:absolute;left:76px;top:18px;background:none;border:none;font-size:22px;cursor:pointer;padding:4px;color:var(--sub);" onclick="goForward()">→</button>
   <div class="app-title">AWAI</div>
   <div class="app-subtitle">友だちと記憶がここに</div>
   <button class="season-btn" id="seasonBtn" style="right:52px;">🌸</button>

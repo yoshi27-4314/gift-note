@@ -7225,11 +7225,12 @@ function renderCalendar(cardList) {
   cardList.innerHTML = html;
 }
 
-function toggleCalendarHidden(personId, annIdx, hidden) {
+async function toggleCalendarHidden(personId, annIdx, hidden) {
   const p = data.people.find(x=>x.id===personId);
   if (!p || !p.anniversaries || !p.anniversaries[annIdx]) return;
   p.anniversaries[annIdx].calendarHidden = !!hidden;
   saveData();
+  await sbSave();
   render();
   showToast(hidden ? 'カレンダーから非表示にしました' : 'カレンダーに表示しました');
 }

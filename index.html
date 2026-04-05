@@ -2416,6 +2416,7 @@ function renderPersonListItem(p) {
 
 function togglePersonDetail(id) {
   openPersonId = openPersonId === id ? null : id;
+  if (openPersonId) history.pushState({person:id}, '');
   render();
   if (openPersonId) {
     setTimeout(() => {
@@ -3617,6 +3618,8 @@ function switchTab(tab) {
   // タブ状態を常時保存（リロード時復元用）
   localStorage.setItem('awai_last_tab', currentTab);
   localStorage.setItem('awai_last_label', currentLabel === null ? '' : currentLabel);
+  // ブラウザ履歴にpush（戻るボタン用）
+  history.pushState({tab: currentTab, label: currentLabel}, '');
   render();
   showTabGuide(tab);
 }
@@ -3654,6 +3657,7 @@ function jumpToPerson(id) {
   if (person?.isMemory) currentLabel = 'memory';
   else if (person?.hidden) currentLabel = null; // 非表示でも表示する
   openPersonId = id;
+  history.pushState({person:id, tab:'people'}, '');
   render();
   setTimeout(() => {
     const detail = document.getElementById('personDetail');
@@ -8584,12 +8588,41 @@ if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().t
     });
   }
 
-  // ブラウザ戻るボタンでモーダルが閉じないようにする
+  // ブラウザ戻るボタンでナビゲーション
   window.addEventListener('popstate', e => {
+    // モーダルが開いている場合 → モーダルを閉じる
     const overlay = document.getElementById('modalOverlay');
     if (overlay && overlay.classList.contains('open')) {
-      e.preventDefault();
-      history.pushState({modal:true}, '');
+      closeModal();
+      return;
+    }
+    // 個別カードが開いている場合 → 一覧に戻る
+    if (openPersonId) {
+      openPersonId = null;
+      render();
+      return;
+    }
+    if (openGroupId) {
+      openGroupId = null;
+      render();
+      return;
+    }
+    if (openItemId) {
+      openItemId = null;
+      render();
+      return;
+    }
+    if (openAllRecordId) {
+      openAllRecordId = null;
+      render();
+      return;
+    }
+    // 前のタブ状態に戻る
+    if (e.state && e.state.tab) {
+      currentTab = e.state.tab;
+      currentLabel = e.state.label || null;
+      document.querySelectorAll('.tab').forEach(el => el.classList.toggle('active', el.dataset.tab===currentTab));
+      render();
     }
   });
 

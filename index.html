@@ -1233,6 +1233,151 @@ function setSeason(s) {
   document.querySelectorAll('.season-option').forEach(el => el.classList.toggle('active', el.dataset.season===s));
 }
 
+// ===== Special Events & Animations =====
+const ANIMAL_EMOJIS = ['🐱','🐈','🐈‍⬛','😺','😸','😻','😼','🐶','🐕','🐩','🐻','🐻‍❄️','🐰','🐇','🦊','🐼','🐨','🦁','🐯','🐮','🐷','🐸','🐵','🙈','🦄','🐧','🐦','🐤','🦜','🦩','🐹','🐭','🦝','🦦','🦥','🐿️','🦔','🐺','🦋','🐬','🐳','🐙','🐾','🐝','🦒','🐘','🦘','🦫','🦭','🐞'];
+
+function getSpecialEvent() {
+  const today = new Date();
+  const m = today.getMonth() + 1;
+  const d = today.getDate();
+  const dow = today.getDay();
+  const md = `${m}/${d}`;
+
+  // 固定日イベント
+  const fixed = {
+    '1/1': { type: 'newyear', emoji: '🎍', anim: 'snow', msg: '' },
+    '1/2': { type: 'newyear', emoji: '🎍', anim: 'snow', msg: '' },
+    '1/3': { type: 'newyear', emoji: '🎍', anim: 'snow', msg: '' },
+    '2/3': { type: 'setsubun', emoji: '👹', anim: 'lantern', msg: '' },
+    '2/14': { type: 'valentine', emoji: '💝', anim: 'sparkle', msg: '' },
+    '3/3': { type: 'hinamatsuri', emoji: '🎎', anim: 'sakura', msg: '' },
+    '3/14': { type: 'whiteday', emoji: '🤍', anim: 'sparkle', msg: '' },
+    '4/1': { type: 'aprilfool', emoji: '🐾', anim: 'none', msg: '' },
+    '5/5': { type: 'kodomonohi', emoji: '🎏', anim: 'lantern', msg: '' },
+    '7/7': { type: 'tanabata', emoji: '🎋', anim: 'sparkle', msg: '' },
+    '8/13': { type: 'obon', emoji: '🏮', anim: 'lantern', msg: '' },
+    '8/14': { type: 'obon', emoji: '🏮', anim: 'lantern', msg: '' },
+    '8/15': { type: 'obon', emoji: '🏮', anim: 'lantern', msg: '' },
+    '10/31': { type: 'halloween', emoji: '🎃', anim: 'pumpkin', msg: '' },
+    '11/15': { type: 'shichigosan', emoji: '👘', anim: 'confetti', msg: '' },
+    '11/23': { type: 'thanksgiving', emoji: '🙏', anim: 'autumn', msg: '' },
+    '12/24': { type: 'christmas', emoji: '🎄', anim: 'snow', msg: '' },
+    '12/25': { type: 'christmas', emoji: '🎄', anim: 'snow', msg: '' },
+    '12/31': { type: 'omisoka', emoji: '🎆', anim: 'sparkle', msg: '' },
+  };
+
+  if (fixed[md]) return fixed[md];
+
+  // 変動日イベント
+  // 成人の日（1月第2月曜）
+  if (m === 1 && dow === 1 && d >= 8 && d <= 14) return { type: 'seijin', emoji: '🎊', anim: 'confetti', msg: '' };
+  // 春分の日（3/20前後）
+  if (m === 3 && d >= 19 && d <= 21) return { type: 'shunbun', emoji: '🌸', anim: 'sakura', msg: '' };
+  // 母の日（5月第2日曜）
+  if (m === 5 && dow === 0 && d >= 8 && d <= 14) return { type: 'mothersday', emoji: '🌹', anim: 'sakura', msg: '' };
+  // 父の日（6月第3日曜）
+  if (m === 6 && dow === 0 && d >= 15 && d <= 21) return { type: 'fathersday', emoji: '👔', anim: 'confetti', msg: '' };
+  // 敬老の日（9月第3月曜）
+  if (m === 9 && dow === 1 && d >= 15 && d <= 21) return { type: 'keiro', emoji: '👴', anim: 'autumn', msg: '' };
+  // 秋分の日（9/22-23前後）
+  if (m === 9 && d >= 22 && d <= 24) return { type: 'shubun', emoji: '🍁', anim: 'autumn', msg: '' };
+
+  // 本人の誕生日
+  const myProfile = getMyProfile();
+  if (myProfile.anniversaries) {
+    for (const a of myProfile.anniversaries) {
+      if (!a.date) continue;
+      const parts = a.date.split('-');
+      const annMD = parts.length >= 2 ? `${parseInt(parts[parts.length-2])}/${parseInt(parts[parts.length-1])}` : '';
+      if (annMD === md) {
+        return { type: 'birthday', emoji: '🎂', anim: 'confetti', msg: '' };
+      }
+    }
+  }
+
+  return null;
+}
+
+function showSpecialAnimation(animType) {
+  if (animType === 'none' || !animType) return;
+  const container = document.createElement('div');
+  container.id = 'specialAnim';
+  container.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:9999;overflow:hidden;';
+  document.body.appendChild(container);
+
+  const particles = {
+    confetti: { chars: ['🎊','✨','🎉','⭐','💫','🌟'], colors: ['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#ff6ec7'] },
+    snow: { chars: ['❄️','❄','✨','⛄','🌨'], colors: ['#fff','#e8f4ff','#d4eaff'] },
+    sakura: { chars: ['🌸','🌺','💮','✿','❀'], colors: ['#ffb7c5','#ff91a4','#ffc0cb'] },
+    sparkle: { chars: ['✨','⭐','💫','🌟','⚡','💖'], colors: ['#ffd700','#ff69b4','#87ceeb'] },
+    autumn: { chars: ['🍁','🍂','🍃','🌾','🍄'], colors: ['#d4760a','#c0392b','#f39c12'] },
+    pumpkin: { chars: ['🎃','👻','🦇','🕷','✨'], colors: ['#ff8c00','#800080','#00ff00'] },
+    lantern: { chars: ['🏮','✨','🔥','💫','🌟'], colors: ['#ff6347','#ffa500','#ffd700'] }
+  };
+
+  const p = particles[animType] || particles.confetti;
+  let count = 0;
+  const maxParticles = 30;
+
+  const interval = setInterval(() => {
+    if (count >= maxParticles) { clearInterval(interval); return; }
+    const el = document.createElement('div');
+    el.textContent = p.chars[Math.floor(Math.random() * p.chars.length)];
+    el.style.cssText = `position:absolute;top:-20px;left:${Math.random()*100}%;font-size:${16+Math.random()*16}px;opacity:0.8;transition:none;`;
+    container.appendChild(el);
+
+    const duration = 3000 + Math.random() * 3000;
+    const swayX = (Math.random() - 0.5) * 200;
+    el.animate([
+      { transform: 'translateY(0) translateX(0) rotate(0deg)', opacity: 0.9 },
+      { transform: `translateY(${window.innerHeight + 50}px) translateX(${swayX}px) rotate(${Math.random()*720-360}deg)`, opacity: 0 }
+    ], { duration, easing: 'ease-in' }).onfinish = () => el.remove();
+
+    count++;
+  }, 200);
+
+  // 8秒後にコンテナを削除
+  setTimeout(() => { if (container.parentNode) container.remove(); }, 10000);
+}
+
+function applyAprilFool() {
+  const today = new Date();
+  if (today.getMonth() !== 3 || today.getDate() !== 1) return false;
+  // personIconを一時的に上書き
+  if (!window._originalPersonIcon) window._originalPersonIcon = personIcon;
+  window._aprilFoolAnimals = {};
+  const origFn = window._originalPersonIcon;
+  window.personIcon = function(p) {
+    if (p.type === 'corporate') return origFn(p);
+    if (!window._aprilFoolAnimals[p.id||p.nickname]) {
+      window._aprilFoolAnimals[p.id||p.nickname] = ANIMAL_EMOJIS[Math.floor(Math.random() * ANIMAL_EMOJIS.length)];
+    }
+    return { emoji: window._aprilFoolAnimals[p.id||p.nickname], bg: '#fff' };
+  };
+  return true;
+}
+
+function checkSpecialEvent() {
+  const shown = localStorage.getItem('awai_special_event_date');
+  const today = new Date().toISOString().split('T')[0];
+  if (shown === today) return;
+
+  const event = getSpecialEvent();
+  if (!event) return;
+
+  localStorage.setItem('awai_special_event_date', today);
+
+  // エイプリルフール特別処理
+  if (event.type === 'aprilfool') {
+    applyAprilFool();
+    render();
+    return;
+  }
+
+  // アニメーション
+  setTimeout(() => showSpecialAnimation(event.anim), 1000);
+}
+
 // ===== Anniversary helpers =====
 function daysUntil(dateStr, dateType) {
   if (!dateStr) return null;
@@ -9999,6 +10144,7 @@ if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().t
   trackAppOpen();
   setTimeout(updateAwaiStageDisplay, 500);
   setTimeout(showAwaiMemory, 3000);
+  setTimeout(checkSpecialEvent, 1500);
 
   // Supabase初期化（クラウド同期開始）
   sbInit();

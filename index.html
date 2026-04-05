@@ -4871,11 +4871,13 @@ function addFamilyRow() {
 }
 
 let _saving = false;
-function showToast(msg) {
+function showToast(msg, duration, onclick) {
   let el = document.getElementById('toast');
   if (!el) { el = document.createElement('div'); el.id='toast'; el.className='toast'; document.body.appendChild(el); }
   el.textContent = msg; el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 2000);
+  el.onclick = onclick || null;
+  el.style.cursor = onclick ? 'pointer' : '';
+  setTimeout(() => { el.classList.remove('show'); el.onclick = null; el.style.cursor = ''; }, duration || 2000);
 }
 function savePerson() {
   if (_saving) return;
@@ -7795,7 +7797,8 @@ async function openNotifications() {
     </div>`;
   }
   html += renderAiReminders();
-  if (!items.length && !getAiReminderCount()) {
+  html += renderSimilarNotifs();
+  if (!items.length && !getAiReminderCount() && !renderSimilarNotifs()) {
     html += '<div style="text-align:center;padding:32px;color:var(--sub);">お知らせはまだありません</div>';
   } else {
     items.forEach(item => {
@@ -8622,6 +8625,78 @@ function findSimilarPeople(personId) {
   }).slice(0, 3);
 }
 
+// 仕掛け5改善: 類似の人に通知（5秒トースト＋タップで飛べる＋通知ベルに保存）
+const SIMILAR_NOTIF_KEY = 'awai_similar_notifs';
+
+function notifySimilarPeople(similarPeople, suggestions) {
+  if (!similarPeople.length) return;
+  const names = similarPeople.map(p => p.nickname).join('、');
+  const firstPerson = similarPeople[0];
+
+  // 5秒トースト＋タップでその人のコンシェルジュへ
+  setTimeout(() => {
+    showToast(`💡 ${names} さんにも合いそう！タップで提案`, 5000, () => {
+      openAiSuggest(firstPerson.id);
+    });
+  }, 1500);
+
+  // 通知ベルに保存（後で見返せる）
+  try {
+    const notifs = JSON.parse(localStorage.getItem(SIMILAR_NOTIF_KEY) || '[]');
+    const itemNames = suggestions.slice(0, 3).map(s => s.name).join('、');
+    similarPeople.forEach(sp => {
+      const key = `similar_${sp.id}_${new Date().toISOString().split('T')[0]}`;
+      if (!notifs.some(n => n.key === key)) {
+        notifs.unshift({
+          key,
+          personId: sp.id,
+          personName: sp.nickname,
+          items: itemNames,
+          dismissed: false,
+          createdAt: new Date().toISOString()
+        });
+      }
+    });
+    // 最新20件まで
+    if (notifs.length > 20) notifs.length = 20;
+    localStorage.setItem(SIMILAR_NOTIF_KEY, JSON.stringify(notifs));
+  } catch {}
+}
+
+function renderSimilarNotifs() {
+  try {
+    const notifs = JSON.parse(localStorage.getItem(SIMILAR_NOTIF_KEY) || '[]');
+    const active = notifs.filter(n => !n.dismissed);
+    if (!active.length) return '';
+    let html = '<div style="margin-bottom:16px;">';
+    html += '<div style="font-weight:600;font-size:14px;margin-bottom:8px;">💡 この人にも合いそう</div>';
+    active.forEach(n => {
+      html += `<div style="background:linear-gradient(135deg,#f3eefa,#ece0f8);border:1px solid #d4c8e8;border-radius:12px;padding:12px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <div style="font-size:13px;font-weight:500;">${esc(n.personName)} さん</div>
+          <div style="font-size:12px;color:var(--sub);">${esc(n.items)}</div>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button onclick="event.stopPropagation();closeModal();openAiSuggest('${n.personId}')" style="padding:6px 10px;border-radius:8px;background:var(--accent);color:#fff;border:none;font-size:11px;cursor:pointer;">💡 提案</button>
+          <button onclick="event.stopPropagation();dismissSimilarNotif('${n.key}')" style="padding:6px 8px;border-radius:8px;background:none;border:none;font-size:11px;cursor:pointer;color:var(--sub);">✕</button>
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+    return html;
+  } catch { return ''; }
+}
+
+function dismissSimilarNotif(key) {
+  try {
+    const notifs = JSON.parse(localStorage.getItem(SIMILAR_NOTIF_KEY) || '[]');
+    const n = notifs.find(n => n.key === key);
+    if (n) n.dismissed = true;
+    localStorage.setItem(SIMILAR_NOTIF_KEY, JSON.stringify(notifs));
+    openNotifications();
+  } catch {}
+}
+
 async function callAI(prompt, context, structured) {
   if (!_sbUser) throw new Error('AIコンシェルジュを使うにはログインが必要です');
   const session = await _sb.auth.getSession();
@@ -8758,8 +8833,7 @@ function saveAiSuggestion(tab, personId, idx, silent) {
     if (!silent) {
       const similar = findSimilarPeople(personId);
       if (similar.length) {
-        const names = similar.map(p=>p.nickname).join('、');
-        setTimeout(() => showToast(`💡 ${names} さんにも合いそう！`), 2000);
+        notifySimilarPeople(similar, _lastAiSuggestions);
       }
     }
   } else if (tab === 'place') {
@@ -8924,8 +8998,7 @@ ${budget ? '\n## 予算\n約'+budget+'円' : ''}
       // 仕掛け5: 類似の人に横展開
       const similar = findSimilarPeople(personId);
       if (similar.length) {
-        const names = similar.map(p=>p.nickname).join('、');
-        setTimeout(() => showToast(`💡 ${names} さんにも合いそうな提案です`), 1500);
+        notifySimilarPeople(similar, result.suggestions);
       }
     } else {
       const text = typeof result === 'string' ? result : (result.reply || '提案を生成できませんでした');

@@ -3340,8 +3340,10 @@ function updateBackBtn() {
   if (!backBtn || !fwdBtn) return;
   const canBack = openPersonId || openGroupId || openItemId || openAllRecordId || _navHistory.length > 0;
   const canFwd = _navFuture.length > 0;
-  backBtn.style.opacity = canBack ? '1' : '0.3';
-  fwdBtn.style.opacity = canFwd ? '1' : '0.3';
+  backBtn.style.color = canBack ? 'var(--accent)' : 'var(--border)';
+  backBtn.style.pointerEvents = canBack ? '' : 'none';
+  fwdBtn.style.color = canFwd ? 'var(--accent)' : 'var(--border)';
+  fwdBtn.style.pointerEvents = canFwd ? '' : 'none';
 }
 
 function navPushState() {

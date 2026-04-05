@@ -8613,8 +8613,21 @@ if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().t
     else openItemModal();
   });
 
-  // 背景タップでモーダルを閉じない（入力中の誤タップ防止）
-  // 閉じるのは「キャンセル」「閉じる」ボタンのみ
+  // 背景タップでモーダルを閉じる（入力フォームがない場合のみ）
+  document.getElementById('modalOverlay').addEventListener('click', e => {
+    if (e.target !== e.currentTarget) return;
+    const modal = e.target.querySelector('.modal');
+    if (!modal) return;
+    // 入力フォームがあるモーダルは閉じない（誤タップ防止）
+    const hasInputs = modal.querySelector('input:not([type="hidden"]):not([type="checkbox"]):not([type="file"]),textarea,select');
+    if (hasInputs) return;
+    closeModal();
+  });
+  document.getElementById('settingsModalOverlay').addEventListener('click', e => {
+    if (e.target === e.currentTarget) {
+      document.getElementById('settingsModalOverlay').classList.remove('open');
+    }
+  });
 
   let _searchTimer;
   document.getElementById('searchInput').addEventListener('input', e => {

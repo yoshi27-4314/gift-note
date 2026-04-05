@@ -780,6 +780,7 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 
 <div id="updateBanner"></div>
 <div id="backupBanner"></div>
+<div id="loginWarningBanner"></div>
 <div class="reminder-zone" id="reminderZone"></div>
 <div class="pickup-zone" id="pickupZone"></div>
 
@@ -868,7 +869,25 @@ async function sbInit() {
     ensureShareCode();
     // 紹介ポイント同期
     syncReferralPoints();
+    // 未ログイン警告
+    showLoginWarning();
   } catch(e) { console.error('Supabase init error:', e); }
+}
+
+function showLoginWarning() {
+  if (!_sbUser || _sbUser.email) return; // ログイン済みなら表示しない
+  const dismissed = localStorage.getItem('awai_login_warn_dismissed');
+  if (dismissed) return;
+  const banner = document.getElementById('loginWarningBanner');
+  if (!banner) return;
+  banner.innerHTML = `<div style="margin:0 16px 8px;padding:14px 16px;background:linear-gradient(135deg,#fff0f0,#ffe8e8);border:1px solid #e8a0a0;border-radius:14px;display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="document.getElementById('settingsModalOverlay').classList.add('open');openSettings();document.getElementById('loginWarningBanner').innerHTML='';">
+    <span style="font-size:22px;flex-shrink:0;">⚠️</span>
+    <div style="flex:1;">
+      <div style="font-size:14px;font-weight:600;color:#c05050;">ログインしないとデータが消える可能性があります</div>
+      <div style="font-size:12px;color:#a07070;margin-top:2px;">タップしてGoogleでログイン →</div>
+    </div>
+    <span style="font-size:14px;color:#c0a0a0;flex-shrink:0;" onclick="event.stopPropagation();localStorage.setItem('awai_login_warn_dismissed','1');this.parentElement.remove();">✕</span>
+  </div>`;
 }
 
 async function sbLoad() {

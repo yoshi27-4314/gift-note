@@ -2270,6 +2270,27 @@ function renderPersonCard(p) {
       <button class="card-btn" onclick="event.stopPropagation();openAiSuggest('${p.id}')" style="background:var(--pickup);border-color:var(--pickup-border);font-size:14px;padding:10px 16px;flex:1;">💡 コンシェルジュ</button>
       <button class="card-btn" onclick="event.stopPropagation();openPartnerLinks('${p.id}')" style="background:linear-gradient(135deg,#e8f2fc,#daeaf8);border-color:#bdd8f0;font-size:14px;padding:10px 16px;flex:1;">🎁 ギフトを探す</button>
     </div>`;
+    // 仕掛け3: 過去の提案履歴
+    if (p.aiHistory?.length) {
+      html += `<div class="person-section"><div class="person-section-title" style="cursor:pointer;" onclick="event.stopPropagation();this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'':'none'">💡 過去の提案 (${p.aiHistory.length}回) ▾</div>`;
+      html += `<div style="display:none;">`;
+      p.aiHistory.forEach(h => {
+        html += `<div style="margin-bottom:10px;padding:8px;background:var(--bg);border-radius:10px;">`;
+        html += `<div style="font-size:11px;color:var(--sub);margin-bottom:4px;">${h.date}</div>`;
+        (h.items||[]).forEach(item => {
+          html += `<div style="font-size:13px;margin-bottom:4px;">`;
+          html += `<strong>${esc(item.name)}</strong> <span style="color:var(--sub);font-size:11px;">${esc(item.shop)}</span>`;
+          const links = [];
+          if (item.rakutenUrl) links.push(`<a href="${esc(item.rakutenUrl)}" target="_blank" rel="noopener" style="font-size:11px;color:#BF0000;">楽天</a>`);
+          if (item.amazonUrl) links.push(`<a href="${esc(item.amazonUrl)}" target="_blank" rel="noopener" style="font-size:11px;color:#FF9900;">Amazon</a>`);
+          if (item.webLinks?.official) links.push(`<a href="${esc(item.webLinks.official)}" target="_blank" rel="noopener" style="font-size:11px;color:#4A90D9;">公式</a>`);
+          if (links.length) html += ` ${links.join(' ')}`;
+          html += `</div>`;
+        });
+        html += `</div>`;
+      });
+      html += `</div></div>`;
+    }
   }
   // Corporate photo (business card etc.)
   if (p.corpPhoto) {
@@ -7697,7 +7718,9 @@ async function openNotifications() {
     } catch(e) {}
   }
   let html = '<h2>🔔 お知らせ</h2>';
-  if (!items.length) {
+  // 仕掛け4: 記念日リマインダーを先頭に表示
+  html += renderAiReminders();
+  if (!items.length && !getAiReminderCount()) {
     html += '<div style="text-align:center;padding:32px;color:var(--sub);">お知らせはまだありません</div>';
   } else {
     items.forEach(item => {
@@ -7724,8 +7747,103 @@ async function checkNotifications() {
   try {
     const lastRead = localStorage.getItem('awai_notif_read') || '2000-01-01';
     const { count } = await _sb.from('announcements').select('id', { count: 'exact', head: true }).gt('created_at', lastRead);
-    if (count > 0) updateNotifBadge(count);
+    let totalBadge = count || 0;
+    // 仕掛け4: 記念日事前提案の件数も加算
+    const aiReminders = getAiReminderCount();
+    totalBadge += aiReminders;
+    if (totalBadge > 0) updateNotifBadge(totalBadge);
   } catch(e) {}
+}
+
+// 仕掛け4: 記念日30日前を検知→自動提案準備
+const AI_REMINDER_KEY = 'awai_ai_reminders';
+
+function getAiReminderCount() {
+  checkAiReminders();
+  try {
+    const reminders = JSON.parse(localStorage.getItem(AI_REMINDER_KEY) || '[]');
+    return reminders.filter(r => !r.dismissed).length;
+  } catch { return 0; }
+}
+
+function checkAiReminders() {
+  try {
+    const existing = JSON.parse(localStorage.getItem(AI_REMINDER_KEY) || '[]');
+    const today = new Date();
+    const newReminders = [...existing];
+
+    data.people.forEach(p => {
+      if (p.isMemory || !p.anniversaries?.length) return;
+      p.anniversaries.forEach(a => {
+        if (!a.date) return;
+        const days = daysUntil(a.date, a.dateType);
+        if (days !== null && days > 0 && days <= 30) {
+          const key = `${p.id}_${a.name}_${a.date}`;
+          if (!newReminders.some(r => r.key === key)) {
+            newReminders.push({
+              key,
+              personId: p.id,
+              personName: p.nickname,
+              annivName: a.name,
+              annivDate: a.date,
+              daysLeft: days,
+              dismissed: false,
+              createdAt: today.toISOString()
+            });
+          }
+        }
+      });
+    });
+
+    // 過去のリマインダー（90日以上前）を削除
+    const cleaned = newReminders.filter(r => {
+      const age = (today - new Date(r.createdAt)) / (1000*60*60*24);
+      return age < 90;
+    });
+
+    localStorage.setItem(AI_REMINDER_KEY, JSON.stringify(cleaned));
+  } catch {}
+}
+
+function renderAiReminders() {
+  try {
+    const reminders = JSON.parse(localStorage.getItem(AI_REMINDER_KEY) || '[]');
+    const active = reminders.filter(r => !r.dismissed);
+    if (!active.length) return '';
+
+    let html = '<div style="margin-bottom:16px;">';
+    html += '<div style="font-weight:600;font-size:14px;margin-bottom:8px;">🎁 ギフト準備リマインド</div>';
+    active.forEach(r => {
+      html += `<div style="background:var(--pickup);border:1px solid var(--pickup-border);border-radius:12px;padding:12px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <div style="font-size:13px;font-weight:500;">${esc(r.personName)} の ${esc(r.annivName)}</div>
+          <div style="font-size:12px;color:var(--sub);">あと${r.daysLeft}日 — 今のうちにギフトを準備しませんか？</div>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button onclick="event.stopPropagation();openAiSuggestFromReminder('${r.personId}')" style="padding:6px 10px;border-radius:8px;background:var(--accent);color:#fff;border:none;font-size:11px;cursor:pointer;">💡 提案</button>
+          <button onclick="event.stopPropagation();dismissAiReminder('${r.key}')" style="padding:6px 8px;border-radius:8px;background:var(--bg);border:1px solid var(--border);font-size:11px;cursor:pointer;">✕</button>
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+    return html;
+  } catch { return ''; }
+}
+
+function openAiSuggestFromReminder(personId) {
+  closeModal();
+  openAiSuggest(personId);
+}
+
+function dismissAiReminder(key) {
+  try {
+    const reminders = JSON.parse(localStorage.getItem(AI_REMINDER_KEY) || '[]');
+    const r = reminders.find(r => r.key === key);
+    if (r) r.dismissed = true;
+    localStorage.setItem(AI_REMINDER_KEY, JSON.stringify(reminders));
+    // 通知モーダルを再描画
+    openNotifications();
+  } catch {}
 }
 
 function updateNotifBadge(count) {
@@ -8306,6 +8424,61 @@ function mdToHtml(text) {
 }
 
 let _lastAiSuggestions = [];
+const AI_CACHE_KEY = 'awai_ai_cache';
+
+// === 仕掛け1: 検索結果キャッシュ ===
+function getAiCache(personId, scene, budget) {
+  try {
+    const cache = JSON.parse(localStorage.getItem(AI_CACHE_KEY) || '{}');
+    const key = `${personId}_${scene||''}_${budget||''}`;
+    const entry = cache[key];
+    if (entry && Date.now() - entry.ts < 24*60*60*1000) return entry.data; // 24時間有効
+    return null;
+  } catch { return null; }
+}
+
+function setAiCache(personId, scene, budget, data) {
+  try {
+    const cache = JSON.parse(localStorage.getItem(AI_CACHE_KEY) || '{}');
+    const key = `${personId}_${scene||''}_${budget||''}`;
+    // 古いキャッシュを50件まで制限
+    const keys = Object.keys(cache);
+    if (keys.length > 50) { keys.sort((a,b)=>cache[a].ts-cache[b].ts); delete cache[keys[0]]; }
+    cache[key] = { ts: Date.now(), data };
+    localStorage.setItem(AI_CACHE_KEY, JSON.stringify(cache));
+  } catch {}
+}
+
+// === 仕掛け3: 人物カードに提案履歴を保存 ===
+function saveAiHistory(personId, suggestions) {
+  const person = data.people.find(p=>p.id===personId);
+  if (!person) return;
+  if (!person.aiHistory) person.aiHistory = [];
+  person.aiHistory.unshift({
+    date: new Date().toISOString().split('T')[0],
+    items: suggestions.map(s => ({
+      name: s.name, shop: s.shop, reason: s.reason, budget: s.budget,
+      rakutenUrl: s.rakuten?.url || null, amazonUrl: s.amazonUrl || null,
+      webLinks: s.webLinks || null, image: s.rakuten?.image || null
+    }))
+  });
+  // 最新10回分まで保持
+  if (person.aiHistory.length > 10) person.aiHistory = person.aiHistory.slice(0, 10);
+  saveData();
+}
+
+// === 仕掛け5: 類似の人に横展開 ===
+function findSimilarPeople(personId) {
+  const person = data.people.find(p=>p.id===personId);
+  if (!person) return [];
+  const myTags = [...(person.interests||[]), ...(person.brands||[]), ...(person.foodLike||[])];
+  if (!myTags.length) return [];
+  return data.people.filter(p => {
+    if (p.id === personId || p.isMemory || p.type === 'corporate') return false;
+    const theirTags = [...(p.interests||[]), ...(p.brands||[]), ...(p.foodLike||[])];
+    return myTags.some(t => theirTags.includes(t));
+  }).slice(0, 3);
+}
 
 async function callAI(prompt, context, structured) {
   if (!_sbUser) throw new Error('AIコンシェルジュを使うにはログインが必要です');
@@ -8370,13 +8543,26 @@ function renderAiCards(suggestions, personId, container) {
     </div>`;
   });
 
-  html += `<div style="text-align:center;margin-top:12px;">
-    <button class="btn btn-secondary" onclick="runAiSuggest('${personId}')" style="font-size:13px;padding:8px 20px;">🔄 別の提案を探す</button>
+  // 仕掛け2: 全部保存ボタン
+  html += `<div style="display:flex;gap:8px;justify-content:center;margin-top:12px;">
+    <button class="btn btn-primary" onclick="saveAllAiSuggestions('${personId}')" style="font-size:13px;padding:8px 20px;">📥 ${suggestions.length}件まとめて保存</button>
+    <button class="btn btn-secondary" onclick="document.getElementById('aiSuggestBtn').dataset.forceNew='1';runAiSuggest('${personId}')" style="font-size:13px;padding:8px 20px;">🔄 別の提案を探す</button>
   </div>`;
   container.innerHTML = html;
 }
 
-function saveAiSuggestion(tab, personId, idx) {
+// 仕掛け2: 全部保存
+function saveAllAiSuggestions(personId) {
+  if (!_lastAiSuggestions.length) return;
+  let count = 0;
+  _lastAiSuggestions.forEach((s, i) => {
+    saveAiSuggestion(s.isPlace ? 'place' : 'wish', personId, i, true);
+    count++;
+  });
+  showToast(`📥 ${count}件まとめて保存しました`);
+}
+
+function saveAiSuggestion(tab, personId, idx, silent) {
   const s = _lastAiSuggestions[idx];
   if (!s) return;
   const person = data.people.find(p=>p.id===personId);
@@ -8421,8 +8607,16 @@ function saveAiSuggestion(tab, personId, idx) {
       updatedAt: now
     };
     data.wish.push(item);
-    saveData(); render();
-    showToast(`⭐ "${s.name}" をお気に入りに保存しました`);
+    saveData(); if (!silent) render();
+    if (!silent) showToast(`⭐ "${s.name}" をお気に入りに保存しました`);
+    // 仕掛け5: 類似の人に横展開
+    if (!silent) {
+      const similar = findSimilarPeople(personId);
+      if (similar.length) {
+        const names = similar.map(p=>p.nickname).join('、');
+        setTimeout(() => showToast(`💡 ${names} さんにも合いそう！`), 2000);
+      }
+    }
   } else if (tab === 'place') {
     const wl = s.webLinks || {};
     const item = {
@@ -8447,8 +8641,8 @@ function saveAiSuggestion(tab, personId, idx) {
       updatedAt: now
     };
     data.place.push(item);
-    saveData(); render();
-    showToast(`📍 "${s.shop || s.name}" を行きたいに保存しました`);
+    saveData(); if (!silent) render();
+    if (!silent) showToast(`📍 "${s.shop || s.name}" を行きたいに保存しました`);
   }
 }
 
@@ -8560,18 +8754,42 @@ ${budget ? '\n## 予算\n約'+budget+'円' : ''}
 苦手なものは絶対に避けてください。過去にあげたものと被らないでください。`;
 
   try {
-    const result = await callAI(prompt, profileLines.join('\n'), true);
+    // 仕掛け1: キャッシュ確認（「別の提案を探す」時はスキップ）
+    const forceNew = btn.dataset.forceNew === '1';
+    btn.dataset.forceNew = '0';
+    let result = null;
+    if (!forceNew) {
+      const cached = getAiCache(personId, scene, budget);
+      if (cached) {
+        result = cached;
+        resultDiv.innerHTML = '';
+      }
+    }
+
+    if (!result) {
+      result = await callAI(prompt, profileLines.join('\n'), true);
+      // キャッシュに保存
+      if (result.suggestions) setAiCache(personId, scene, budget, result);
+    }
+
     if (result.suggestions && result.suggestions.length) {
       renderAiCards(result.suggestions, personId, resultDiv);
+      // 仕掛け3: 提案履歴を人物カードに保存
+      saveAiHistory(personId, result.suggestions);
+      // 仕掛け5: 類似の人に横展開
+      const similar = findSimilarPeople(personId);
+      if (similar.length) {
+        const names = similar.map(p=>p.nickname).join('、');
+        setTimeout(() => showToast(`💡 ${names} さんにも合いそうな提案です`), 1500);
+      }
     } else {
-      // フォールバック: テキスト表示
       const text = typeof result === 'string' ? result : (result.reply || '提案を生成できませんでした');
       resultDiv.innerHTML = `<div style="background:var(--pickup);border:1px solid var(--pickup-border);border-radius:14px;padding:14px;">
         <div style="font-weight:600;margin-bottom:8px;font-family:'Shippori Mincho',serif;">💡 ${esc(person.nickname)} への提案</div>
         <div>${mdToHtml(text)}</div>
       </div>
       <div style="text-align:center;margin-top:12px;">
-        <button class="btn btn-secondary" onclick="runAiSuggest('${personId}')" style="font-size:13px;padding:8px 20px;">🔄 別の提案を探す</button>
+        <button class="btn btn-secondary" onclick="document.getElementById('aiSuggestBtn').dataset.forceNew='1';runAiSuggest('${personId}')" style="font-size:13px;padding:8px 20px;">🔄 別の提案を探す</button>
       </div>`;
     }
   } catch(e) {

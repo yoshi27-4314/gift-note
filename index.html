@@ -8382,6 +8382,23 @@ function saveAiSuggestion(tab, personId, idx) {
   const person = data.people.find(p=>p.id===personId);
   const now = new Date().toISOString();
 
+  // 全リンクをmemoに整理して保存
+  function buildAiMemo(s) {
+    let lines = [`${s.shop} — ${s.reason}`];
+    lines.push('');
+    lines.push('🔗 リンク:');
+    if (s.rakuten?.url) lines.push(`楽天: ${s.rakuten.url}`);
+    if (s.amazonUrl) lines.push(`Amazon: ${s.amazonUrl}`);
+    if (s.webLinks) {
+      if (s.webLinks.official) lines.push(`公式: ${s.webLinks.official}`);
+      if (s.webLinks.instagram) lines.push(`Instagram: ${s.webLinks.instagram}`);
+      if (s.webLinks.tabelog) lines.push(`食べログ: ${s.webLinks.tabelog}`);
+      if (s.webLinks.hotpepper) lines.push(`ホットペッパー: ${s.webLinks.hotpepper}`);
+      if (s.webLinks.gurunavi) lines.push(`ぐるなび: ${s.webLinks.gurunavi}`);
+    }
+    return lines.join('\n');
+  }
+
   if (tab === 'wish') {
     const item = {
       id: genId(),
@@ -8397,7 +8414,7 @@ function saveAiSuggestion(tab, personId, idx) {
       rating: 0,
       tags: null,
       url: s.rakuten?.url || s.amazonUrl || null,
-      memo: `${s.shop} — ${s.reason}`,
+      memo: buildAiMemo(s),
       img: s.rakuten?.image || null,
       pinned: false,
       createdAt: now,
@@ -8407,6 +8424,7 @@ function saveAiSuggestion(tab, personId, idx) {
     saveData(); render();
     showToast(`⭐ "${s.name}" をお気に入りに保存しました`);
   } else if (tab === 'place') {
+    const wl = s.webLinks || {};
     const item = {
       id: genId(),
       title: s.shop || s.name,
@@ -8415,14 +8433,14 @@ function saveAiSuggestion(tab, personId, idx) {
       person: person?.nickname || null,
       labelIdx: null,
       address: null,
-      mapUrl: null,
-      url: s.rakuten?.url || s.amazonUrl || null,
+      mapUrl: wl.official || wl.tabelog || wl.hotpepper || null,
+      url: wl.official || s.rakuten?.url || s.amazonUrl || null,
       googleMapUrl: `https://www.google.com/maps/search/${encodeURIComponent(s.shop || s.name)}`,
       phone: null,
       tags: null,
       placeCategory: null,
       rating: 0,
-      memo: s.reason,
+      memo: buildAiMemo(s),
       img: null,
       pinned: false,
       createdAt: now,
@@ -8875,12 +8893,26 @@ function saveAiSuggestionDirect(tab, idx) {
   const s = _lastAiSuggestions[idx];
   if (!s) return;
   const now = new Date().toISOString();
+  function buildMemo(s) {
+    let lines = [`${s.shop} — ${s.reason}`, '', '🔗 リンク:'];
+    if (s.rakuten?.url) lines.push(`楽天: ${s.rakuten.url}`);
+    if (s.amazonUrl) lines.push(`Amazon: ${s.amazonUrl}`);
+    if (s.webLinks) {
+      if (s.webLinks.official) lines.push(`公式: ${s.webLinks.official}`);
+      if (s.webLinks.instagram) lines.push(`Instagram: ${s.webLinks.instagram}`);
+      if (s.webLinks.tabelog) lines.push(`食べログ: ${s.webLinks.tabelog}`);
+      if (s.webLinks.hotpepper) lines.push(`ホットペッパー: ${s.webLinks.hotpepper}`);
+      if (s.webLinks.gurunavi) lines.push(`ぐるなび: ${s.webLinks.gurunavi}`);
+    }
+    return lines.join('\n');
+  }
   if (tab === 'wish') {
-    data.wish.push({ id:genId(), title:s.name, person:null, amount:String(s.rakuten?.price||s.budget||''), url:s.rakuten?.url||s.amazonUrl||null, memo:`${s.shop} — ${s.reason}`, img:s.rakuten?.image||null, tags:null, pinned:false, createdAt:now, updatedAt:now });
+    data.wish.push({ id:genId(), title:s.name, person:null, amount:String(s.rakuten?.price||s.budget||''), url:s.rakuten?.url||s.amazonUrl||null, memo:buildMemo(s), img:s.rakuten?.image||null, tags:null, pinned:false, createdAt:now, updatedAt:now });
     saveData(); render();
     showToast(`⭐ "${s.name}" をお気に入りに保存しました`);
   } else if (tab === 'place') {
-    data.place.push({ id:genId(), title:s.shop||s.name, person:null, url:s.rakuten?.url||s.amazonUrl||null, googleMapUrl:`https://www.google.com/maps/search/${encodeURIComponent(s.shop||s.name)}`, memo:s.reason, tags:null, pinned:false, createdAt:now, updatedAt:now });
+    const wl = s.webLinks || {};
+    data.place.push({ id:genId(), title:s.shop||s.name, person:null, mapUrl:wl.official||wl.tabelog||null, url:wl.official||s.rakuten?.url||s.amazonUrl||null, googleMapUrl:`https://www.google.com/maps/search/${encodeURIComponent(s.shop||s.name)}`, memo:buildMemo(s), tags:null, pinned:false, createdAt:now, updatedAt:now });
     saveData(); render();
     showToast(`📍 "${s.shop||s.name}" を行きたいに保存しました`);
   }

@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
     const RAKUTEN_AFFILIATE_ID = Deno.env.get("RAKUTEN_AFFILIATE_ID") || "";
     const PERPLEXITY_API_KEY = Deno.env.get("PERPLEXITY_API_KEY") || "";
 
-    const { message, context, structured } = await req.json();
+    const { message, context, structured, tone } = await req.json();
 
     if (!message || typeof message !== "string") {
       return new Response(
@@ -137,6 +137,8 @@ Deno.serve(async (req) => {
   商品(isPlace:false): ファッション, グルメ, お菓子, 美容・健康, インテリア, 家電・ガジェット, 趣味・体験, ギフト券, その他
   場所(isPlace:true): 食事, 遊び, 観光, 買い物, 宿泊, リラックス, その他
 
+${tone ? "\n" + tone : ""}
+
 ${context ? "## ユーザーの登録情報\n" + context : ""}`
       : `あなたはAWAI（アワイ）のAIコンシェルジュです。
 ギフト選び・人間関係の記憶・おもてなしのプロフェッショナルとして、
@@ -148,6 +150,8 @@ ${context ? "## ユーザーの登録情報\n" + context : ""}`
 - 具体的な商品名・価格帯を含める
 - 3つ程度の選択肢を提示
 - 相手が喜ぶ理由も添える
+
+${tone ? "\n" + tone : ""}
 
 ${context ? "## ユーザーの登録情報\n" + context : ""}`;
 

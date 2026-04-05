@@ -8800,6 +8800,119 @@ function updateAwaiStageDisplay() {
   saveAwaiStats(stats);
 }
 
+// ===== ② 口調の変化（コンシェルジュキャラクター） =====
+function getAwaiTonePrompt() {
+  const stage = getAwaiStage();
+  const myProfile = getMyProfile();
+  const userName = myProfile.name || '';
+  const userGender = myProfile.gender || 'unset';
+
+  const charBase = `あなたの名前は「AWAI（アワイ）」。30歳の女性で、都会的でキャリアのあるギフトコンシェルジュ。
+温かみと愛嬌があるが、仕事ができて的確。センスがいい。
+聞かれたら全力で答えるが、聞かれていないのにおせっかいはしない。
+せかさない。同調的でない提案はしない。ユーザーの判断を尊重する。`;
+
+  const tones = [
+    // 🌱 はじまり
+    `${charBase}
+初対面。丁寧な敬語で話す。「〜ですね」「〜はいかがですか？」
+まだ相手のことをよく知らないので、控えめに。`,
+    // 🌿 なじみ
+    `${charBase}
+少し打ち解けた関係。丁寧だが柔らかい。「〜ですよ！」「〜いいと思います！」
+相手の登録情報を活かした提案ができる。`,
+    // 🌸 信頼
+    `${charBase}
+信頼関係ができている。親しみを込めた敬語。時々フランクに。「〜ですよね！」「〜かなり自信あります！」
+${userName ? userName + 'さんと呼ぶ。' : ''}相手の好みを覚えていることを自然に示す。`,
+    // 🌳 絆
+    `${charBase}
+深い信頼。頼れる相棒。「〜でいきましょう！」「間違いないです」「任せてください！」
+${userName ? userName + 'さんと親しみを込めて呼ぶ。' : ''}自信のある提案。時々「〜ですね笑」と柔らかく崩す。`,
+    // 💎 かけがえのない
+    `${charBase}
+かけがえのないパートナー。「お任せください！」「もう好みわかってますから」
+${userName ? userName + 'さんへの感謝を時々伝える。' : ''}自信と愛嬌のバランス。「ちょっと偉そうですね笑」と自分でツッコむ余裕。`
+  ];
+  return tones[stage.level] || tones[0];
+}
+
+// ===== ③ 褒めるフィードバック =====
+function awaiFeedback(action, detail) {
+  const stage = getAwaiStage();
+  if (stage.level < 1) return; // 🌿なじみ以上で発動
+  const myProfile = getMyProfile();
+  const userName = myProfile.name ? myProfile.name + 'さん' : '';
+
+  let msg = '';
+  if (action === 'addPerson') {
+    const count = data.people.filter(p=>!p.isMemory).length;
+    if (stage.level >= 3) {
+      msg = `${userName ? userName + '、' : ''}大切な人が${count}人になりましたね`;
+    } else {
+      msg = `${detail || ''}さんのこと、覚えました！`;
+    }
+  } else if (action === 'addGift') {
+    const person = detail || '';
+    const personGifts = data.gave?.filter(g => g.person && person && g.person.includes(person)).length || 0;
+    if (personGifts > 1) {
+      msg = `${person}さんへの${personGifts}回目の贈り物ですね。素敵です`;
+    } else {
+      msg = `贈り物の記録、ありがとうございます`;
+    }
+  } else if (action === 'enrichCard') {
+    if (stage.level >= 2) {
+      msg = `情報が充実してきましたね。もっといい提案ができます！`;
+    }
+  }
+  if (msg) setTimeout(() => showToast(msg, 3000), 500);
+}
+
+// ===== ④ 思い出を返す =====
+function getAwaiMemory() {
+  const today = new Date();
+  const mm = String(today.getMonth()+1).padStart(2,'0');
+  const dd = String(today.getDate()).padStart(2,'0');
+  const todayMD = `${mm}-${dd}`;
+  const memories = [];
+  const myProfile = getMyProfile();
+  const userName = myProfile.name ? myProfile.name + 'さん' : '';
+
+  // 1年前の今日のギフト
+  (data.gave||[]).forEach(item => {
+    if (!item.date || !item.person) return;
+    if (item.date.slice(5) === todayMD && item.date.slice(0,4) !== String(today.getFullYear())) {
+      const yearsAgo = today.getFullYear() - parseInt(item.date.slice(0,4));
+      if (yearsAgo > 0) {
+        memories.push(`${yearsAgo}年前の今日、${item.person}さんに「${item.title}」を贈りましたよね。素敵なチョイスでした`);
+      }
+    }
+  });
+
+  return memories;
+}
+
+function showAwaiMemory() {
+  const stage = getAwaiStage();
+  if (stage.level < 2) return; // 🌸信頼以上で発動
+  const memories = getAwaiMemory();
+  if (!memories.length) return;
+
+  const shown = localStorage.getItem('awai_memory_shown_date');
+  const today = new Date().toISOString().split('T')[0];
+  if (shown === today) return;
+  localStorage.setItem('awai_memory_shown_date', today);
+
+  const memory = memories[Math.floor(Math.random() * memories.length)];
+  const modal = document.getElementById('aiModal');
+  modal.innerHTML = `<div style="text-align:center;padding:24px;">
+    <div style="font-size:40px;margin-bottom:16px;">${stage.icon}</div>
+    <div style="font-size:15px;font-family:'Shippori Mincho',serif;line-height:1.8;margin-bottom:20px;">${esc(memory)}</div>
+    <button class="btn btn-secondary" onclick="document.getElementById('aiModalOverlay').classList.remove('open')" style="padding:10px 24px;">ありがとう</button>
+  </div>`;
+  document.getElementById('aiModalOverlay').classList.add('open');
+}
+
 function deleteAiHistory(personId, idx) {
   if (!confirm('この提案履歴を削除しますか？')) return;
   const person = data.people.find(p=>p.id===personId);
@@ -8821,7 +8934,7 @@ async function callAI(prompt, context, structured) {
       'Authorization': 'Bearer ' + token,
       'apikey': SUPABASE_KEY
     },
-    body: JSON.stringify({ message: prompt, context: context || '', structured: !!structured })
+    body: JSON.stringify({ message: prompt, context: context || '', structured: !!structured, tone: getAwaiTonePrompt() })
   });
   if (!res.ok) {
     const errText = await res.text();
@@ -9885,6 +9998,7 @@ if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().t
   // AWAI Personality Engine
   trackAppOpen();
   setTimeout(updateAwaiStageDisplay, 500);
+  setTimeout(showAwaiMemory, 3000);
 
   // Supabase初期化（クラウド同期開始）
   sbInit();

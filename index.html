@@ -3101,8 +3101,8 @@ function checkAppUpdate() {
   localStorage.setItem(VERSION_KEY, APP_VERSION);
   // 定期チェック開始
   scheduleUpdateCheck();
-  // バックアップリマインドチェック
-  checkBackupReminder();
+  // バックアップリマインドチェック（Supabase導入済みのため無効化）
+  // checkBackupReminder();
   // 緊急バックアップがあれば復元案内
   checkEmergencyBackup();
 }
@@ -5032,18 +5032,14 @@ function openSettings() {
       `}
     </div>
 
-    <!-- バックアップ -->
+    <!-- クラウド保存状態 -->
     <div style="${_sc}">
-      <div style="${_sl}">💾 バックアップ</div>
-      <div style="display:flex;gap:8px;">
-        <div style="${_sb2}flex:1;border:1px solid var(--border);justify-content:center;" onclick="exportData()">
-          <span style="font-size:20px;">📥</span><span style="font-size:13px;">保存する</span>
-        </div>
-        <div style="${_sb2}flex:1;border:1px solid var(--border);justify-content:center;" onclick="document.getElementById('importFileInput').click()">
-          <span style="font-size:20px;">📤</span><span style="font-size:13px;">復元する</span>
-        </div>
-        <input type="file" id="importFileInput" accept=".json" style="display:none;" onchange="importData(event)">
+      <div style="${_sl}">☁️ データ保存</div>
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;">
+        <span style="color:#6bab8a;font-size:20px;">✅</span>
+        <div style="font-size:14px;">クラウドに自動保存されています</div>
       </div>
+      <div style="font-size:12px;color:var(--sub);">スマホを変えてもデータは消えません</div>
     </div>
 
     <!-- AI設定（上級者向け） -->

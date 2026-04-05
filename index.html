@@ -8301,6 +8301,7 @@ if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().t
     else if (currentTab==='place' && currentLabel==='closed') openPlaceMemoryModal();
     else if (currentTab==='place') openPlaceModal();
     else if (currentTab==='gift') { currentTab='gave'; openItemModal(); currentTab='gift'; }
+    else if (currentTab==='calendar') { const t=new Date(); calDayTap(t.getFullYear(),t.getMonth(),t.getDate()); }
     else openItemModal();
   });
 

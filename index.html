@@ -3741,7 +3741,10 @@ function render() {
     else filteredPeople = items.filter(p=>!p.isMemory);
     if (!filteredPeople.length) {
       const msg = currentLabel==='memory' ? '🤍 記憶はまだ登録されていません' : currentLabel==='corporate' ? '🏢 会社はまだ登録されていません' : currentLabel==='individual' ? '👤 友だちはまだ登録されていません' : '👤 友だちを追加しましょう';
-      cardList.innerHTML = `<div class="empty-msg">${msg}<br>下の ＋ ボタンから追加できます</div>`;
+      cardList.innerHTML = `<div class="empty-msg">${msg}<br>下の ＋ ボタンから追加できます</div>
+        <div style="display:flex;gap:8px;justify-content:center;margin-top:12px;">
+          <button onclick="openOcrModal()" style="padding:10px 16px;border-radius:12px;border:1px solid var(--pickup-border);background:var(--pickup);color:var(--text);font-size:13px;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">📷 画像から一括登録</button>
+        </div>`;
       return;
     }
     const visiblePeople = filteredPeople.filter(p=>!p.hidden);
@@ -8557,6 +8560,226 @@ ${budget ? '\n## 予算\n約'+budget+'円' : ''}
     resultDiv.innerHTML = `<div style="color:#c97070;padding:12px;">エラー: ${esc(e.message)}</div>`;
   }
   btn.disabled = false; btn.textContent = '✨ 提案をもらう';
+}
+
+// ===== Image OCR (LINE Screenshot / Business Card) =====
+const OCR_EDGE_FN = SUPABASE_URL + '/functions/v1/image-ocr';
+
+function openOcrModal() {
+  const modal = document.getElementById('aiModal');
+  modal.innerHTML = `<h2>📷 画像から登録</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+      <button onclick="startOcr('line_friends')" style="padding:16px 12px;border-radius:14px;border:1px solid var(--pickup-border);background:var(--pickup);color:var(--text);font-size:13px;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">
+        <div style="font-size:24px;margin-bottom:6px;">💬</div>
+        LINEスクショ<br><span style="font-size:11px;color:var(--sub);">友だち一括登録</span>
+      </button>
+      <button onclick="startOcr('business_card')" style="padding:16px 12px;border-radius:14px;border:1px solid var(--pickup-border);background:var(--pickup);color:var(--text);font-size:13px;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">
+        <div style="font-size:24px;margin-bottom:6px;">🪪</div>
+        名刺スキャン<br><span style="font-size:11px;color:var(--sub);">法人カード自動入力</span>
+      </button>
+    </div>
+    <div class="form-btns">
+      <button class="btn btn-secondary" onclick="document.getElementById('aiModalOverlay').classList.remove('open')">閉じる</button>
+    </div>`;
+  document.getElementById('aiModalOverlay').classList.add('open');
+}
+
+function startOcr(mode) {
+  const modal = document.getElementById('aiModal');
+  const title = mode === 'line_friends' ? '💬 LINEスクショから友だち登録' : '🪪 名刺スキャン';
+  const hint = mode === 'line_friends'
+    ? 'LINEの友だち一覧のスクリーンショットを選択してください。複数枚OK！'
+    : '名刺の写真を撮影または選択してください。';
+
+  modal.innerHTML = `<h2>${title}</h2>
+    <div style="font-size:13px;color:var(--sub);margin-bottom:12px;">${hint}</div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <button onclick="document.getElementById('ocrCamera').click()" style="flex:1;padding:12px;border-radius:12px;border:1px solid var(--border);background:var(--bg);cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;font-size:13px;">📷 カメラ</button>
+      <button onclick="document.getElementById('ocrFile').click()" style="flex:1;padding:12px;border-radius:12px;border:1px solid var(--border);background:var(--bg);cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;font-size:13px;">📁 ファイル</button>
+    </div>
+    <input type="file" id="ocrCamera" accept="image/*" capture="environment" style="display:none;" onchange="processOcrImage(this,'${mode}')">
+    <input type="file" id="ocrFile" accept="image/*" ${mode==='line_friends'?'multiple':''} style="display:none;" onchange="processOcrImage(this,'${mode}')">
+    <div id="ocrPreview" style="text-align:center;margin-bottom:12px;"></div>
+    <div id="ocrResult"></div>
+    <div class="form-btns">
+      <button class="btn btn-secondary" onclick="document.getElementById('aiModalOverlay').classList.remove('open')">閉じる</button>
+    </div>`;
+  document.getElementById('aiModalOverlay').classList.add('open');
+}
+
+async function processOcrImage(input, mode) {
+  const files = input.files;
+  if (!files || !files.length) return;
+
+  const resultDiv = document.getElementById('ocrResult');
+  const previewDiv = document.getElementById('ocrPreview');
+
+  for (let fi = 0; fi < files.length; fi++) {
+    const file = files[fi];
+    // プレビュー表示
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const base64 = e.target.result;
+      previewDiv.innerHTML += `<img src="${base64}" style="max-width:150px;max-height:150px;border-radius:8px;margin:4px;">`;
+      resultDiv.innerHTML = '<div style="text-align:center;color:var(--sub);padding:20px;">💭 AIが読み取り中...</div>';
+
+      try {
+        if (!_sbUser) throw new Error('ログインが必要です');
+        const session = await _sb.auth.getSession();
+        const token = session?.data?.session?.access_token;
+
+        const res = await fetch(OCR_EDGE_FN, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + (token || ''),
+            'apikey': SUPABASE_KEY
+          },
+          body: JSON.stringify({ image: base64, mode })
+        });
+        const json = await res.json();
+        if (json.error) throw new Error(json.error);
+
+        if (mode === 'line_friends' && json.result?.friends) {
+          renderOcrFriends(json.result.friends);
+        } else if (mode === 'business_card' && json.result) {
+          renderOcrBusinessCard(json.result);
+        } else {
+          resultDiv.innerHTML = '<div style="color:#c97070;padding:12px;">読み取れませんでした。別の画像で試してください。</div>';
+        }
+      } catch (err) {
+        resultDiv.innerHTML = `<div style="color:#c97070;padding:12px;">エラー: ${esc(err.message)}</div>`;
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+function renderOcrFriends(friends) {
+  const resultDiv = document.getElementById('ocrResult');
+  if (!friends.length) {
+    resultDiv.innerHTML = '<div style="color:var(--sub);padding:12px;">友だちの名前が見つかりませんでした。</div>';
+    return;
+  }
+  let html = `<div style="font-weight:600;margin-bottom:8px;">${friends.length}人の名前を検出しました</div>`;
+  html += '<div style="max-height:300px;overflow-y:auto;">';
+  friends.forEach((f, i) => {
+    const exists = data.people.some(p => p.nickname === f.name);
+    html += `<label style="display:flex;align-items:center;gap:8px;padding:8px;border-bottom:1px solid var(--border);font-size:13px;">
+      <input type="checkbox" id="ocrF${i}" ${exists?'':'checked'}>
+      <span>${esc(f.name)}</span>
+      ${exists ? '<span style="font-size:11px;color:var(--sub);">（登録済み）</span>' : ''}
+      ${f.note ? `<span style="font-size:11px;color:var(--sub);">${esc(f.note)}</span>` : ''}
+    </label>`;
+  });
+  html += '</div>';
+  html += `<div style="margin-top:12px;text-align:center;">
+    <button class="btn btn-primary" onclick="saveOcrFriends()" style="font-size:14px;padding:10px 24px;">✅ チェックした人を一括登録</button>
+  </div>`;
+  resultDiv.innerHTML = html;
+  // データを保持
+  resultDiv._friends = friends;
+}
+
+function saveOcrFriends() {
+  const resultDiv = document.getElementById('ocrResult');
+  const friends = resultDiv._friends || [];
+  let count = 0;
+  const now = new Date().toISOString();
+  friends.forEach((f, i) => {
+    const cb = document.getElementById('ocrF' + i);
+    if (cb && cb.checked) {
+      const exists = data.people.some(p => p.nickname === f.name);
+      if (!exists) {
+        data.people.push({
+          id: genId(),
+          type: 'individual',
+          nickname: f.name,
+          fullName: '',
+          relation: '',
+          interests: [],
+          brands: [],
+          foodLike: [],
+          foodDislike: [],
+          personality: [],
+          memo: f.note || '',
+          anniversaries: [],
+          pinned: false,
+          createdAt: now,
+          updatedAt: now
+        });
+        count++;
+      }
+    }
+  });
+  if (count) {
+    saveData(); render();
+    showToast(`👤 ${count}人の友だちを登録しました`);
+    document.getElementById('aiModalOverlay').classList.remove('open');
+  } else {
+    showToast('登録する人が選択されていません');
+  }
+}
+
+function renderOcrBusinessCard(card) {
+  const resultDiv = document.getElementById('ocrResult');
+  let html = '<div style="font-weight:600;margin-bottom:8px;">名刺の読み取り結果</div>';
+  html += '<div style="background:var(--bg);border-radius:12px;padding:12px;font-size:13px;line-height:2;">';
+  if (card.corpFullName) html += `<div>🏢 ${esc(card.corpFullName)}</div>`;
+  if (card.fullName) html += `<div>👤 ${esc(card.fullName)}</div>`;
+  if (card.position) html += `<div>📋 ${esc(card.position)}${card.department ? ' / ' + esc(card.department) : ''}</div>`;
+  if (card.phone) html += `<div>📞 ${esc(card.phone)}</div>`;
+  if (card.mobile) html += `<div>📱 ${esc(card.mobile)}</div>`;
+  if (card.email) html += `<div>📧 ${esc(card.email)}</div>`;
+  if (card.address) html += `<div>📍 ${esc(card.address)}</div>`;
+  if (card.url) html += `<div>🔗 ${esc(card.url)}</div>`;
+  if (card.industry) html += `<div>🏭 ${esc(card.industry)}</div>`;
+  html += '</div>';
+  html += `<div style="margin-top:12px;text-align:center;">
+    <button class="btn btn-primary" onclick="saveOcrBusinessCard()" style="font-size:14px;padding:10px 24px;">✅ この内容で登録</button>
+  </div>`;
+  resultDiv.innerHTML = html;
+  resultDiv._card = card;
+}
+
+function saveOcrBusinessCard() {
+  const resultDiv = document.getElementById('ocrResult');
+  const card = resultDiv._card;
+  if (!card) return;
+  const now = new Date().toISOString();
+  const isCorp = card.type === 'corporate';
+
+  const person = {
+    id: genId(),
+    type: isCorp ? 'corporate' : 'individual',
+    nickname: card.nickname || card.corpFullName || card.fullName || '名前なし',
+    corpFullName: card.corpFullName || '',
+    corpNickname: card.nickname || '',
+    fullName: card.fullName || '',
+    position: card.position || '',
+    department: card.department || '',
+    phone: card.phone || card.mobile || '',
+    email: card.email || '',
+    address: card.address || '',
+    url: card.url || '',
+    industry: card.industry || '',
+    relation: card.position ? card.position : '仕事関係',
+    interests: [],
+    brands: [],
+    foodLike: [],
+    foodDislike: [],
+    personality: [],
+    memo: [card.department, card.mobile ? '携帯:' + card.mobile : ''].filter(Boolean).join(' / '),
+    anniversaries: [],
+    pinned: false,
+    createdAt: now,
+    updatedAt: now
+  };
+
+  data.people.push(person);
+  saveData(); render();
+  showToast(`🪪 ${person.nickname} を登録しました`);
+  document.getElementById('aiModalOverlay').classList.remove('open');
 }
 
 // ===== Card Search =====

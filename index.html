@@ -7094,8 +7094,8 @@ function renderCalendar(cardList) {
   const events = {};
   // Anniversaries
   data.people.forEach(p => {
-    (p.anniversaries||[]).forEach(a => {
-      if (!a.date) return;
+    (p.anniversaries||[]).forEach((a,ai) => {
+      if (!a.date || a.calendarHidden) return;
       const parts = a.date.split('-').map(Number);
       let m,d;
       if (a.dateType==='full'&&parts.length>=3) { if(parts[1]-1!==month) return; m=parts[1]-1; d=parts[2]; }
@@ -7103,7 +7103,7 @@ function renderCalendar(cardList) {
       else return;
       const key = d;
       if (!events[key]) events[key]=[];
-      events[key].push({type:'anniversary',emoji:(a.name||'').match(/[\p{Emoji}]/u)?.[0]||'📅',name:p.nickname,event:a.name});
+      events[key].push({type:'anniversary',emoji:(a.name||'').match(/[\p{Emoji}]/u)?.[0]||'📅',name:p.nickname,event:a.name,_personId:p.id,_annIdx:ai});
     });
   });
   // Gave/Received
@@ -7169,10 +7169,14 @@ function renderCalendar(cardList) {
     html += '<div style="padding:16px 16px 8px;font-size:13px;font-weight:600;color:var(--accent);">今月の予定</div>';
     upcoming.forEach(e => {
       const typeColor = e.type==='gave'?'#d48a7a':e.type==='received'?'#7a9ad4':'var(--accent)';
+      const hasHideOption = e.type==='anniversary' && e._personId !== undefined;
       html += `<div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border);">
         <span style="font-size:20px;">${e.emoji}</span>
         <div style="flex:1;"><div style="font-size:14px;font-weight:500;">${esc(e.name)} ${esc((e.event||'').replace(/[\p{Emoji}]/gu,'').trim())}</div><div style="font-size:11px;color:var(--sub);">${month+1}/${e.day}</div></div>
         <span style="font-size:12px;color:${typeColor};font-weight:600;">${e.type==='gave'?'あげた':e.type==='received'?'もらった':''}</span>
+        ${hasHideOption?`<label style="font-size:11px;color:var(--sub);display:flex;align-items:center;gap:2px;cursor:pointer;flex-shrink:0;" onclick="event.stopPropagation();">
+          <input type="checkbox" onchange="toggleCalendarHidden('${e._personId}',${e._annIdx},this.checked)"><span>👁‍🗨</span>
+        </label>`:''}
       </div>`;
     });
   } else {
@@ -7188,6 +7192,15 @@ function renderCalendar(cardList) {
   </div>`;
 
   cardList.innerHTML = html;
+}
+
+function toggleCalendarHidden(personId, annIdx, hidden) {
+  const p = data.people.find(x=>x.id===personId);
+  if (!p || !p.anniversaries || !p.anniversaries[annIdx]) return;
+  p.anniversaries[annIdx].calendarHidden = !!hidden;
+  saveData();
+  render();
+  showToast(hidden ? 'カレンダーから非表示にしました' : 'カレンダーに表示しました');
 }
 
 function calPrev() { _calMonth--; if(_calMonth<0){_calMonth=11;_calYear--;} render(); }

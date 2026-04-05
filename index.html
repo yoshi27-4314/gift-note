@@ -5349,16 +5349,34 @@ async function deleteDevMemo(idx) {
   const memos = _devMemosCache || getDevMemosLocal();
   const memo = memos[idx];
   if (!memo) return;
+
+  let deleted = false;
   if (memo._supaId && _sb && _sbUser) {
     try {
-      await _sb.from('dev_memos').delete().eq('id', memo._supaId);
-    } catch(e) { console.warn('削除失敗:', e); }
+      // user_idが自分のものか確認
+      const isMine = memo._userId === _sbUser.id;
+      if (isMine) {
+        const { error } = await _sb.from('dev_memos').delete().eq('id', memo._supaId).eq('user_id', _sbUser.id);
+        if (error) { alert('削除エラー: ' + error.message); return; }
+        deleted = true;
+      } else {
+        alert('他のユーザーのメモは削除できません');
+        return;
+      }
+    } catch(e) { alert('削除に失敗しました'); return; }
+  } else {
+    deleted = true;
   }
-  const localMemos = getDevMemosLocal();
-  const localIdx = memo._supaId ? localMemos.findIndex(m => m._supaId === memo._supaId) : idx;
-  if (localIdx >= 0) { localMemos.splice(localIdx, 1); saveDevMemosLocal(localMemos); }
-  openDevMemo();
-  showToast('メモを削除しました');
+
+  if (deleted) {
+    const localMemos = getDevMemosLocal();
+    const localIdx = memo._supaId ? localMemos.findIndex(m => m._supaId === memo._supaId) : idx;
+    if (localIdx >= 0) { localMemos.splice(localIdx, 1); saveDevMemosLocal(localMemos); }
+    // キャッシュからも削除
+    if (_devMemosCache) { _devMemosCache.splice(idx, 1); }
+    openDevMemo();
+    showToast('メモを削除しました');
+  }
 }
 
 // ===== Contact Import (Android Contact Picker API) =====

@@ -2220,6 +2220,24 @@ function renderItemCard(item, tab, rank) {
   if (item.amount) html += `<div class="card-amount">¥${Number(item.amount).toLocaleString()}</div>`;
   if (item.img) html += `<img class="card-img" src="${item.img}" alt="">`;
   if (item.memo) html += `<div class="card-memo">${esc(item.memo)}</div>`;
+  if (item.aiLinks) {
+    const _al = 'display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:8px;font-size:11px;text-decoration:none;font-weight:500;margin:2px;';
+    const linkMap = {
+      rakuten: { label:'🛒 楽天', style:'background:#BF0000;color:#fff;' },
+      amazon: { label:'🛒 Amazon', style:'background:#FF9900;color:#000;' },
+      official: { label:'🔗 公式サイト', style:'background:#4A90D9;color:#fff;' },
+      instagram: { label:'📸 Instagram', style:'background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);color:#fff;' },
+      tabelog: { label:'🍽 食べログ', style:'background:#F09000;color:#fff;' },
+      hotpepper: { label:'🔥 ホットペッパー', style:'background:#E60012;color:#fff;' },
+      gurunavi: { label:'🍴 ぐるなび', style:'background:#E2001A;color:#fff;' }
+    };
+    html += `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;">`;
+    Object.entries(item.aiLinks).forEach(([key, url]) => {
+      const info = linkMap[key] || { label:'🔗 '+key, style:'background:var(--accent);color:#fff;' };
+      html += `<a href="${esc(url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="${_al}${info.style}">${info.label}</a>`;
+    });
+    html += `</div>`;
+  }
   if (item.tags&&item.tags.length) html += `<div class="card-tags">${item.tags.map(t=>`<span class="card-tag">#${esc(t)}</span>`).join('')}</div>`;
   if (item.address) html += `<div style="font-size:13px;color:var(--sub);margin-top:6px;">📍 ${esc(item.address)}</div>`;
   if (item.phone) html += `<a href="tel:${esc(item.phone)}" style="display:block;font-size:13px;color:var(--accent);margin-top:6px;text-decoration:none;">📞 ${esc(item.phone)}</a>`;
@@ -8788,21 +8806,18 @@ function saveAiSuggestion(tab, personId, idx, silent) {
   const person = data.people.find(p=>p.id===personId);
   const now = new Date().toISOString();
 
-  // 全リンクをmemoに整理して保存
-  function buildAiMemo(s) {
-    let lines = [`${s.shop} — ${s.reason}`];
-    lines.push('');
-    lines.push('🔗 リンク:');
-    if (s.rakuten?.url) lines.push(`楽天: ${s.rakuten.url}`);
-    if (s.amazonUrl) lines.push(`Amazon: ${s.amazonUrl}`);
+  function buildAiLinks(s) {
+    const links = {};
+    if (s.rakuten?.url) links.rakuten = s.rakuten.url;
+    if (s.amazonUrl) links.amazon = s.amazonUrl;
     if (s.webLinks) {
-      if (s.webLinks.official) lines.push(`公式: ${s.webLinks.official}`);
-      if (s.webLinks.instagram) lines.push(`Instagram: ${s.webLinks.instagram}`);
-      if (s.webLinks.tabelog) lines.push(`食べログ: ${s.webLinks.tabelog}`);
-      if (s.webLinks.hotpepper) lines.push(`ホットペッパー: ${s.webLinks.hotpepper}`);
-      if (s.webLinks.gurunavi) lines.push(`ぐるなび: ${s.webLinks.gurunavi}`);
+      if (s.webLinks.official) links.official = s.webLinks.official;
+      if (s.webLinks.instagram) links.instagram = s.webLinks.instagram;
+      if (s.webLinks.tabelog) links.tabelog = s.webLinks.tabelog;
+      if (s.webLinks.hotpepper) links.hotpepper = s.webLinks.hotpepper;
+      if (s.webLinks.gurunavi) links.gurunavi = s.webLinks.gurunavi;
     }
-    return lines.join('\n');
+    return Object.keys(links).length ? links : null;
   }
 
   if (tab === 'wish') {
@@ -8820,7 +8835,8 @@ function saveAiSuggestion(tab, personId, idx, silent) {
       rating: 0,
       tags: null,
       url: s.rakuten?.url || s.amazonUrl || null,
-      memo: buildAiMemo(s),
+      memo: `${s.shop} — ${s.reason}`,
+      aiLinks: buildAiLinks(s),
       img: s.rakuten?.image || null,
       pinned: false,
       createdAt: now,
@@ -8853,7 +8869,8 @@ function saveAiSuggestion(tab, personId, idx, silent) {
       tags: null,
       placeCategory: (s.isPlace && s.category) ? s.category : null,
       rating: 0,
-      memo: buildAiMemo(s),
+      memo: `${s.shop} — ${s.reason}`,
+      aiLinks: buildAiLinks(s),
       img: null,
       pinned: false,
       createdAt: now,
@@ -9360,26 +9377,20 @@ function saveAiSuggestionDirect(tab, idx) {
   const s = _lastAiSuggestions[idx];
   if (!s) return;
   const now = new Date().toISOString();
-  function buildMemo(s) {
-    let lines = [`${s.shop} — ${s.reason}`, '', '🔗 リンク:'];
-    if (s.rakuten?.url) lines.push(`楽天: ${s.rakuten.url}`);
-    if (s.amazonUrl) lines.push(`Amazon: ${s.amazonUrl}`);
-    if (s.webLinks) {
-      if (s.webLinks.official) lines.push(`公式: ${s.webLinks.official}`);
-      if (s.webLinks.instagram) lines.push(`Instagram: ${s.webLinks.instagram}`);
-      if (s.webLinks.tabelog) lines.push(`食べログ: ${s.webLinks.tabelog}`);
-      if (s.webLinks.hotpepper) lines.push(`ホットペッパー: ${s.webLinks.hotpepper}`);
-      if (s.webLinks.gurunavi) lines.push(`ぐるなび: ${s.webLinks.gurunavi}`);
-    }
-    return lines.join('\n');
+  function buildLinks(s) {
+    const links = {};
+    if (s.rakuten?.url) links.rakuten = s.rakuten.url;
+    if (s.amazonUrl) links.amazon = s.amazonUrl;
+    if (s.webLinks) { Object.entries(s.webLinks).forEach(([k,v])=>{ if(v) links[k]=v; }); }
+    return Object.keys(links).length ? links : null;
   }
   if (tab === 'wish') {
-    data.wish.push({ id:genId(), title:s.name, person:null, itemCategory:(!s.isPlace&&s.category)?s.category:null, amount:String(s.rakuten?.price||s.budget||''), url:s.rakuten?.url||s.amazonUrl||null, memo:buildMemo(s), img:s.rakuten?.image||null, tags:null, pinned:false, createdAt:now, updatedAt:now });
+    data.wish.push({ id:genId(), title:s.name, person:null, itemCategory:(!s.isPlace&&s.category)?s.category:null, amount:String(s.rakuten?.price||s.budget||''), url:s.rakuten?.url||s.amazonUrl||null, memo:`${s.shop} — ${s.reason}`, aiLinks:buildLinks(s), img:s.rakuten?.image||null, tags:null, pinned:false, createdAt:now, updatedAt:now });
     saveData(); render();
     showToast(`⭐ "${s.name}" をお気に入りに保存しました`);
   } else if (tab === 'place') {
     const wl = s.webLinks || {};
-    data.place.push({ id:genId(), title:s.shop||s.name, person:null, placeCategory:(s.isPlace&&s.category)?s.category:null, mapUrl:wl.official||wl.tabelog||null, url:wl.official||s.rakuten?.url||s.amazonUrl||null, googleMapUrl:`https://www.google.com/maps/search/${encodeURIComponent(s.shop||s.name)}`, memo:buildMemo(s), tags:null, pinned:false, createdAt:now, updatedAt:now });
+    data.place.push({ id:genId(), title:s.shop||s.name, person:null, placeCategory:(s.isPlace&&s.category)?s.category:null, mapUrl:wl.official||wl.tabelog||null, url:wl.official||s.rakuten?.url||s.amazonUrl||null, googleMapUrl:`https://www.google.com/maps/search/${encodeURIComponent(s.shop||s.name)}`, memo:`${s.shop||s.name} — ${s.reason}`, aiLinks:buildLinks(s), tags:null, pinned:false, createdAt:now, updatedAt:now });
     saveData(); render();
     showToast(`📍 "${s.shop||s.name}" を行きたいに保存しました`);
   }

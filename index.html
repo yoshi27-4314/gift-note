@@ -2397,11 +2397,7 @@ function renderPersonCard(p) {
         </div>
         ${elapsedStr?`<div style="font-size:14px;font-weight:600;color:var(--accent);margin-top:4px;">${elapsedStr}</div>`:''}
         <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;">
-          <span style="font-size:12px;color:var(--sub);">🔔 ${remOn?a.reminders.join(', ')+'日前にリマインド':'リマインドOFF'}</span>
-          <label style="font-size:11px;color:var(--sub);display:flex;align-items:center;gap:4px;cursor:pointer;" onclick="event.stopPropagation();">
-            <input type="checkbox" ${remOn?'checked':''} onchange="event.stopPropagation();toggleAnnReminder('${p.id}',${a._idx},this.checked)">
-            <span>${remOn?'ON':'OFF'}</span>
-          </label>
+          <span style="font-size:12px;color:var(--accent);cursor:pointer;text-decoration:underline;" onclick="event.stopPropagation();cycleAnnReminderDays('${p.id}',${a._idx})">🔔 ${remOn?a.reminders.sort((x,y)=>y-x).map(d=>d===1?'前日':d+'日前').join('・'):'タップして設定'}</span>
         </div>
       </div>`;
     });
@@ -4538,12 +4534,69 @@ function annRowHTML(a, idx) {
       </div>
       <input type="hidden" class="ann-repeat" value="${repeat}">
     </div>
-    <input placeholder="🔔 リマインダ（日数をカンマ区切り）" value="${(a.reminders||[]).join(', ')}" class="ann-reminders" style="font-size:12px;">
-    <div class="form-hint">例: 30, 7, 0（0=当日）</div>
+    <div style="margin-top:6px;">
+      <div style="font-size:12px;color:var(--sub);margin-bottom:4px;">🔔 どのくらい前から準備しますか？</div>
+      <div style="display:flex;gap:6px;" class="ann-reminder-btns">
+        <span class="date-type-chip ${(a.reminders||[]).includes(7)?'active':''}" onclick="toggleReminderDay(this,7)" style="font-size:12px;">7日前</span>
+        <span class="date-type-chip ${(a.reminders||[]).includes(14)?'active':''}" onclick="toggleReminderDay(this,14)" style="font-size:12px;">14日前</span>
+        <span class="date-type-chip ${(a.reminders||[]).includes(30)?'active':''}" onclick="toggleReminderDay(this,30)" style="font-size:12px;">30日前</span>
+        <span class="date-type-chip ${(a.reminders||[]).includes(1)?'active':''}" onclick="toggleReminderDay(this,1)" style="font-size:12px;">前日</span>
+      </div>
+      <input type="hidden" class="ann-reminders" value="${(a.reminders||[]).join(', ')}">
+    </div>
     ${idx>0?`<div class="ann-remove" onclick="document.getElementById('annRow${idx}').remove()">削除</div>`:''}
   </div>`;
 }
 
+
+function cycleAnnReminderDays(personId, annIdx) {
+  const person = data.people.find(p=>p.id===personId);
+  if (!person || !person.anniversaries?.[annIdx]) return;
+  const a = person.anniversaries[annIdx];
+  // プリセットパターンを順番に切り替え
+  const patterns = [
+    [30],         // 30日前
+    [14],         // 14日前
+    [7],          // 7日前
+    [30, 1],      // 30日前＋前日
+    [14, 1],      // 14日前＋前日
+    [7, 1],       // 7日前＋前日
+    [30, 7, 1],   // 30日前＋7日前＋前日
+    []            // OFF
+  ];
+  const current = JSON.stringify((a.reminders||[]).sort((x,y)=>x-y));
+  let nextIdx = 0;
+  for (let i = 0; i < patterns.length; i++) {
+    if (JSON.stringify(patterns[i].sort((x,y)=>x-y)) === current) {
+      nextIdx = (i + 1) % patterns.length;
+      break;
+    }
+  }
+  a.reminders = patterns[nextIdx];
+  saveData(); render();
+  if (patterns[nextIdx].length) {
+    const label = patterns[nextIdx].sort((x,y)=>y-x).map(d=>d===1?'前日':d+'日前').join('・');
+    showToast(`🔔 ${label} に通知します`);
+  } else {
+    showToast('🔕 リマインドをOFFにしました');
+  }
+}
+
+function toggleReminderDay(el, day) {
+  el.classList.toggle('active');
+  // 親の.ann-reminder-btnsから隠しinputを更新
+  const container = el.closest('.ann-reminder-btns') || el.parentElement;
+  const hiddenInput = container.parentElement.querySelector('.ann-reminders');
+  if (hiddenInput) {
+    const active = container.querySelectorAll('.date-type-chip.active');
+    const days = Array.from(active).map(chip => {
+      const txt = chip.textContent;
+      if (txt.includes('前日')) return 1;
+      return parseInt(txt);
+    }).filter(n => !isNaN(n));
+    hiddenInput.value = days.join(', ');
+  }
+}
 
 let annCounter = 100;
 function addAnnRow() {
@@ -7719,6 +7772,16 @@ async function openNotifications() {
   }
   let html = '<h2>🔔 お知らせ</h2>';
   // 仕掛け4: 記念日リマインダーを先頭に表示
+  // 初回チュートリアル
+  if (!localStorage.getItem('awai_reminder_tutorial_done') && getAiReminderCount() > 0) {
+    html += `<div style="background:linear-gradient(135deg,#e8f2fc,#daeaf8);border:1px solid #bdd8f0;border-radius:14px;padding:14px;margin-bottom:12px;">
+      <div style="font-weight:600;font-size:14px;margin-bottom:6px;">💡 通知タイミングは変更できます</div>
+      <div style="font-size:13px;color:var(--text);line-height:1.6;">友だちカードの記念日セクションで 🔔 をタップすると、通知の日数を変えられます（7日前/14日前/30日前など）。</div>
+      <div style="text-align:right;margin-top:8px;">
+        <button onclick="localStorage.setItem('awai_reminder_tutorial_done','1');openNotifications();" style="padding:6px 14px;border-radius:8px;background:var(--accent);color:#fff;border:none;font-size:12px;cursor:pointer;">OK、わかりました</button>
+      </div>
+    </div>`;
+  }
   html += renderAiReminders();
   if (!items.length && !getAiReminderCount()) {
     html += '<div style="text-align:center;padding:32px;color:var(--sub);">お知らせはまだありません</div>';
@@ -7777,7 +7840,10 @@ function checkAiReminders() {
       p.anniversaries.forEach(a => {
         if (!a.date) return;
         const days = daysUntil(a.date, a.dateType);
-        if (days !== null && days > 0 && days <= 30) {
+        if (days === null || days <= 0) return;
+        // ユーザー設定のリマインド日数を使う（未設定なら30日前）
+        const reminderDays = (a.reminders && a.reminders.length) ? Math.max(...a.reminders) : 30;
+        if (days <= reminderDays) {
           const key = `${p.id}_${a.name}_${a.date}`;
           if (!newReminders.some(r => r.key === key)) {
             newReminders.push({

@@ -116,7 +116,7 @@ Deno.serve(async (req) => {
   {
     "name": "商品名またはギフト名",
     "shop": "店名・ブランド名",
-    "reason": "なぜこの人に合うか（1-2文）",
+    "reason": "この贈り物で相手がどう喜ぶか、どんな体験ができるか（具体的に1-2文）",
     "budget": 5000,
     "keyword": "楽天やAmazonで検索する最適なキーワード",
     "isPlace": false,

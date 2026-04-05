@@ -280,6 +280,17 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
   from { opacity:0; transform:translateY(12px); }
   to { opacity:1; transform:translateY(0); }
 }
+@keyframes calPageLeft {
+  0% { opacity:0; transform:translateX(40px) rotateY(-8deg); }
+  100% { opacity:1; transform:translateX(0) rotateY(0); }
+}
+@keyframes calPageRight {
+  0% { opacity:0; transform:translateX(-40px) rotateY(8deg); }
+  100% { opacity:1; transform:translateX(0) rotateY(0); }
+}
+.cal-page-left { animation: calPageLeft 0.35s ease-out; }
+.cal-page-right { animation: calPageRight 0.35s ease-out; }
+}
 .card-title {
   font-family: 'Shippori Mincho', serif; font-size: 17px; font-weight: 600;
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
@@ -7273,11 +7284,14 @@ function renderCalendar(cardList) {
   });
 
   let html = '';
+  // 手帳風ラッパー
+  html += `<div style="background:var(--card);border-radius:20px;margin:8px 12px;padding:4px 0 16px;box-shadow:0 2px 12px var(--shadow);border-left:4px solid var(--accent);position:relative;overflow:hidden;">`;
+  html += `<div style="position:absolute;top:0;right:0;width:30px;height:100%;background:linear-gradient(to left,rgba(0,0,0,0.02),transparent);pointer-events:none;"></div>`;
   // Month navigation
-  html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 20px 12px;">
-    <button onclick="calPrev()" style="background:none;border:none;font-size:20px;cursor:pointer;padding:8px;color:var(--text);">◀</button>
-    <div style="font-family:'Shippori Mincho',serif;font-size:18px;font-weight:600;">${year}年 ${monthNames[month]}</div>
-    <button onclick="calNext()" style="background:none;border:none;font-size:20px;cursor:pointer;padding:8px;color:var(--text);">▶</button>
+  html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px 8px;">
+    <button onclick="calPrev()" style="background:none;border:none;font-size:18px;cursor:pointer;padding:8px;color:var(--sub);">◀</button>
+    <div style="font-family:'Shippori Mincho',serif;font-size:20px;font-weight:600;letter-spacing:2px;">${year}年 ${monthNames[month]}</div>
+    <button onclick="calNext()" style="background:none;border:none;font-size:18px;cursor:pointer;padding:8px;color:var(--sub);">▶</button>
   </div>`;
 
   // Day headers
@@ -7302,6 +7316,7 @@ function renderCalendar(cardList) {
     </div>`;
   }
   html += '</div>';
+  html += '</div>'; // 手帳風ラッパー閉じ
 
   // Event list for today or selected
   const todayEvents = events[today.getDate()] || [];
@@ -7382,8 +7397,18 @@ async function toggleCalendarHidden(personId, annIdx, hidden) {
   showToast(hidden ? '記念日から非表示にしました' : '記念日に表示しました');
 }
 
-function calPrev() { _calMonth--; if(_calMonth<0){_calMonth=11;_calYear--;} render(); }
-function calNext() { _calMonth++; if(_calMonth>11){_calMonth=0;_calYear++;} render(); }
+function calPrev() {
+  _calMonth--; if(_calMonth<0){_calMonth=11;_calYear--;}
+  render();
+  const cl = document.getElementById('cardList');
+  if (cl) { cl.classList.remove('cal-page-left','cal-page-right'); void cl.offsetHeight; cl.classList.add('cal-page-right'); }
+}
+function calNext() {
+  _calMonth++; if(_calMonth>11){_calMonth=0;_calYear++;}
+  render();
+  const cl = document.getElementById('cardList');
+  if (cl) { cl.classList.remove('cal-page-left','cal-page-right'); void cl.offsetHeight; cl.classList.add('cal-page-left'); }
+}
 
 // カレンダースワイプで月切り替え
 let _calSwipeX = 0;

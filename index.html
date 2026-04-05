@@ -978,7 +978,7 @@ async function loginWithGoogle() {
   try {
     const { error } = await _sb.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: 'https://yoshi27-4314.github.io/gift-note/' }
+      options: { redirectTo: 'https://awai.gift/' }
     });
     if (error) alert('Googleログインエラー: ' + error.message);
   } catch(e) { alert('Googleログインに失敗しました'); }
@@ -3089,7 +3089,7 @@ function renderAnnSection() {
 
 // ===== Update notification =====
 const UPDATE_CHECK_KEY = 'awai_last_update_check';
-const VERSION_URL = 'https://yoshi27-4314.github.io/gift-note/version.json';
+const VERSION_URL = 'https://awai.gift/version.json';
 const CHECK_HOURS = [9, 19]; // 朝9時・夜7時にチェック
 
 function checkAppUpdate() {
@@ -5527,7 +5527,7 @@ function getMyReferralId() {
 }
 
 function getAppUrl() {
-  const base = 'https://yoshi27-4314.github.io/gift-note/';
+  const base = 'https://awai.gift/';
   return base + '?ref=' + getMyReferralId();
 }
 
@@ -6251,7 +6251,7 @@ function generateProfileQR() {
 
   const json = JSON.stringify(shareData);
   const encoded = btoa(unescape(encodeURIComponent(json)));
-  const url = 'https://yoshi27-4314.github.io/gift-note/?p=' + encodeURIComponent(encoded);
+  const url = 'https://awai.gift/?p=' + encodeURIComponent(encoded);
   const area = document.getElementById('profileQRResult');
   try {
     const qr = qrcode(0, 'M');

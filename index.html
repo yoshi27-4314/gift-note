@@ -3073,13 +3073,18 @@ ${budget ? '\n## 1人あたりの予算\n約'+budget+'円' : ''}
 - 苦手なものは絶対に避けてください
 - Amazonや楽天ではなく、知る人ぞ知る名店やブランド、体験型ギフトなどセンスの良い提案を
 - 各メンバーに1つずつ、「商品名」「店名」「なぜこの人に合うか」「予算目安」を含めて
+- 各提案の最後に「🔍 探し方:」として、具体的な検索ワードを1〜2個提示してください（例:「○○○ 公式サイト」「○○○ Instagram」など）
+- 存在が不確実なURLは絶対に載せないでください
 - 日本語で簡潔に`;
 
   try {
     const text = await callAI(prompt, memberProfiles);
     resultDiv.innerHTML = `<div style="background:var(--pickup);border:1px solid var(--pickup-border);border-radius:14px;padding:14px;">
       <div style="font-weight:600;margin-bottom:8px;font-family:'Shippori Mincho',serif;">💡 ${esc(group.name)} への提案</div>
-      <div>${mdToHtml(text)}</div></div>`;
+      <div>${mdToHtml(text)}</div></div>
+    <div style="text-align:center;margin-top:12px;">
+      <button class="btn btn-secondary" onclick="runGroupAiSuggest('${groupId}')" style="font-size:13px;padding:8px 20px;">🔄 別の提案を探す</button>
+    </div>`;
   } catch(e) {
     resultDiv.innerHTML = `<div style="color:#c97070;padding:12px;">エラー: ${esc(e.message)}</div>`;
   }
@@ -8410,14 +8415,19 @@ ${budget ? '\n## 予算\n約'+budget+'円' : ''}
 - 過去にあげたものと被らないようにしてください
 - Amazonや楽天ではなく、知る人ぞ知る名店やブランド、体験型ギフトなどセンスの良い提案を心がけてください
 - 各提案は「商品名」「店名やブランド名」「なぜこの人に合うか」「予算目安」を含めてください
+- 各提案の最後に「🔍 探し方:」として、その商品や店を見つけるための具体的な検索ワードを1〜2個提示してください（例:「○○○ 公式サイト」「○○○ Instagram」「○○○ ぐるなび」など）
+- 存在が不確実なURLは絶対に載せないでください。検索ワードの提示に留めてください
 - 日本語で回答してください
-- 簡潔に、各提案は3-4行程度で`;
+- 簡潔に、各提案は4-5行程度で`;
 
   try {
     const text = await callAI(prompt, profileLines.join('\n'));
     resultDiv.innerHTML = `<div style="background:var(--pickup);border:1px solid var(--pickup-border);border-radius:14px;padding:14px;">
       <div style="font-weight:600;margin-bottom:8px;font-family:'Shippori Mincho',serif;">💡 ${esc(person.nickname)} への提案</div>
       <div>${mdToHtml(text)}</div>
+    </div>
+    <div style="text-align:center;margin-top:12px;">
+      <button class="btn btn-secondary" onclick="runAiSuggest('${personId}')" style="font-size:13px;padding:8px 20px;">🔄 別の提案を探す</button>
     </div>`;
   } catch(e) {
     resultDiv.innerHTML = `<div style="color:#c97070;padding:12px;">エラー: ${esc(e.message)}</div>`;

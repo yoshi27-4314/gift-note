@@ -712,7 +712,20 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
           <input id="obMyBirthDay" type="number" min="1" max="31" placeholder="日" style="flex:1;padding:14px 12px;font-size:16px;border-radius:12px;border:1px solid var(--border);">
         </div>
       </div>
+      <div class="form-group" style="margin-top:16px;"><label>好きなこと・趣味（任意）</label>
+        <input id="obMyInterests" placeholder="例：ゴルフ、ワイン、旅行、料理" style="padding:14px 16px;font-size:16px;border-radius:12px;border:1px solid var(--border);width:100%;">
+        <div style="font-size:11px;color:var(--sub);margin-top:4px;">あなたの体験に合わせたガイドをします</div>
+      </div>
       <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;margin-top:32px;" onclick="obSaveProfile()">次へ</button>
+    </div>
+    <!-- Step 2b: 気づきの質問 -->
+    <div id="obStep2b" class="ob-step" style="display:none;">
+      <div style="text-align:center;margin-bottom:24px;font-size:36px;" id="obInsightEmoji">💭</div>
+      <h2 style="text-align:center;font-family:'Shippori Mincho',serif;font-size:20px;margin-bottom:12px;" id="obInsightTitle">大切な人のこと<br>どれくらい知っていますか？</h2>
+      <p style="text-align:center;color:var(--sub);font-size:13px;margin-bottom:24px;">正直に答えてみてください</p>
+      <div id="obInsightQuestions"></div>
+      <div id="obInsightResult" style="display:none;text-align:center;margin-top:20px;"></div>
+      <button class="btn btn-primary" id="obInsightBtn" style="width:100%;padding:16px;font-size:17px;border-radius:14px;margin-top:24px;" onclick="obShowInsightResult()">結果を見る</button>
     </div>
     <!-- Step 3: First Person -->
     <div id="obStep3" class="ob-step" style="display:none;">
@@ -7531,9 +7544,110 @@ function obSaveProfile() {
   if (bd) {
     profile.anniversaries = [{name:'🎂 誕生日', date: bd.date, dateType: bd.dateType, repeat:'yearly', reminders:[30]}];
   }
+  const interests = document.getElementById('obMyInterests')?.value.trim();
+  if (interests) {
+    profile.interests = interests.split(/[,、\s]+/).filter(Boolean);
+  }
   localStorage.setItem(MY_PROFILE_KEY, JSON.stringify(profile));
   sbSave();
-  obNext(3);
+  obBuildInsight(profile.interests || []);
+  obNext('2b');
+}
+
+// パーソナライズされた気づきの質問を生成
+function obBuildInsight(interests) {
+  const qArea = document.getElementById('obInsightQuestions');
+  if (!qArea) return;
+
+  // 趣味に基づくパーソナライズ質問テンプレート
+  const templates = {
+    'ゴルフ': { q:'一緒にラウンドする仲間の好きな飲み物を知っていますか？', emoji:'⛳' },
+    'ワイン': { q:'一緒にワインを飲みたい人の好きな銘柄を知っていますか？', emoji:'🍷' },
+    '旅行': { q:'一緒に旅行したい人の行きたい場所を知っていますか？', emoji:'✈️' },
+    '料理': { q:'手料理を食べてもらいたい人の苦手な食べ物を知っていますか？', emoji:'🍳' },
+    'お酒': { q:'一緒に飲みたい人の好きなお酒の種類を知っていますか？', emoji:'🍶' },
+    'スポーツ': { q:'応援している仲間の好きなチームを知っていますか？', emoji:'⚽' },
+    '音楽': { q:'一緒にライブに行きたい人の好きなアーティストを知っていますか？', emoji:'🎵' },
+    '映画': { q:'映画の趣味が合う人の最近のお気に入りを知っていますか？', emoji:'🎬' },
+    'カフェ': { q:'一緒にカフェに行きたい人の好きなドリンクを知っていますか？', emoji:'☕' },
+    '読書': { q:'本を薦め合える人の最近読んだ本を知っていますか？', emoji:'📚' },
+    '釣り': { q:'一緒に釣りに行く仲間の好きな釣り場を知っていますか？', emoji:'🎣' },
+    'キャンプ': { q:'一緒にキャンプしたい人の好きな料理を知っていますか？', emoji:'🏕️' },
+    'ファッション': { q:'プレゼントしたい人の服のサイズを知っていますか？', emoji:'👕' },
+    '花': { q:'花を贈りたい人の好きな花を知っていますか？', emoji:'💐' },
+    'お菓子': { q:'お菓子を贈りたい人の好きな味を知っていますか？', emoji:'🍪' },
+  };
+
+  // デフォルト質問（趣味に関係なく共通）
+  const defaultQuestions = [
+    { q:'大切な人の好きな食べ物を知っていますか？', emoji:'🍽' },
+    { q:'大切な人の服のサイズを知っていますか？', emoji:'👕' },
+    { q:'最後に大切な人にプレゼントしたのはいつですか？', emoji:'🎁' },
+  ];
+
+  // パーソナライズ質問を選択
+  let questions = [];
+  interests.forEach(i => {
+    const key = Object.keys(templates).find(k => i.includes(k) || k.includes(i));
+    if (key && questions.length < 2) questions.push(templates[key]);
+  });
+  // 足りない分はデフォルトから追加
+  defaultQuestions.forEach(q => { if (questions.length < 3) questions.push(q); });
+
+  let html = '';
+  questions.forEach((q, idx) => {
+    html += `<div style="background:var(--card);border-radius:16px;padding:16px;margin-bottom:10px;box-shadow:0 1px 6px var(--shadow);">
+      <div style="font-size:15px;margin-bottom:10px;">${q.emoji} ${q.q}</div>
+      <div style="display:flex;gap:8px;">
+        <div class="date-type-chip" onclick="obAnswerInsight(this,${idx},'yes')" style="flex:1;text-align:center;font-size:14px;padding:10px;" data-answer="">知ってる</div>
+        <div class="date-type-chip" onclick="obAnswerInsight(this,${idx},'no')" style="flex:1;text-align:center;font-size:14px;padding:10px;" data-answer="">知らない</div>
+      </div>
+    </div>`;
+  });
+  qArea.innerHTML = html;
+  qArea._total = questions.length;
+  qArea._yesCount = 0;
+}
+
+function obAnswerInsight(el, idx, answer) {
+  el.parentElement.querySelectorAll('.date-type-chip').forEach(c => {
+    c.classList.remove('active');
+    c.style.opacity = '0.5';
+  });
+  el.classList.add('active');
+  el.style.opacity = '1';
+  el.dataset.answer = answer;
+}
+
+function obShowInsightResult() {
+  const qArea = document.getElementById('obInsightQuestions');
+  const chips = qArea.querySelectorAll('.date-type-chip[data-answer]');
+  let yes = 0, answered = 0;
+  chips.forEach(c => {
+    if (c.dataset.answer === 'yes') yes++;
+    if (c.dataset.answer) answered++;
+  });
+
+  const total = Math.floor(answered / 2); // 2 chips per question
+  const result = document.getElementById('obInsightResult');
+  const btn = document.getElementById('obInsightBtn');
+
+  let message = '';
+  if (yes === 0) {
+    message = `<div style="font-size:16px;font-weight:600;color:var(--accent);margin-bottom:8px;">意外と知らないことが多いかもしれません</div>
+      <div style="font-size:14px;color:var(--sub);line-height:1.8;">大丈夫です。<br>AWAIは気づいたことを<br>少しずつ残していく場所です。</div>`;
+  } else if (yes < total) {
+    message = `<div style="font-size:16px;font-weight:600;color:var(--accent);margin-bottom:8px;">${total}つのうち${yes}つ知っていました</div>
+      <div style="font-size:14px;color:var(--sub);line-height:1.8;">もっと知りたいと思った時、<br>AWAIがお手伝いします。</div>`;
+  } else {
+    message = `<div style="font-size:16px;font-weight:600;color:var(--accent);margin-bottom:8px;">よく知っていますね</div>
+      <div style="font-size:14px;color:var(--sub);line-height:1.8;">その気持ちを忘れないように<br>AWAIに残していきましょう。</div>`;
+  }
+
+  result.innerHTML = message;
+  result.style.display = '';
+  btn.textContent = '大切な人を登録する →';
+  btn.onclick = () => obNext(3);
 }
 
 let _obPersonId = null;

@@ -640,13 +640,17 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 
 /* Ranking */
 .ranking-toggle {
-  display: flex; justify-content: center; gap: 8px; padding: 8px 20px;
+  display: flex; gap: 8px; padding: 6px 20px;
+  overflow-x: auto; scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
 }
+.ranking-toggle::-webkit-scrollbar { display: none; }
 .ranking-btn {
-  padding: 8px 16px; border-radius: 20px; font-size: 13px;
+  flex-shrink: 0; padding: 8px 16px; border-radius: 20px; font-size: 13px;
   border: none; background: var(--card); box-shadow: 0 1px 4px var(--shadow);
   cursor: pointer; font-family: 'Zen Maru Gothic', sans-serif;
-  transition: all 0.2s ease;
+  transition: all 0.2s ease; white-space: nowrap;
+  display: flex; align-items: center; gap: 4px;
 }
 .ranking-btn:active { transform: scale(0.95); }
 .ranking-btn.active { background: #f0b040; color: #fff; box-shadow: 0 2px 8px rgba(240,176,64,0.3); }
@@ -848,7 +852,7 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
   <div class="ranking-btn" id="rankOnBtn" onclick="setRankMode(!rankMode)">⭐ ランキング</div>
   <div class="ranking-btn" id="giftGaveBtn" style="display:none;" onclick="filterGiftType('gave')">🎁 あげた</div>
   <div class="ranking-btn" id="giftReceivedBtn" style="display:none;" onclick="filterGiftType('received')">🎀 もらった</div>
-  <div class="ranking-btn" id="annSortBtn" style="display:none;" onclick="toggleAnnSort()">📅 記念日順</div>
+  <div class="ranking-btn" id="annSortBtn" style="display:none;" onclick="toggleAnnSort()"><span class="cal-date-icon" style="width:16px;height:18px;border-width:1.5px;"><span style="display:block;width:100%;height:4px;background:var(--accent);border-radius:2px 2px 0 0;"></span><span class="ann-sort-date" style="font-size:9px;font-weight:700;color:var(--text);line-height:1;margin-top:1px;"></span></span> 記念日順</div>
 </div>
 <div id="annSection"></div>
 <div class="card-list" id="cardList"></div>
@@ -2153,9 +2157,10 @@ function toggleAnnSort() {
   const btn = document.getElementById('annSortBtn');
   if (btn) {
     btn.classList.remove('asc','desc','active');
-    if (annSortMode === 'asc') { btn.classList.add('asc','active'); btn.textContent = '📅 近い順 ↑'; }
-    else if (annSortMode === 'desc') { btn.classList.add('desc','active'); btn.textContent = '📅 遠い順 ↓'; }
-    else { btn.textContent = '📅 記念日順'; }
+    const dIcon = `<span class="cal-date-icon" style="width:16px;height:18px;border-width:1.5px;"><span style="display:block;width:100%;height:4px;background:${annSortMode?'#fff':'var(--accent)'};border-radius:2px 2px 0 0;"></span><span style="font-size:9px;font-weight:700;color:${annSortMode?'#fff':'var(--text)'};line-height:1;margin-top:1px;">${new Date().getDate()}</span></span>`;
+    if (annSortMode === 'asc') { btn.classList.add('asc','active'); btn.innerHTML = dIcon + ' 近い順 ↑'; }
+    else if (annSortMode === 'desc') { btn.classList.add('desc','active'); btn.innerHTML = dIcon + ' 遠い順 ↓'; }
+    else { btn.innerHTML = dIcon + ' 記念日順'; }
   }
   render();
 }
@@ -8818,9 +8823,10 @@ if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().t
   sbInit();
   setTimeout(checkNotifications, 2000);
 
-  // カレンダーアイコンに今日の日付を表示
-  const calDateNum = document.querySelector('.cal-date-num');
-  if (calDateNum) calDateNum.textContent = new Date().getDate();
+  // 全ての日付アイコンに今日の日付を表示
+  const todayNum = new Date().getDate();
+  document.querySelectorAll('.cal-date-num').forEach(el => el.textContent = todayNum);
+  document.querySelectorAll('.ann-sort-date').forEach(el => el.textContent = todayNum);
 
   document.querySelectorAll('.tab').forEach(el => {
     el.addEventListener('click', () => switchTab(el.dataset.tab));

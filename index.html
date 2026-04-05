@@ -2394,8 +2394,14 @@ function renderPersonCard(p) {
           ${(()=>{
             if (!days || days<=0 || days>30) return '';
             const gKey = p.id+'_'+a.name+'_'+a.date;
-            const isReady = p.giftStatus?.[gKey]?.ready;
-            return `<span onclick="event.stopPropagation();toggleGiftStatus('${p.id}','${gKey}')" style="font-size:11px;padding:3px 8px;border-radius:10px;cursor:pointer;${isReady?'background:#E8F5E9;color:#4CAF50;border:1px solid #C8E6C9;':'background:#FFF3E0;color:#F57C00;border:1px solid #FFE0B2;'}">${isReady?'✅ 準備OK':'🎁 準備する'}</span>`;
+            const st = p.giftStatus?.[gKey]?.status || 'none';
+            const styles = {
+              none: 'background:#FFF3E0;color:#F57C00;border:1px solid #FFE0B2;',
+              preparing: 'background:#FFF8E1;color:#F9A825;border:1px solid #FFF0B3;',
+              ready: 'background:#E8F5E9;color:#4CAF50;border:1px solid #C8E6C9;'
+            };
+            const labels = { none: '🎁 準備する', preparing: '🟡 準備中', ready: '✅ 準備OK' };
+            return `<span onclick="event.stopPropagation();toggleGiftStatus('${p.id}','${gKey}')" style="font-size:11px;padding:3px 8px;border-radius:10px;cursor:pointer;${styles[st]}">${labels[st]}</span>`;
           })()}
         </div>
         <div style="font-size:14px;color:var(--text);margin-bottom:2px;">
@@ -7892,7 +7898,16 @@ function renderAiReminders() {
           <div style="font-size:12px;color:var(--sub);">あと${r.daysLeft}日 — 今のうちにギフトを準備しませんか？</div>
         </div>
         <div style="display:flex;gap:6px;align-items:center;">
-          <button onclick="event.stopPropagation();markGiftReady('${r.personId}','${r.key}')" style="padding:6px 10px;border-radius:8px;background:${r.ready?'#4CAF50':'var(--bg)'};color:${r.ready?'#fff':'var(--text)'};border:1px solid ${r.ready?'#4CAF50':'var(--border)'};font-size:11px;cursor:pointer;">${r.ready?'✅ 準備OK':'☐ 準備OK'}</button>
+          ${(()=>{
+            const st = r.ready ? 'ready' : (r.preparing ? 'preparing' : 'none');
+            const styles = {
+              none: 'background:var(--bg);color:var(--text);border:1px solid var(--border);',
+              preparing: 'background:#FFF8E1;color:#F9A825;border:1px solid #FFF0B3;',
+              ready: 'background:#4CAF50;color:#fff;border:1px solid #4CAF50;'
+            };
+            const labels = { none: '🎁 準備する', preparing: '🟡 準備中', ready: '✅ 準備OK' };
+            return `<button onclick="event.stopPropagation();markGiftReady('${r.personId}','${r.key}')" style="padding:6px 10px;border-radius:8px;${styles[st]}font-size:11px;cursor:pointer;">${labels[st]}</button>`;
+          })()}
           <button onclick="event.stopPropagation();openAiSuggestFromReminder('${r.personId}')" style="padding:6px 10px;border-radius:8px;background:var(--accent);color:#fff;border:none;font-size:11px;cursor:pointer;">💡 提案</button>
           <button onclick="event.stopPropagation();dismissAiReminder('${r.key}')" style="padding:6px 8px;border-radius:8px;background:none;border:none;font-size:11px;cursor:pointer;color:var(--sub);">✕</button>
         </div>
@@ -7912,12 +7927,15 @@ function toggleGiftStatus(personId, key) {
   const person = data.people.find(p=>p.id===personId);
   if (!person) return;
   if (!person.giftStatus) person.giftStatus = {};
-  if (person.giftStatus[key]?.ready) {
+  const current = person.giftStatus[key]?.status || 'none';
+  // none → preparing → ready → none
+  const next = current === 'none' ? 'preparing' : current === 'preparing' ? 'ready' : 'none';
+  if (next === 'none') {
     delete person.giftStatus[key];
-    showToast('🎁 準備中に戻しました');
+    showToast('🎁 リセットしました');
   } else {
-    person.giftStatus[key] = { ready: true, date: new Date().toISOString().split('T')[0] };
-    showToast('✅ 準備OK！');
+    person.giftStatus[key] = { status: next, ready: next === 'ready', date: new Date().toISOString().split('T')[0] };
+    showToast(next === 'preparing' ? '🟡 準備中！' : '✅ 準備OK！');
   }
   // リマインダー側も同期
   try {
@@ -7934,24 +7952,28 @@ function markGiftReady(personId, key) {
     const reminders = JSON.parse(localStorage.getItem(AI_REMINDER_KEY) || '[]');
     const r = reminders.find(r => r.key === key);
     if (r) {
-      r.ready = !r.ready;
-      if (r.ready) r.readyAt = new Date().toISOString();
-      else delete r.readyAt;
+      // none → preparing → ready → none
+      const current = r.ready ? 'ready' : (r.preparing ? 'preparing' : 'none');
+      const next = current === 'none' ? 'preparing' : current === 'preparing' ? 'ready' : 'none';
+      r.ready = next === 'ready';
+      r.preparing = next === 'preparing';
     }
     localStorage.setItem(AI_REMINDER_KEY, JSON.stringify(reminders));
-    // 人物カードにも準備状況を保存
+    // 人物カードにも同期
     const person = data.people.find(p=>p.id===personId);
     if (person) {
       if (!person.giftStatus) person.giftStatus = {};
-      if (r?.ready) {
-        person.giftStatus[key] = { ready: true, date: new Date().toISOString().split('T')[0] };
-      } else {
+      const next = r?.ready ? 'ready' : (r?.preparing ? 'preparing' : 'none');
+      if (next === 'none') {
         delete person.giftStatus[key];
+      } else {
+        person.giftStatus[key] = { status: next, ready: next === 'ready', date: new Date().toISOString().split('T')[0] };
       }
       saveData();
     }
     openNotifications();
-    showToast(r?.ready ? '✅ 準備OK！' : '☐ 準備中に戻しました');
+    const next = r?.ready ? 'ready' : (r?.preparing ? 'preparing' : 'none');
+    showToast(next === 'preparing' ? '🟡 準備中！' : next === 'ready' ? '✅ 準備OK！' : '🎁 リセットしました');
   } catch {}
 }
 

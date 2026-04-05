@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AWAI Admin Tool</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+:root {
+  --bg: #f5f5f5;
+  --card: #ffffff;
+  --accent: #2563eb;
+  --danger: #dc2626;
+  --warn: #f59e0b;
+  --success: #16a34a;
+  --text: #1e293b;
+  --sub: #64748b;
+  --border: #e2e8f0;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
+.login-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+.login-box { background: var(--card); padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); text-align: center; max-width: 400px; width: 90%; }
+.login-box h1 { font-size: 24px; margin-bottom: 8px; }
+.login-box p { color: var(--sub); margin-bottom: 24px; font-size: 14px; }
+.login-btn { display: inline-flex; align-items: center; gap: 10px; padding: 12px 28px; border: 1px solid var(--border); border-radius: 8px; background: var(--card); cursor: pointer; font-size: 15px; transition: background 0.2s; }
+.login-btn:hover { background: #f8fafc; }
+.login-btn img { width: 20px; height: 20px; }
+
+.app { display: none; }
+.app.active { display: block; }
+
+.header { background: var(--card); border-bottom: 1px solid var(--border); padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+.header h1 { font-size: 18px; color: var(--accent); }
+.header-right { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--sub); }
+.header-right button { padding: 6px 14px; border: 1px solid var(--border); border-radius: 6px; background: var(--card); cursor: pointer; font-size: 13px; }
+
+.nav { background: var(--card); border-bottom: 1px solid var(--border); display: flex; overflow-x: auto; }
+.nav-btn { padding: 12px 20px; border: none; background: none; cursor: pointer; font-size: 14px; color: var(--sub); white-space: nowrap; border-bottom: 2px solid transparent; transition: all 0.2s; }
+.nav-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+.nav-btn:hover { color: var(--text); }
+
+.content { max-width: 1000px; margin: 0 auto; padding: 20px; }
+
+.card { background: var(--card); border-radius: 10px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.card h2 { font-size: 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.card h3 { font-size: 14px; margin-bottom: 8px; color: var(--sub); }
+
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+th { background: #f8fafc; font-weight: 600; color: var(--sub); font-size: 12px; text-transform: uppercase; }
+tr:hover { background: #f8fafc; }
+tr.clickable { cursor: pointer; }
+tr.clickable:hover { background: #eff6ff; }
+
+.badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+.badge-info { background: #dbeafe; color: #1e40af; }
+.badge-warn { background: #fef3c7; color: #92400e; }
+.badge-danger { background: #fee2e2; color: #991b1b; }
+.badge-success { background: #dcfce7; color: #166534; }
+
+.btn { padding: 8px 18px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; transition: opacity 0.2s; }
+.btn:hover { opacity: 0.85; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-primary { background: var(--accent); color: white; }
+.btn-warn { background: var(--warn); color: white; }
+.btn-success { background: var(--success); color: white; }
+.btn-secondary { background: #e2e8f0; color: var(--text); }
+
+.form-group { margin-bottom: 14px; }
+.form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--sub); margin-bottom: 4px; }
+.form-group input, .form-group textarea, .form-group select {
+  width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; font-family: inherit;
+}
+.form-group textarea { min-height: 80px; resize: vertical; }
+.form-group select { background: white; }
+
+.json-view { background: #1e293b; color: #e2e8f0; padding: 16px; border-radius: 8px; font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 12px; overflow-x: auto; white-space: pre-wrap; word-break: break-all; max-height: 500px; overflow-y: auto; line-height: 1.5; }
+.json-key { color: #7dd3fc; }
+.json-string { color: #86efac; }
+.json-number { color: #fbbf24; }
+.json-bool { color: #f472b6; }
+.json-null { color: #94a3b8; }
+
+.step { padding: 16px; border: 2px solid var(--border); border-radius: 8px; margin-bottom: 12px; }
+.step.active { border-color: var(--accent); }
+.step.done { border-color: var(--success); background: #f0fdf4; }
+.step-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.step-num { width: 28px; height: 28px; border-radius: 50%; background: var(--border); color: var(--sub); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
+.step.active .step-num { background: var(--accent); color: white; }
+.step.done .step-num { background: var(--success); color: white; }
+.step-title { font-weight: 600; font-size: 14px; }
+
+.log-area { background: #fefce8; border: 1px solid #fde68a; border-radius: 8px; padding: 12px; font-size: 12px; max-height: 200px; overflow-y: auto; font-family: monospace; }
+.log-entry { margin-bottom: 4px; }
+.log-time { color: var(--sub); }
+
+.safety-banner { background: #fef2f2; border: 2px solid #fecaca; border-radius: 10px; padding: 16px; margin-bottom: 20px; }
+.safety-banner h3 { color: var(--danger); font-size: 14px; margin-bottom: 6px; }
+.safety-banner ul { font-size: 13px; color: #991b1b; padding-left: 20px; line-height: 1.8; }
+
+.empty { text-align: center; padding: 40px; color: var(--sub); font-size: 14px; }
+
+.section { display: none; }
+.section.active { display: block; }
+
+.confirm-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+.confirm-box { background: white; border-radius: 12px; padding: 28px; max-width: 420px; width: 90%; text-align: center; }
+.confirm-box h3 { font-size: 18px; margin-bottom: 12px; color: var(--danger); }
+.confirm-box p { font-size: 14px; color: var(--sub); margin-bottom: 20px; line-height: 1.6; }
+.confirm-box .btns { display: flex; gap: 10px; justify-content: center; }
+
+.memo-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 12px; }
+.memo-card .memo-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+.memo-card .memo-title { font-weight: 600; font-size: 15px; }
+.memo-card .memo-meta { font-size: 12px; color: var(--sub); }
+.memo-card .memo-text { font-size: 14px; line-height: 1.6; margin-bottom: 8px; }
+.memo-card .memo-priority { font-size: 12px; }
+.memo-card .reply-area { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+.memo-card .existing-reply { background: #e3f2fd; border-radius: 8px; padding: 10px; margin-bottom: 8px; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<!-- Login Screen -->
+<div id="loginScreen" class="login-screen">
+  <div class="login-box">
+    <h1>AWAI Admin Tool</h1>
+    <p>管理者専用ツールです。<br>Googleアカウントでログインしてください。</p>
+    <button class="login-btn" onclick="adminLogin()">
+      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"> Googleでログイン
+    </button>
+    <div id="loginError" style="color:#dc2626;font-size:13px;margin-top:16px;display:none;"></div>
+  </div>
+</div>
+
+<!-- App -->
+<div id="app" class="app">
+  <div class="header">
+    <h1>AWAI Admin</h1>
+    <div class="header-right">
+      <span id="adminEmail"></span>
+      <button onclick="adminLogout()">ログアウト</button>
+    </div>
+  </div>
+
+  <nav class="nav">
+    <button class="nav-btn active" data-section="users" onclick="showSection('users')">ユーザー一覧</button>
+    <button class="nav-btn" data-section="migrate" onclick="showSection('migrate')">データ移行</button>
+    <button class="nav-btn" data-section="announce" onclick="showSection('announce')">お知らせ投稿</button>
+    <button class="nav-btn" data-section="memos" onclick="showSection('memos')">開発者メモ</button>
+    <button class="nav-btn" data-section="log" onclick="showSection('log')">操作ログ</button>
+  </nav>
+
+  <div class="content">
+    <!-- Safety Banner -->
+    <div class="safety-banner">
+      <h3>安全規則</h3>
+      <ul>
+        <li>削除機能はありません（意図的に排除されています）</li>
+        <li>すべての操作はIDベースで実行されます（テキスト検索での操作は不可）</li>
+        <li>データ変更前にバックアップのダウンロードが必須です</li>
+        <li>すべての書き込み操作には確認ダイアログが表示されます</li>
+        <li>全操作がタイムスタンプ付きで記録されます</li>
+      </ul>
+    </div>
+
+    <!-- Users Section -->
+    <div id="sec-users" class="section active">
+      <div class="card">
+        <h2>ユーザー一覧</h2>
+        <div id="userListLoading" style="text-align:center;padding:20px;color:var(--sub);">読み込み中...</div>
+        <div id="userListContent" style="display:none;">
+          <table>
+            <thead><tr><th>User ID</th><th>Email</th><th>更新日時</th><th>操作</th></tr></thead>
+            <tbody id="userTableBody"></tbody>
+          </table>
+        </div>
+        <div id="userListEmpty" class="empty" style="display:none;">ユーザーが見つかりませんでした</div>
+      </div>
+
+      <!-- User Detail (shown when a user is clicked) -->
+      <div id="userDetail" class="card" style="display:none;">
+        <h2>
+          <span id="detailTitle">ユーザー詳細</span>
+          <button class="btn btn-secondary" onclick="closeUserDetail()" style="margin-left:auto;font-size:12px;">閉じる</button>
+        </h2>
+        <div style="margin-bottom:12px;">
+          <span class="badge badge-info" id="detailUserId"></span>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+          <button class="btn btn-primary" onclick="downloadBackup(currentDetailUserId, 'detail')">JSONバックアップをダウンロード</button>
+        </div>
+        <h3>data (ギフトデータ)</h3>
+        <div id="detailData" class="json-view" style="margin-bottom:12px;">-</div>
+        <h3>profile (プロフィール)</h3>
+        <div id="detailProfile" class="json-view">-</div>
+      </div>
+    </div>
+
+    <!-- Migrate Section -->
+    <div id="sec-migrate" class="section">
+      <div class="card">
+        <h2>データ移行ツール</h2>
+        <p style="font-size:13px;color:var(--sub);margin-bottom:16px;">
+          あるユーザーのデータを別のユーザーに移行します。<br>
+          移行元のデータは移行先のユーザーに上書きコピーされます。
+        </p>
+
+        <!-- Step 1 -->
+        <div class="step active" id="mig-step1">
+          <div class="step-header">
+            <div class="step-num">1</div>
+            <div class="step-title">移行元ユーザーを選択</div>
+          </div>
+          <div class="form-group">
+            <label>移行元 (Source) User ID</label>
+            <select id="migSource" onchange="onMigSourceChange()">
+              <option value="">-- ユーザーを選択 --</option>
+            </select>
+          </div>
+          <div id="migSourceInfo" style="font-size:13px;color:var(--sub);"></div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="step" id="mig-step2">
+          <div class="step-header">
+            <div class="step-num">2</div>
+            <div class="step-title">移行先ユーザーを選択</div>
+          </div>
+          <div class="form-group">
+            <label>移行先 (Destination) User ID</label>
+            <select id="migDest" onchange="onMigDestChange()" disabled>
+              <option value="">-- ユーザーを選択 --</option>
+            </select>
+          </div>
+          <div id="migDestInfo" style="font-size:13px;color:var(--sub);"></div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="step" id="mig-step3">
+          <div class="step-header">
+            <div class="step-num">3</div>
+            <div class="step-title">移行プレビュー</div>
+          </div>
+          <div id="migPreview" style="font-size:13px;">ステップ1・2を完了してください</div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="step" id="mig-step4">
+          <div class="step-header">
+            <div class="step-num">4</div>
+            <div class="step-title">バックアップダウンロード（必須）</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-primary" id="migBackupSrc" disabled onclick="migDownloadBackup('source')">移行元バックアップ</button>
+            <button class="btn btn-primary" id="migBackupDst" disabled onclick="migDownloadBackup('dest')">移行先バックアップ</button>
+          </div>
+          <div id="migBackupStatus" style="font-size:12px;color:var(--sub);margin-top:8px;">
+            両方のバックアップをダウンロードしてください
+          </div>
+        </div>
+
+        <!-- Step 5 & 6 -->
+        <div class="step" id="mig-step5">
+          <div class="step-header">
+            <div class="step-num">5</div>
+            <div class="step-title">実行</div>
+          </div>
+          <button class="btn btn-warn" id="migExecuteBtn" disabled onclick="migExecute()">
+            データ移行を実行
+          </button>
+          <div id="migResult" style="font-size:13px;margin-top:8px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Announce Section -->
+    <div id="sec-announce" class="section">
+      <div class="card">
+        <h2>お知らせ投稿</h2>
+        <div class="form-group">
+          <label>タイトル *</label>
+          <input type="text" id="annTitle" placeholder="お知らせのタイトル">
+        </div>
+        <div class="form-group">
+          <label>本文</label>
+          <textarea id="annBody" placeholder="お知らせの本文（省略可）"></textarea>
+        </div>
+        <div class="form-group">
+          <label>リンクURL</label>
+          <input type="url" id="annLinkUrl" placeholder="https://...">
+        </div>
+        <div class="form-group">
+          <label>リンクラベル</label>
+          <input type="text" id="annLinkLabel" placeholder="詳しく見る">
+        </div>
+        <button class="btn btn-primary" onclick="postAnnouncement()">投稿する</button>
+      </div>
+
+      <div class="card">
+        <h2>投稿済みお知らせ</h2>
+        <div id="annList">読み込み中...</div>
+      </div>
+    </div>
+
+    <!-- Memos Section -->
+    <div id="sec-memos" class="section">
+      <div class="card">
+        <h2>開発者メモ一覧（全ユーザー）</h2>
+        <div style="margin-bottom:12px;">
+          <label style="font-size:13px;color:var(--sub);">フィルタ:
+            <select id="memoFilter" onchange="loadDevMemos()" style="padding:4px 8px;border-radius:4px;border:1px solid var(--border);">
+              <option value="all">すべて</option>
+              <option value="unreplied">未返信のみ</option>
+              <option value="undone">未完了のみ</option>
+            </select>
+          </label>
+        </div>
+        <div id="memoList">読み込み中...</div>
+      </div>
+    </div>
+
+    <!-- Log Section -->
+    <div id="sec-log" class="section">
+      <div class="card">
+        <h2>操作ログ</h2>
+        <p style="font-size:13px;color:var(--sub);margin-bottom:12px;">このセッション中に行われた操作の記録です</p>
+        <div id="logArea" class="log-area">
+          <div class="log-entry" style="color:var(--sub);">まだ操作がありません</div>
+        </div>
+        <button class="btn btn-secondary" style="margin-top:10px;" onclick="downloadLog()">ログをダウンロード</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== Config =====
+const SUPABASE_URL = 'https://njdnfvlucwasrafoepmu.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5qZG5mdmx1Y3dhc3JhZm9lcG11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMTEzNjgsImV4cCI6MjA5MDg4NzM2OH0.jDjqf3nWqaQ0sMfDf-85dDQNbEhX90qLsOOhWJdDlM8';
+const ADMIN_EMAILS = ['awai.giftnote@gmail.com'];
+
+const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentUser = null;
+let allUsers = [];
+let currentDetailUserId = null;
+let migSourceBackedUp = false;
+let migDestBackedUp = false;
+const opLog = [];
+
+// ===== Logging =====
+function log(action, detail = '') {
+  const ts = new Date().toISOString();
+  const entry = { ts, action, detail, user: currentUser?.email || 'unknown' };
+  opLog.push(entry);
+  const area = document.getElementById('logArea');
+  if (opLog.length === 1) area.innerHTML = '';
+  area.innerHTML += `<div class="log-entry"><span class="log-time">[${ts}]</span> <strong>${esc(action)}</strong> ${esc(detail)}</div>`;
+  area.scrollTop = area.scrollHeight;
+}
+
+function downloadLog() {
+  const text = opLog.map(e => `[${e.ts}] (${e.user}) ${e.action} ${e.detail}`).join('\n');
+  downloadFile(`awai_admin_log_${new Date().toISOString().slice(0,10)}.txt`, text, 'text/plain');
+}
+
+// ===== Utils =====
+function esc(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function downloadFile(filename, content, type) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function formatJson(obj) {
+  if (!obj || (typeof obj === 'object' && Object.keys(obj).length === 0)) return '<span class="json-null">（データなし）</span>';
+  const raw = JSON.stringify(obj, null, 2);
+  return raw
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"([^"]+)":/g, '<span class="json-key">"$1"</span>:')
+    .replace(/: "([^"]*)"/g, ': <span class="json-string">"$1"</span>')
+    .replace(/: (\d+\.?\d*)/g, ': <span class="json-number">$1</span>')
+    .replace(/: (true|false)/g, ': <span class="json-bool">$1</span>')
+    .replace(/: (null)/g, ': <span class="json-null">$1</span>');
+}
+
+function dataSummary(data) {
+  if (!data) return '（データなし）';
+  const parts = [];
+  if (data.persons) parts.push(`人物: ${Array.isArray(data.persons) ? data.persons.length : 0}件`);
+  if (data.gifts) parts.push(`ギフト: ${Array.isArray(data.gifts) ? data.gifts.length : 0}件`);
+  if (data.places) parts.push(`場所: ${Array.isArray(data.places) ? data.places.length : 0}件`);
+  if (data.history) parts.push(`履歴: ${Array.isArray(data.history) ? data.history.length : 0}件`);
+  if (data.anniversaries) parts.push(`記念日: ${Array.isArray(data.anniversaries) ? data.anniversaries.length : 0}件`);
+  const totalKeys = Object.keys(data).length;
+  parts.push(`合計キー: ${totalKeys}`);
+  return parts.join(' / ');
+}
+
+async function confirmDialog(title, message) {
+  return new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.className = 'confirm-overlay';
+    overlay.innerHTML = `
+      <div class="confirm-box">
+        <h3>${esc(title)}</h3>
+        <p>${esc(message)}</p>
+        <div class="btns">
+          <button class="btn btn-secondary" id="cfm-cancel">キャンセル</button>
+          <button class="btn btn-warn" id="cfm-ok">実行する</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.querySelector('#cfm-cancel').onclick = () => { overlay.remove(); resolve(false); };
+    overlay.querySelector('#cfm-ok').onclick = () => { overlay.remove(); resolve(true); };
+  });
+}
+
+// ===== Auth =====
+async function adminLogin() {
+  const { error } = await _sb.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.href }
+  });
+  if (error) {
+    document.getElementById('loginError').textContent = 'ログインエラー: ' + error.message;
+    document.getElementById('loginError').style.display = 'block';
+  }
+}
+
+async function adminLogout() {
+  await _sb.auth.signOut();
+  currentUser = null;
+  document.getElementById('app').classList.remove('active');
+  document.getElementById('loginScreen').style.display = 'flex';
+}
+
+async function checkAuth() {
+  const { data: { session } } = await _sb.auth.getSession();
+  if (session?.user) {
+    const email = session.user.email;
+    if (!ADMIN_EMAILS.includes(email)) {
+      document.getElementById('loginError').textContent = `${email} は管理者として登録されていません`;
+      document.getElementById('loginError').style.display = 'block';
+      await _sb.auth.signOut();
+      return;
+    }
+    currentUser = session.user;
+    document.getElementById('adminEmail').textContent = email;
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('app').classList.add('active');
+    log('ログイン', email);
+    loadUsers();
+    loadAnnouncements();
+    loadDevMemos();
+  }
+}
+
+// ===== Navigation =====
+function showSection(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('sec-' + name).classList.add('active');
+  document.querySelector(`.nav-btn[data-section="${name}"]`).classList.add('active');
+}
+
+// ===== Users =====
+async function loadUsers() {
+  const loading = document.getElementById('userListLoading');
+  const content = document.getElementById('userListContent');
+  const empty = document.getElementById('userListEmpty');
+  loading.style.display = 'block';
+  content.style.display = 'none';
+  empty.style.display = 'none';
+
+  try {
+    const { data, error } = await _sb.from('user_data').select('user_id, updated_at').order('updated_at', { ascending: false });
+    if (error) throw error;
+    allUsers = data || [];
+
+    // Also try to get email from user_profiles if available
+    const { data: profiles } = await _sb.from('user_profiles').select('user_id, display_name, share_code');
+    const profileMap = {};
+    (profiles || []).forEach(p => { profileMap[p.user_id] = p; });
+
+    if (allUsers.length === 0) {
+      loading.style.display = 'none';
+      empty.style.display = 'block';
+      return;
+    }
+
+    const tbody = document.getElementById('userTableBody');
+    tbody.innerHTML = allUsers.map(u => {
+      const profile = profileMap[u.user_id];
+      const displayName = profile?.display_name || '';
+      const updated = u.updated_at ? new Date(u.updated_at).toLocaleString('ja-JP') : '-';
+      const shortId = u.user_id.substring(0, 8) + '...';
+      return `<tr class="clickable" onclick="viewUser('${esc(u.user_id)}')">
+        <td><code style="font-size:12px;" title="${esc(u.user_id)}">${esc(shortId)}</code></td>
+        <td>${esc(displayName) || '<span style="color:var(--sub);">-</span>'}</td>
+        <td style="font-size:12px;">${updated}</td>
+        <td><button class="btn btn-secondary" style="font-size:11px;padding:4px 10px;" onclick="event.stopPropagation();downloadBackup('${esc(u.user_id)}','list')">バックアップ</button></td>
+      </tr>`;
+    }).join('');
+
+    loading.style.display = 'none';
+    content.style.display = 'block';
+
+    // Populate migrate dropdowns
+    populateMigrateDropdowns(allUsers, profileMap);
+    log('ユーザー一覧取得', `${allUsers.length}件`);
+  } catch(e) {
+    loading.innerHTML = `<span style="color:var(--danger);">エラー: ${esc(e.message)}</span>`;
+    console.error(e);
+  }
+}
+
+function populateMigrateDropdowns(users, profileMap) {
+  const opts = users.map(u => {
+    const name = profileMap?.[u.user_id]?.display_name || '';
+    const label = `${u.user_id.substring(0,8)}... ${name ? '(' + name + ')' : ''}`;
+    return `<option value="${esc(u.user_id)}">${esc(label)}</option>`;
+  }).join('');
+  const defaultOpt = '<option value="">-- ユーザーを選択 --</option>';
+  document.getElementById('migSource').innerHTML = defaultOpt + opts;
+  document.getElementById('migDest').innerHTML = defaultOpt + opts;
+}
+
+async function viewUser(userId) {
+  currentDetailUserId = userId;
+  const detail = document.getElementById('userDetail');
+  detail.style.display = 'block';
+  document.getElementById('detailUserId').textContent = userId;
+  document.getElementById('detailTitle').textContent = 'ユーザー詳細';
+  document.getElementById('detailData').innerHTML = '読み込み中...';
+  document.getElementById('detailProfile').innerHTML = '読み込み中...';
+  detail.scrollIntoView({ behavior: 'smooth' });
+
+  try {
+    const { data: row, error } = await _sb.from('user_data').select('data, profile').eq('user_id', userId).single();
+    if (error) throw error;
+    document.getElementById('detailData').innerHTML = formatJson(row?.data);
+    document.getElementById('detailProfile').innerHTML = formatJson(row?.profile);
+    log('ユーザー詳細表示', userId);
+  } catch(e) {
+    document.getElementById('detailData').innerHTML = `<span style="color:#f87171;">エラー: ${esc(e.message)}</span>`;
+  }
+}
+
+function closeUserDetail() {
+  document.getElementById('userDetail').style.display = 'none';
+  currentDetailUserId = null;
+}
+
+// ===== Backup =====
+async function downloadBackup(userId, source) {
+  try {
+    const { data: row, error } = await _sb.from('user_data').select('*').eq('user_id', userId).single();
+    if (error) throw error;
+    const backup = {
+      _backup_meta: {
+        created_at: new Date().toISOString(),
+        created_by: currentUser.email,
+        source_tool: 'AWAI Admin Tool',
+        user_id: userId
+      },
+      user_data: row
+    };
+    const filename = `awai_backup_${userId.substring(0,8)}_${new Date().toISOString().replace(/[:.]/g,'-')}.json`;
+    downloadFile(filename, JSON.stringify(backup, null, 2), 'application/json');
+    log('バックアップダウンロード', `user_id=${userId} source=${source}`);
+  } catch(e) {
+    alert('バックアップ取得エラー: ' + e.message);
+  }
+}
+
+// ===== Data Migration =====
+let migSourceData = null;
+let migDestData = null;
+
+async function onMigSourceChange() {
+  const id = document.getElementById('migSource').value;
+  migSourceData = null;
+  migSourceBackedUp = false;
+  migDestBackedUp = false;
+  updateMigSteps();
+
+  if (!id) {
+    document.getElementById('migSourceInfo').textContent = '';
+    return;
+  }
+  try {
+    const { data: row } = await _sb.from('user_data').select('data, profile').eq('user_id', id).single();
+    migSourceData = row;
+    document.getElementById('migSourceInfo').innerHTML =
+      `<strong>データ概要:</strong> ${esc(dataSummary(row?.data))}<br><strong>プロフィール:</strong> ${row?.profile ? 'あり' : 'なし'}`;
+  } catch(e) {
+    document.getElementById('migSourceInfo').innerHTML = `<span style="color:var(--danger);">${esc(e.message)}</span>`;
+  }
+
+  document.getElementById('migDest').disabled = false;
+  document.getElementById('mig-step2').classList.add('active');
+}
+
+async function onMigDestChange() {
+  const srcId = document.getElementById('migSource').value;
+  const dstId = document.getElementById('migDest').value;
+  migDestData = null;
+  migDestBackedUp = false;
+  migSourceBackedUp = false;
+  updateMigSteps();
+
+  if (!dstId) {
+    document.getElementById('migDestInfo').textContent = '';
+    return;
+  }
+  if (srcId === dstId) {
+    document.getElementById('migDestInfo').innerHTML = '<span style="color:var(--danger);">移行元と同じユーザーは選択できません</span>';
+    document.getElementById('migDest').value = '';
+    return;
+  }
+  try {
+    const { data: row } = await _sb.from('user_data').select('data, profile').eq('user_id', dstId).single();
+    migDestData = row;
+    document.getElementById('migDestInfo').innerHTML =
+      `<strong>データ概要:</strong> ${esc(dataSummary(row?.data))}<br><strong>プロフィール:</strong> ${row?.profile ? 'あり' : 'なし'}`;
+  } catch(e) {
+    document.getElementById('migDestInfo').innerHTML = `<span style="color:var(--danger);">${esc(e.message)}</span>`;
+  }
+
+  // Step 3: Preview
+  const srcId2 = document.getElementById('migSource').value;
+  document.getElementById('migPreview').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:start;">
+      <div style="background:#fef2f2;border-radius:8px;padding:12px;">
+        <div style="font-weight:600;font-size:13px;color:var(--danger);margin-bottom:4px;">移行元（コピー元）</div>
+        <div style="font-size:12px;word-break:break-all;">${esc(srcId2)}</div>
+        <div style="font-size:12px;margin-top:4px;">${esc(dataSummary(migSourceData?.data))}</div>
+      </div>
+      <div style="font-size:24px;padding-top:20px;">→</div>
+      <div style="background:#eff6ff;border-radius:8px;padding:12px;">
+        <div style="font-weight:600;font-size:13px;color:var(--accent);margin-bottom:4px;">移行先（上書き先）</div>
+        <div style="font-size:12px;word-break:break-all;">${esc(dstId)}</div>
+        <div style="font-size:12px;margin-top:4px;">${esc(dataSummary(migDestData?.data))}</div>
+        <div style="font-size:11px;color:var(--danger);margin-top:4px;font-weight:600;">※ このデータは上書きされます</div>
+      </div>
+    </div>`;
+  document.getElementById('mig-step3').classList.add('active');
+  document.getElementById('mig-step3').classList.add('done');
+
+  // Enable backup buttons
+  document.getElementById('migBackupSrc').disabled = false;
+  document.getElementById('migBackupDst').disabled = false;
+  document.getElementById('mig-step4').classList.add('active');
+}
+
+async function migDownloadBackup(which) {
+  const id = which === 'source' ? document.getElementById('migSource').value : document.getElementById('migDest').value;
+  await downloadBackup(id, 'migrate-' + which);
+  if (which === 'source') migSourceBackedUp = true;
+  else migDestBackedUp = true;
+
+  const status = document.getElementById('migBackupStatus');
+  if (migSourceBackedUp && migDestBackedUp) {
+    status.innerHTML = '<span class="badge badge-success">両方のバックアップ完了</span>';
+    document.getElementById('mig-step4').classList.add('done');
+    document.getElementById('mig-step5').classList.add('active');
+    document.getElementById('migExecuteBtn').disabled = false;
+  } else if (migSourceBackedUp) {
+    status.innerHTML = '<span class="badge badge-warn">移行先のバックアップが未完了</span>';
+  } else if (migDestBackedUp) {
+    status.innerHTML = '<span class="badge badge-warn">移行元のバックアップが未完了</span>';
+  }
+}
+
+function updateMigSteps() {
+  ['mig-step2','mig-step3','mig-step4','mig-step5'].forEach(id => {
+    const el = document.getElementById(id);
+    el.classList.remove('active','done');
+  });
+  document.getElementById('migBackupSrc').disabled = true;
+  document.getElementById('migBackupDst').disabled = true;
+  document.getElementById('migExecuteBtn').disabled = true;
+  document.getElementById('migBackupStatus').textContent = '両方のバックアップをダウンロードしてください';
+  document.getElementById('migPreview').textContent = 'ステップ1・2を完了してください';
+  document.getElementById('migResult').textContent = '';
+  document.getElementById('migSourceInfo').textContent = '';
+  document.getElementById('migDestInfo').textContent = '';
+}
+
+async function migExecute() {
+  if (!migSourceBackedUp || !migDestBackedUp) {
+    alert('バックアップが完了していません。両方のバックアップをダウンロードしてください。');
+    return;
+  }
+
+  const srcId = document.getElementById('migSource').value;
+  const dstId = document.getElementById('migDest').value;
+  if (!srcId || !dstId || srcId === dstId) {
+    alert('ユーザー選択が正しくありません。');
+    return;
+  }
+
+  const ok = await confirmDialog(
+    '本当に実行しますか？',
+    `この操作は取り消せません。\n\n移行元: ${srcId.substring(0,8)}...\n移行先: ${dstId.substring(0,8)}...\n\n移行先のデータは上書きされます。`
+  );
+  if (!ok) {
+    log('データ移行キャンセル', `${srcId} → ${dstId}`);
+    return;
+  }
+
+  const result = document.getElementById('migResult');
+  result.innerHTML = '<span style="color:var(--sub);">実行中...</span>';
+  document.getElementById('migExecuteBtn').disabled = true;
+
+  try {
+    // Re-fetch source data to ensure freshness
+    const { data: srcRow, error: srcErr } = await _sb.from('user_data').select('data, profile').eq('user_id', srcId).single();
+    if (srcErr) throw srcErr;
+
+    // Upsert to destination
+    const { error: dstErr } = await _sb.from('user_data').upsert({
+      user_id: dstId,
+      data: srcRow.data,
+      profile: srcRow.profile,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'user_id' });
+    if (dstErr) throw dstErr;
+
+    result.innerHTML = '<span class="badge badge-success">移行完了</span> データが正常に移行されました。';
+    document.getElementById('mig-step5').classList.add('done');
+    log('データ移行実行', `${srcId} → ${dstId}`);
+  } catch(e) {
+    result.innerHTML = `<span class="badge badge-danger">エラー</span> ${esc(e.message)}`;
+    log('データ移行エラー', `${srcId} → ${dstId}: ${e.message}`);
+  }
+}
+
+// ===== Announcements =====
+async function postAnnouncement() {
+  const title = document.getElementById('annTitle').value.trim();
+  const body = document.getElementById('annBody').value.trim();
+  const linkUrl = document.getElementById('annLinkUrl').value.trim();
+  const linkLabel = document.getElementById('annLinkLabel').value.trim();
+
+  if (!title) { alert('タイトルを入力してください'); return; }
+
+  const ok = await confirmDialog('お知らせを投稿', `「${title}」を投稿しますか？\n全ユーザーに表示されます。`);
+  if (!ok) return;
+
+  try {
+    const row = { title, body: body || null, link_url: linkUrl || null, link_label: linkLabel || null };
+    const { error } = await _sb.from('announcements').insert(row);
+    if (error) throw error;
+
+    document.getElementById('annTitle').value = '';
+    document.getElementById('annBody').value = '';
+    document.getElementById('annLinkUrl').value = '';
+    document.getElementById('annLinkLabel').value = '';
+    log('お知らせ投稿', title);
+    alert('投稿しました');
+    loadAnnouncements();
+  } catch(e) {
+    alert('投稿エラー: ' + e.message);
+    log('お知らせ投稿エラー', e.message);
+  }
+}
+
+async function loadAnnouncements() {
+  const container = document.getElementById('annList');
+  try {
+    const { data: rows, error } = await _sb.from('announcements').select('*').order('created_at', { ascending: false }).limit(30);
+    if (error) throw error;
+    if (!rows?.length) {
+      container.innerHTML = '<div class="empty">投稿はまだありません</div>';
+      return;
+    }
+    container.innerHTML = rows.map(r => {
+      const date = new Date(r.created_at).toLocaleString('ja-JP');
+      return `<div style="padding:10px 0;border-bottom:1px solid var(--border);">
+        <div style="display:flex;justify-content:space-between;">
+          <strong style="font-size:14px;">${esc(r.title)}</strong>
+          <span style="font-size:11px;color:var(--sub);">${date}</span>
+        </div>
+        ${r.body ? `<div style="font-size:13px;color:var(--sub);margin-top:4px;">${esc(r.body)}</div>` : ''}
+        ${r.link_url ? `<div style="font-size:12px;margin-top:4px;"><a href="${esc(r.link_url)}" target="_blank">${esc(r.link_label || r.link_url)}</a></div>` : ''}
+      </div>`;
+    }).join('');
+  } catch(e) {
+    container.innerHTML = `<span style="color:var(--danger);">読み込みエラー: ${esc(e.message)}</span>`;
+  }
+}
+
+// ===== Dev Memos =====
+async function loadDevMemos() {
+  const container = document.getElementById('memoList');
+  const filter = document.getElementById('memoFilter').value;
+  container.innerHTML = '読み込み中...';
+
+  try {
+    let query = _sb.from('dev_memos').select('*').order('created_at', { ascending: false });
+    if (filter === 'unreplied') query = query.is('admin_reply', null);
+    if (filter === 'undone') query = query.eq('done', false);
+
+    const { data: rows, error } = await query;
+    if (error) throw error;
+    if (!rows?.length) {
+      container.innerHTML = '<div class="empty">メモはありません</div>';
+      return;
+    }
+
+    container.innerHTML = rows.map(m => {
+      const date = new Date(m.created_at).toLocaleString('ja-JP');
+      const priorityBadge = m.priority === 'high' ? '<span class="badge badge-danger">高</span>'
+        : m.priority === 'medium' ? '<span class="badge badge-warn">中</span>'
+        : '<span class="badge badge-info">低</span>';
+      const doneBadge = m.done ? '<span class="badge badge-success">完了</span>' : '<span class="badge badge-warn">未完了</span>';
+
+      return `<div class="memo-card">
+        <div class="memo-header">
+          <div>
+            <div class="memo-title">${esc(m.title || '(無題)')}</div>
+            <div class="memo-meta">
+              ${esc(m.sender || '匿名')} | User: ${esc(m.user_id?.substring(0,8))}... | ${date}
+            </div>
+          </div>
+          <div class="memo-priority">${priorityBadge} ${doneBadge}</div>
+        </div>
+        <div class="memo-text">${esc(m.text || '')}</div>
+        ${m.img ? `<div style="margin-bottom:8px;"><img src="${esc(m.img)}" style="max-width:200px;border-radius:8px;"></div>` : ''}
+        <div class="reply-area">
+          ${m.admin_reply ? `<div class="existing-reply"><strong>管理者返信:</strong><br>${esc(m.admin_reply)}</div>` : ''}
+          <div style="display:flex;gap:8px;">
+            <input type="text" id="reply-${m.id}" placeholder="返信を入力..." style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;" value="${esc(m.admin_reply || '')}">
+            <button class="btn btn-primary" style="font-size:12px;padding:6px 12px;" onclick="saveReply('${m.id}')">返信保存</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+
+    log('開発者メモ読み込み', `${rows.length}件 (filter=${filter})`);
+  } catch(e) {
+    container.innerHTML = `<span style="color:var(--danger);">読み込みエラー: ${esc(e.message)}</span>`;
+  }
+}
+
+async function saveReply(memoId) {
+  const input = document.getElementById('reply-' + memoId);
+  const reply = input?.value?.trim();
+
+  const ok = await confirmDialog('返信を保存', '管理者返信を保存しますか？');
+  if (!ok) return;
+
+  try {
+    const { error } = await _sb.from('dev_memos').update({
+      admin_reply: reply || null,
+      updated_at: new Date().toISOString()
+    }).eq('id', memoId);
+    if (error) throw error;
+    log('メモ返信保存', `memo_id=${memoId}`);
+    alert('返信を保存しました');
+    loadDevMemos();
+  } catch(e) {
+    alert('保存エラー: ' + e.message);
+    log('メモ返信エラー', `memo_id=${memoId}: ${e.message}`);
+  }
+}
+
+// ===== Init =====
+checkAuth();
+
+// Handle OAuth redirect
+_sb.auth.onAuthStateChange((event, session) => {
+  if (event === 'SIGNED_IN' && session?.user) {
+    checkAuth();
+  }
+});
+</script>
+</body>
+</html>

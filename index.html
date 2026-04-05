@@ -2288,24 +2288,43 @@ function renderPersonCard(p) {
       <button class="card-btn" onclick="event.stopPropagation();openAiSuggest('${p.id}')" style="background:var(--pickup);border-color:var(--pickup-border);font-size:14px;padding:10px 16px;flex:1;">💡 コンシェルジュ</button>
       <button class="card-btn" onclick="event.stopPropagation();openPartnerLinks('${p.id}')" style="background:linear-gradient(135deg,#e8f2fc,#daeaf8);border-color:#bdd8f0;font-size:14px;padding:10px 16px;flex:1;">🎁 ギフトを探す</button>
     </div>`;
-    // 仕掛け3: 過去の提案履歴
+    // 仕掛け3: 過去の提案履歴（階層構造）
     if (p.aiHistory?.length) {
       html += `<div class="person-section"><div class="person-section-title" style="cursor:pointer;" onclick="event.stopPropagation();this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'':'none'">💡 過去の提案 (${p.aiHistory.length}回) ▾</div>`;
       html += `<div style="display:none;">`;
-      p.aiHistory.forEach(h => {
-        html += `<div style="margin-bottom:10px;padding:8px;background:var(--bg);border-radius:10px;">`;
-        html += `<div style="font-size:11px;color:var(--sub);margin-bottom:4px;">${h.date}</div>`;
+      p.aiHistory.forEach((h, hi) => {
+        const sceneLabel = h.scene || '条件なし';
+        const budgetLabel = h.budget ? `・予算${Number(h.budget).toLocaleString()}円` : '';
+        const toggleId = `aiHist_${p.id}_${hi}`;
+        html += `<div style="margin-bottom:8px;background:var(--bg);border-radius:12px;overflow:hidden;">`;
+        html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;cursor:pointer;" onclick="event.stopPropagation();const el=document.getElementById('${toggleId}');el.style.display=el.style.display==='none'?'':'none'">
+          <div>
+            <span style="font-size:13px;font-weight:600;">${esc(sceneLabel)}${budgetLabel}</span>
+            <span style="font-size:11px;color:var(--sub);margin-left:8px;">${h.date}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:11px;color:var(--sub);">${(h.items||[]).length}件 ▾</span>
+            <span onclick="event.stopPropagation();deleteAiHistory('${p.id}',${hi})" style="font-size:11px;color:#c97070;cursor:pointer;padding:2px 6px;">✕</span>
+          </div>
+        </div>`;
+        html += `<div id="${toggleId}" style="display:none;padding:0 12px 10px;">`;
         (h.items||[]).forEach(item => {
-          html += `<div style="font-size:13px;margin-bottom:4px;">`;
-          html += `<strong>${esc(item.name)}</strong> <span style="color:var(--sub);font-size:11px;">${esc(item.shop)}</span>`;
-          const links = [];
-          if (item.rakutenUrl) links.push(`<a href="${esc(item.rakutenUrl)}" target="_blank" rel="noopener" style="font-size:11px;color:#BF0000;">楽天</a>`);
-          if (item.amazonUrl) links.push(`<a href="${esc(item.amazonUrl)}" target="_blank" rel="noopener" style="font-size:11px;color:#FF9900;">Amazon</a>`);
-          if (item.webLinks?.official) links.push(`<a href="${esc(item.webLinks.official)}" target="_blank" rel="noopener" style="font-size:11px;color:#4A90D9;">公式</a>`);
-          if (links.length) html += ` ${links.join(' ')}`;
+          const price = item.budget ? `¥${Number(item.budget).toLocaleString()}` : '';
+          html += `<div style="padding:8px 0;border-top:1px solid var(--border);">`;
+          html += `<div style="font-size:14px;font-weight:600;font-family:'Shippori Mincho',serif;">${esc(item.name)}</div>`;
+          html += `<div style="font-size:12px;color:var(--sub);margin:2px 0;">${esc(item.shop)}${price ? ' · ' + price : ''}${item.category ? ' · ' + esc(item.category) : ''}</div>`;
+          if (item.reason) html += `<div style="font-size:12px;margin:4px 0;line-height:1.5;">${esc(item.reason)}</div>`;
+          const _hl = 'display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:6px;font-size:10px;text-decoration:none;font-weight:500;margin:1px;';
+          let linksHtml = '';
+          if (item.rakutenUrl) linksHtml += `<a href="${esc(item.rakutenUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="${_hl}background:#BF0000;color:#fff;">🛒 楽天</a>`;
+          if (item.amazonUrl) linksHtml += `<a href="${esc(item.amazonUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="${_hl}background:#FF9900;color:#000;">🛒 Amazon</a>`;
+          if (item.webLinks?.official) linksHtml += `<a href="${esc(item.webLinks.official)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="${_hl}background:#4A90D9;color:#fff;">🔗 公式</a>`;
+          if (item.webLinks?.instagram) linksHtml += `<a href="${esc(item.webLinks.instagram)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="${_hl}background:linear-gradient(45deg,#f09433,#dc2743,#bc1888);color:#fff;">📸</a>`;
+          if (item.webLinks?.tabelog) linksHtml += `<a href="${esc(item.webLinks.tabelog)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="${_hl}background:#F09000;color:#fff;">🍽</a>`;
+          if (linksHtml) html += `<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px;">${linksHtml}</div>`;
           html += `</div>`;
         });
-        html += `</div>`;
+        html += `</div></div>`;
       });
       html += `</div></div>`;
     }
@@ -8613,14 +8632,17 @@ function setAiCache(personId, scene, budget, data) {
 }
 
 // === 仕掛け3: 人物カードに提案履歴を保存 ===
-function saveAiHistory(personId, suggestions) {
+function saveAiHistory(personId, suggestions, scene, budget) {
   const person = data.people.find(p=>p.id===personId);
   if (!person) return;
   if (!person.aiHistory) person.aiHistory = [];
   person.aiHistory.unshift({
     date: new Date().toISOString().split('T')[0],
+    scene: scene || '',
+    budget: budget || '',
     items: suggestions.map(s => ({
       name: s.name, shop: s.shop, reason: s.reason, budget: s.budget,
+      category: s.category || null,
       rakutenUrl: s.rakuten?.url || null, amazonUrl: s.amazonUrl || null,
       webLinks: s.webLinks || null, image: s.rakuten?.image || null
     }))
@@ -8713,6 +8735,15 @@ function dismissSimilarNotif(key) {
     localStorage.setItem(SIMILAR_NOTIF_KEY, JSON.stringify(notifs));
     openNotifications();
   } catch {}
+}
+
+function deleteAiHistory(personId, idx) {
+  if (!confirm('この提案履歴を削除しますか？')) return;
+  const person = data.people.find(p=>p.id===personId);
+  if (!person || !person.aiHistory) return;
+  person.aiHistory.splice(idx, 1);
+  saveData(); render();
+  showToast('提案履歴を削除しました');
 }
 
 async function callAI(prompt, context, structured) {
@@ -9011,7 +9042,7 @@ ${budget ? '\n## 予算\n約'+budget+'円' : ''}
     if (result.suggestions && result.suggestions.length) {
       renderAiCards(result.suggestions, personId, resultDiv);
       // 仕掛け3: 提案履歴を人物カードに保存
-      saveAiHistory(personId, result.suggestions);
+      saveAiHistory(personId, result.suggestions, scene, budget);
       // 仕掛け5: 類似の人に横展開
       const similar = findSimilarPeople(personId);
       if (similar.length) {

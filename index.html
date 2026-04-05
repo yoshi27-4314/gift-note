@@ -2298,12 +2298,29 @@ function renderPersonCard(p) {
     });
     html += '</div></div>';
   }
-  // Family
+  // Family（登録済みの友だちとリンク）
   if (p.family&&p.family.length) {
     html += collapsibleSection('👨‍👩‍👧', '家族構成', p.family.length, 3, () => {
       let fh = '';
       p.family.forEach(f => {
-        fh += `<div class="family-member"><div class="family-icon">👤</div><span>${esc(f.name)}</span><span class="family-note">${esc(f.note||'')}</span></div>`;
+        const linked = data.people.find(x => x.id !== p.id && (x.nickname === f.name || x.fullName === f.name));
+        if (linked) {
+          fh += `<div class="family-member" style="cursor:pointer;" onclick="event.stopPropagation();jumpToPerson('${linked.id}')"><div class="family-icon">👤</div><span style="color:var(--accent);text-decoration:underline;">${esc(f.name)}</span><span class="family-note">${esc(f.note||'')}</span><span style="margin-left:auto;color:var(--sub);font-size:12px;">→</span></div>`;
+        } else {
+          fh += `<div class="family-member"><div class="family-icon">👤</div><span>${esc(f.name)}</span><span class="family-note">${esc(f.note||'')}</span></div>`;
+        }
+      });
+      return fh;
+    });
+  }
+  // 逆リンク（他の人の家族として登録されている場合）
+  const familyBackLinks = data.people.filter(x => x.id !== p.id && x.family && x.family.some(f => f.name === p.nickname || f.name === p.fullName));
+  if (familyBackLinks.length) {
+    html += collapsibleSection('🔗', 'この人の家族として登録', familyBackLinks.length, 3, () => {
+      let fh = '';
+      familyBackLinks.forEach(x => {
+        const rel = x.family.find(f => f.name === p.nickname || f.name === p.fullName);
+        fh += `<div class="family-member" style="cursor:pointer;" onclick="event.stopPropagation();jumpToPerson('${x.id}')"><div class="family-icon">👤</div><span style="color:var(--accent);text-decoration:underline;">${esc(x.nickname)}</span><span class="family-note">${esc(rel?.note||'')}</span><span style="margin-left:auto;color:var(--sub);font-size:12px;">→</span></div>`;
       });
       return fh;
     });

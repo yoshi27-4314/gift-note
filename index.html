@@ -732,15 +732,35 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
           <input id="obPersonBirthDay" type="number" min="1" max="31" placeholder="日" style="flex:1;padding:14px 12px;font-size:16px;border-radius:12px;border:1px solid var(--border);">
         </div>
       </div>
-      <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;margin-top:32px;" onclick="obSavePerson()">登録する</button>
+      <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;margin-top:32px;" onclick="obSavePerson()">次へ</button>
       <button class="btn btn-secondary" style="width:100%;padding:14px;font-size:15px;border-radius:14px;margin-top:12px;" onclick="obNext(4)">あとで</button>
+    </div>
+    <!-- Step 3b: あげた/もらった -->
+    <div id="obStep3b" class="ob-step" style="display:none;">
+      <h2 style="text-align:center;font-family:'Shippori Mincho',serif;font-size:22px;margin-bottom:8px;"><span id="obGiftPersonName"></span>さんとの<br>ギフトの記録</h2>
+      <p style="text-align:center;color:var(--sub);font-size:13px;margin-bottom:24px;">覚えていることだけでOKです</p>
+      <div style="background:var(--card);border-radius:16px;padding:20px;margin-bottom:16px;box-shadow:0 1px 6px var(--shadow);">
+        <div style="font-size:14px;font-weight:600;color:var(--accent);margin-bottom:12px;">🎁 最後にあげたもの</div>
+        <input id="obLastGave" placeholder="例：ワイン、お菓子、花束" style="width:100%;padding:14px 16px;font-size:16px;border-radius:12px;border:1px solid var(--border);">
+        <input id="obLastGaveWhen" placeholder="いつ？（例：去年の誕生日）" style="width:100%;padding:12px 16px;font-size:14px;border-radius:12px;border:1px solid var(--border);margin-top:8px;color:var(--sub);">
+      </div>
+      <div style="background:var(--card);border-radius:16px;padding:20px;margin-bottom:16px;box-shadow:0 1px 6px var(--shadow);">
+        <div style="font-size:14px;font-weight:600;color:#7a9ad4;margin-bottom:12px;">🎀 最後にもらったもの</div>
+        <input id="obLastReceived" placeholder="例：ネクタイ、チョコレート" style="width:100%;padding:14px 16px;font-size:16px;border-radius:12px;border:1px solid var(--border);">
+        <input id="obLastReceivedWhen" placeholder="いつ？（例：お中元、クリスマス）" style="width:100%;padding:12px 16px;font-size:14px;border-radius:12px;border:1px solid var(--border);margin-top:8px;color:var(--sub);">
+      </div>
+      <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;" onclick="obSaveGifts()">完了</button>
+      <button class="btn btn-secondary" style="width:100%;padding:14px;font-size:15px;border-radius:14px;margin-top:12px;" onclick="obNext(4)">スキップ</button>
     </div>
     <!-- Step 4: Complete -->
     <div id="obStep4" class="ob-step" style="display:none;">
-      <div style="text-align:center;margin-bottom:24px;font-size:48px;">✨</div>
-      <h2 id="obCompleteTitle" style="text-align:center;font-family:'Shippori Mincho',serif;font-size:22px;margin-bottom:16px;">準備ができました</h2>
-      <p id="obCompleteMsg" style="text-align:center;color:var(--sub);font-size:15px;line-height:1.8;margin-bottom:40px;">あなたが愛したすべてが、ここにある。</p>
-      <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;" onclick="obFinish()">AWAIをはじめる</button>
+      <div id="obCompleteContent">
+        <div style="text-align:center;margin-bottom:24px;font-size:48px;">✨</div>
+        <h2 id="obCompleteTitle" style="text-align:center;font-family:'Shippori Mincho',serif;font-size:22px;margin-bottom:16px;">準備ができました</h2>
+        <p id="obCompleteMsg" style="text-align:center;color:var(--sub);font-size:15px;line-height:1.8;margin-bottom:16px;"></p>
+        <div id="obCompleteSummary" style="margin-bottom:24px;"></div>
+        <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;" onclick="obFinish()">AWAIをはじめる</button>
+      </div>
     </div>
   </div>
 </div>
@@ -5158,6 +5178,7 @@ async function openDevMemo() {
   let html = `<h2>🛠 開発者メモ</h2>`;
   html += `<div style="display:flex;gap:8px;margin-bottom:16px;">
     <button class="btn btn-primary" onclick="openDevMemoEdit()" style="flex:1;padding:10px;">＋ 新規メモ</button>
+    <button class="card-btn" onclick="closeModal();replayOnboarding()" style="padding:10px 14px;font-size:13px;">🔄 初回体験</button>
   </div>`;
 
   if (!memos.length) {
@@ -6984,6 +7005,12 @@ function saveMemory() {
 // ===== Onboarding =====
 const OB_KEY = 'awai_onboarding_done';
 
+function replayOnboarding() {
+  // データは消さずにオンボーディングを再表示
+  document.getElementById('onboardingOverlay').style.display = '';
+  obNext(1);
+}
+
 function showOnboarding() {
   document.getElementById('onboardingOverlay').style.display = '';
 }
@@ -7081,6 +7108,9 @@ function obSaveProfile() {
   obNext(3);
 }
 
+let _obPersonId = null;
+let _obPersonName = '';
+
 function obSavePerson() {
   const name = document.getElementById('obPersonName').value.trim();
   if (!name) { alert('名前を入力してください'); return; }
@@ -7097,19 +7127,89 @@ function obSavePerson() {
   }
   data.people.push(person);
   saveData();
-  // Show completion with countdown
+  _obPersonId = person.id;
+  _obPersonName = name;
+  document.getElementById('obGiftPersonName').textContent = name;
+  obNext('3b');
+}
+
+function obSaveGifts() {
+  const gaveTitle = document.getElementById('obLastGave').value.trim();
+  const gaveWhen = document.getElementById('obLastGaveWhen').value.trim();
+  const recvTitle = document.getElementById('obLastReceived').value.trim();
+  const recvWhen = document.getElementById('obLastReceivedWhen').value.trim();
+
+  if (gaveTitle) {
+    data.gave.push({
+      id: genId(), title: gaveTitle, person: _obPersonName,
+      occasion: gaveWhen || null, date: null, rating: 0, tags: null,
+      itemCategory: null, url: null, memo: null, img: null,
+      pinned: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+    });
+  }
+  if (recvTitle) {
+    data.received.push({
+      id: genId(), title: recvTitle, person: _obPersonName,
+      occasion: recvWhen || null, date: null, rating: 0, tags: null,
+      itemCategory: null, url: null, memo: null, img: null,
+      pinned: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+    });
+  }
+  saveData();
+  obBuildComplete();
+  obNext(4);
+}
+
+function obBuildComplete() {
   const title = document.getElementById('obCompleteTitle');
-  const month = document.getElementById('obPersonBirthMonth').value;
-  const day = document.getElementById('obPersonBirthDay').value;
+  const msg = document.getElementById('obCompleteMsg');
+  const summary = document.getElementById('obCompleteSummary');
+
+  const month = document.getElementById('obPersonBirthMonth')?.value;
+  const day = document.getElementById('obPersonBirthDay')?.value;
+  const gaveTitle = document.getElementById('obLastGave')?.value.trim();
+  const recvTitle = document.getElementById('obLastReceived')?.value.trim();
+  const gaveWhen = document.getElementById('obLastGaveWhen')?.value.trim();
+  const recvWhen = document.getElementById('obLastReceivedWhen')?.value.trim();
+
+  // カウントダウン
+  let countdownHtml = '';
   if (month && day) {
     const today = new Date();
     const thisYear = today.getFullYear();
     let next = new Date(thisYear, parseInt(month)-1, parseInt(day));
     if (next <= today) next = new Date(thisYear+1, parseInt(month)-1, parseInt(day));
     const diff = Math.ceil((next - today) / (1000*60*60*24));
-    title.textContent = name + 'さんの誕生日まであと' + diff + '日';
+    title.textContent = _obPersonName + 'さんの誕生日まで';
+    countdownHtml = `<div style="text-align:center;margin:16px 0;">
+      <div style="font-size:48px;font-weight:700;color:var(--accent);font-family:'Shippori Mincho',serif;">あと${diff}日</div>
+    </div>`;
+  } else {
+    title.textContent = '準備ができました';
   }
-  obNext(4);
+
+  // ギフト記録サマリー
+  let summaryHtml = countdownHtml;
+  if (gaveTitle || recvTitle) {
+    summaryHtml += '<div style="background:var(--card);border-radius:16px;padding:16px;box-shadow:0 1px 6px var(--shadow);margin-bottom:16px;">';
+    if (gaveTitle) {
+      summaryHtml += `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;${recvTitle?'border-bottom:1px solid var(--border);':''}">
+        <span style="font-size:20px;">🎁</span>
+        <div><div style="font-size:14px;font-weight:500;">あげた：${esc(gaveTitle)}</div>${gaveWhen?`<div style="font-size:12px;color:var(--sub);">${esc(gaveWhen)}</div>`:''}</div>
+      </div>`;
+    }
+    if (recvTitle) {
+      summaryHtml += `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;">
+        <span style="font-size:20px;">🎀</span>
+        <div><div style="font-size:14px;font-weight:500;">もらった：${esc(recvTitle)}</div>${recvWhen?`<div style="font-size:12px;color:var(--sub);">${esc(recvWhen)}</div>`:''}</div>
+      </div>`;
+    }
+    summaryHtml += '</div>';
+  }
+
+  msg.innerHTML = 'もう忘れません。';
+  if (gaveTitle) msg.innerHTML += '<br>次は何にしよう？';
+  summary.innerHTML = summaryHtml;
 }
 
 function obFinish() {

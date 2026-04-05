@@ -5362,12 +5362,6 @@ function openSettings() {
       <div id="backupListArea" style="font-size:12px;color:var(--sub);text-align:center;">読み込み中...</div>
     </div>
 
-    <!-- AI設定（上級者向け） -->
-    <div style="${_sc}">
-      <div style="${_sl}">🤖 AI設定</div>
-      <div style="font-size:13px;color:var(--sub);margin-bottom:8px;">AIコンシェルジュ用のキー</div>
-      <input id="setGeminiKey" type="password" placeholder="APIキーを入力" value="${localStorage.getItem(GEMINI_KEY_STORAGE)||''}" style="width:100%;padding:10px 14px;font-size:14px;border:1px solid var(--border);border-radius:12px;">
-    </div>
 
     <div style="text-align:center;margin:16px 0;">
       <span id="settingsVersionTap" style="font-size:12px;color:var(--sub);cursor:default;user-select:none;padding:8px 16px;" onclick="devModeTap()">AWAI v${APP_VERSION}</span>

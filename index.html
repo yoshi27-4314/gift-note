@@ -801,7 +801,7 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 <div class="tabs" id="tabs">
   <div class="tab active" data-tab="people"><span class="tab-icon">👤</span><span class="tab-label">友だち</span></div>
   <div class="tab" data-tab="wish"><span class="tab-icon">✨</span><span class="tab-label">お気に入り</span></div>
-  <div class="tab" data-tab="calendar"><span class="tab-icon">📅</span><span class="tab-label">カレンダー</span></div>
+  <div class="tab" data-tab="calendar"><span class="tab-icon">📅</span><span class="tab-label">記念日</span></div>
   <div class="tab" data-tab="place"><span class="tab-icon">📍</span><span class="tab-label">行きたい</span></div>
   <div class="tab" data-tab="gift"><span class="tab-icon">🎁</span><span class="tab-label">ギフト</span></div>
 </div>
@@ -3624,7 +3624,7 @@ function switchTab(tab) {
 const TAB_GUIDES = {
   people: { emoji:'👤', msg:'友だち・会社・グループを登録して\n誕生日や記念日を忘れないようにしましょう' },
   wish: { emoji:'✨', msg:'気になるもの、欲しいものを\nメモしておく場所です' },
-  calendar: { emoji:'📅', msg:'記念日やギフトの記録が\nカレンダーで一覧できます' },
+  calendar: { emoji:'📅', msg:'記念日やギフトの記録が\n一覧できます' },
   place: { emoji:'📍', msg:'行きたい場所、行った場所を\n記録しておきましょう' },
   gift: { emoji:'🎁', msg:'あげた・もらったギフトの\n記録を残す場所です' }
 };
@@ -7264,7 +7264,7 @@ async function toggleCalendarHidden(personId, annIdx, hidden) {
   saveData();
   await sbSave();
   render();
-  showToast(hidden ? 'カレンダーから非表示にしました' : 'カレンダーに表示しました');
+  showToast(hidden ? '記念日から非表示にしました' : '記念日に表示しました');
 }
 
 function calPrev() { _calMonth--; if(_calMonth<0){_calMonth=11;_calYear--;} render(); }

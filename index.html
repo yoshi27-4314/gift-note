@@ -2391,6 +2391,12 @@ function renderPersonCard(p) {
             <span style="font-size:15px;font-weight:600;">${esc(label)}</span>
           </div>
           ${badge?`<span class="person-ann-badge" style="font-size:13px;padding:4px 10px;">${badge}</span>`:''}
+          ${(()=>{
+            if (!days || days<=0 || days>30) return '';
+            const gKey = p.id+'_'+a.name+'_'+a.date;
+            const isReady = p.giftStatus?.[gKey]?.ready;
+            return `<span onclick="event.stopPropagation();toggleGiftStatus('${p.id}','${gKey}')" style="font-size:11px;padding:3px 8px;border-radius:10px;cursor:pointer;${isReady?'background:#E8F5E9;color:#4CAF50;border:1px solid #C8E6C9;':'background:#FFF3E0;color:#F57C00;border:1px solid #FFE0B2;'}">${isReady?'✅ 準備OK':'🎁 準備する'}</span>`;
+          })()}
         </div>
         <div style="font-size:14px;color:var(--text);margin-bottom:2px;">
           ${formatAnnDate(a.date,a.dateType)}${a.dateType==='month'?' <span style="font-size:12px;color:var(--sub);">（月のみ）</span>':''}
@@ -7885,9 +7891,10 @@ function renderAiReminders() {
           <div style="font-size:13px;font-weight:500;">${esc(r.personName)} の ${esc(r.annivName)}</div>
           <div style="font-size:12px;color:var(--sub);">あと${r.daysLeft}日 — 今のうちにギフトを準備しませんか？</div>
         </div>
-        <div style="display:flex;gap:6px;">
+        <div style="display:flex;gap:6px;align-items:center;">
+          <button onclick="event.stopPropagation();markGiftReady('${r.personId}','${r.key}')" style="padding:6px 10px;border-radius:8px;background:${r.ready?'#4CAF50':'var(--bg)'};color:${r.ready?'#fff':'var(--text)'};border:1px solid ${r.ready?'#4CAF50':'var(--border)'};font-size:11px;cursor:pointer;">${r.ready?'✅ 準備OK':'☐ 準備OK'}</button>
           <button onclick="event.stopPropagation();openAiSuggestFromReminder('${r.personId}')" style="padding:6px 10px;border-radius:8px;background:var(--accent);color:#fff;border:none;font-size:11px;cursor:pointer;">💡 提案</button>
-          <button onclick="event.stopPropagation();dismissAiReminder('${r.key}')" style="padding:6px 8px;border-radius:8px;background:var(--bg);border:1px solid var(--border);font-size:11px;cursor:pointer;">✕</button>
+          <button onclick="event.stopPropagation();dismissAiReminder('${r.key}')" style="padding:6px 8px;border-radius:8px;background:none;border:none;font-size:11px;cursor:pointer;color:var(--sub);">✕</button>
         </div>
       </div>`;
     });
@@ -7899,6 +7906,53 @@ function renderAiReminders() {
 function openAiSuggestFromReminder(personId) {
   closeModal();
   openAiSuggest(personId);
+}
+
+function toggleGiftStatus(personId, key) {
+  const person = data.people.find(p=>p.id===personId);
+  if (!person) return;
+  if (!person.giftStatus) person.giftStatus = {};
+  if (person.giftStatus[key]?.ready) {
+    delete person.giftStatus[key];
+    showToast('🎁 準備中に戻しました');
+  } else {
+    person.giftStatus[key] = { ready: true, date: new Date().toISOString().split('T')[0] };
+    showToast('✅ 準備OK！');
+  }
+  // リマインダー側も同期
+  try {
+    const reminders = JSON.parse(localStorage.getItem(AI_REMINDER_KEY) || '[]');
+    const r = reminders.find(r => r.key === key);
+    if (r) r.ready = !!person.giftStatus[key]?.ready;
+    localStorage.setItem(AI_REMINDER_KEY, JSON.stringify(reminders));
+  } catch {}
+  saveData(); render();
+}
+
+function markGiftReady(personId, key) {
+  try {
+    const reminders = JSON.parse(localStorage.getItem(AI_REMINDER_KEY) || '[]');
+    const r = reminders.find(r => r.key === key);
+    if (r) {
+      r.ready = !r.ready;
+      if (r.ready) r.readyAt = new Date().toISOString();
+      else delete r.readyAt;
+    }
+    localStorage.setItem(AI_REMINDER_KEY, JSON.stringify(reminders));
+    // 人物カードにも準備状況を保存
+    const person = data.people.find(p=>p.id===personId);
+    if (person) {
+      if (!person.giftStatus) person.giftStatus = {};
+      if (r?.ready) {
+        person.giftStatus[key] = { ready: true, date: new Date().toISOString().split('T')[0] };
+      } else {
+        delete person.giftStatus[key];
+      }
+      saveData();
+    }
+    openNotifications();
+    showToast(r?.ready ? '✅ 準備OK！' : '☐ 準備中に戻しました');
+  } catch {}
 }
 
 function dismissAiReminder(key) {

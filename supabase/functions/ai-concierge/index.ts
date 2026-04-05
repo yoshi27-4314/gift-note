@@ -119,7 +119,8 @@ Deno.serve(async (req) => {
     "reason": "なぜこの人に合うか（1-2文）",
     "budget": 5000,
     "keyword": "楽天やAmazonで検索する最適なキーワード",
-    "isPlace": false
+    "isPlace": false,
+    "category": "カテゴリ名"
   }
 ]
 
@@ -132,6 +133,9 @@ Deno.serve(async (req) => {
 - keywordはブランド名＋商品名で検索に最適化
 - レストランや体験スポットの場合は isPlace: true
 - 毎回異なる提案をする
+- categoryは以下から必ず1つ選ぶ:
+  商品(isPlace:false): ファッション, グルメ, お菓子, 美容・健康, インテリア, 家電・ガジェット, 趣味・体験, ギフト券, その他
+  場所(isPlace:true): 食事, 遊び, 観光, 買い物, 宿泊, リラックス, その他
 
 ${context ? "## ユーザーの登録情報\n" + context : ""}`
       : `あなたはAWAI（アワイ）のAIコンシェルジュです。

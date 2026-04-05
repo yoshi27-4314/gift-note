@@ -2229,6 +2229,7 @@ function renderItemCard(item, tab, rank) {
   const _bs = 'display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border-radius:14px;font-size:13px;font-weight:500;cursor:pointer;font-family:"Zen Maru Gothic",sans-serif;';
   html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
     <button onclick="event.stopPropagation();regiftItem('${tab}','${item.id}')" style="${_bs}border:1px solid var(--pickup-border);background:linear-gradient(135deg,var(--pickup),#fff4e6);color:var(--text);">🎁 プレゼントする</button>
+    <button onclick="event.stopPropagation();searchFromCard('${tab}','${item.id}')" style="${_bs}border:1px solid #d4c8e8;background:linear-gradient(135deg,#f3eefa,#ece0f8);color:#7a60a0;">🔍 もっと探す</button>
     ${tab==='place'&&!item.isClosed?`<button onclick="event.stopPropagation();markVisited('${item.id}')" style="${_bs}border:1px solid ${item.visited?'#a5d6a7':'var(--pickup-border)'};background:linear-gradient(135deg,${item.visited?'#e8f5e9':'var(--pickup)'},${item.visited?'#d4ecd6':'#fff4e6'});color:var(--text);">${item.visited?'✅ 行った！':'📍 行った！'}</button>`:''}
     ${tab==='place'&&!item.isClosed?`<button onclick="event.stopPropagation();closePlacePrompt('${item.id}')" style="${_bs}border:1px solid #d8d0c8;background:linear-gradient(135deg,#f5f0eb,#ece5dd);color:#8a7e74;">🤍 記憶に移す</button>`:''}
     ${tab==='place'&&item.isClosed?`<button onclick="event.stopPropagation();reopenPlace('${item.id}')" style="${_bs}border:1px solid #90caf9;background:linear-gradient(135deg,#e8f4ff,#d6ebfc);color:#4a7aaa;">↩ 戻す</button>`:''}
@@ -3058,7 +3059,7 @@ async function runGroupAiSuggest(groupId) {
     memberProfiles += '\n### ' + m.nickname + '\n' + lines.join('\n') + '\n';
   });
 
-  const prompt = `あなたはギフトコンシェルジュです。以下のグループメンバー全員に対して、それぞれに合った贈り物を提案してください。
+  const prompt = `以下のグループメンバー全員に対して、それぞれに合った贈り物を提案してください。
 
 ## グループ: ${group.name}
 ${group.description ? '説明: '+group.description : ''}
@@ -3068,23 +3069,44 @@ ${memberProfiles}
 ${scene ? '\n## 場面\n'+scene : ''}
 ${budget ? '\n## 1人あたりの予算\n約'+budget+'円' : ''}
 
-## ルール
-- 各メンバーの好みに合わせた個別の提案をしてください
-- 苦手なものは絶対に避けてください
-- Amazonや楽天ではなく、知る人ぞ知る名店やブランド、体験型ギフトなどセンスの良い提案を
-- 各メンバーに1つずつ、「商品名」「店名」「なぜこの人に合うか」「予算目安」を含めて
-- 各提案の最後に「🔍 探し方:」として、具体的な検索ワードを1〜2個提示してください（例:「○○○ 公式サイト」「○○○ Instagram」など）
-- 存在が不確実なURLは絶対に載せないでください
-- 日本語で簡潔に`;
+各メンバーに1つずつ提案してください。苦手なものは絶対に避けてください。`;
 
   try {
-    const text = await callAI(prompt, memberProfiles);
-    resultDiv.innerHTML = `<div style="background:var(--pickup);border:1px solid var(--pickup-border);border-radius:14px;padding:14px;">
-      <div style="font-weight:600;margin-bottom:8px;font-family:'Shippori Mincho',serif;">💡 ${esc(group.name)} への提案</div>
-      <div>${mdToHtml(text)}</div></div>
-    <div style="text-align:center;margin-top:12px;">
-      <button class="btn btn-secondary" onclick="runGroupAiSuggest('${groupId}')" style="font-size:13px;padding:8px 20px;">🔄 別の提案を探す</button>
-    </div>`;
+    const result = await callAI(prompt, memberProfiles, true);
+    if (result.suggestions && result.suggestions.length) {
+      _lastAiSuggestions = result.suggestions;
+      let html = '';
+      result.suggestions.forEach((s, i) => {
+        const hasRakuten = s.rakuten && s.rakuten.url;
+        const rakutenImg = s.rakuten?.image ? `<div style="text-align:center;margin-bottom:10px;"><img src="${esc(s.rakuten.image)}" style="max-width:120px;max-height:120px;border-radius:8px;object-fit:cover;"></div>` : '';
+        const price = s.rakuten?.price ? `¥${Number(s.rakuten.price).toLocaleString()}` : (s.budget ? `約¥${Number(s.budget).toLocaleString()}` : '');
+        html += `<div style="background:var(--pickup);border:1px solid var(--pickup-border);border-radius:14px;padding:14px;margin-bottom:12px;">
+          ${rakutenImg}
+          <div style="font-weight:600;font-size:14px;font-family:'Shippori Mincho',serif;">${esc(s.name)}</div>
+          <div style="font-size:12px;color:var(--sub);margin:4px 0;">${esc(s.shop)}${price ? ' | ' + price : ''}</div>
+          <div style="font-size:13px;margin:8px 0;line-height:1.6;">${esc(s.reason)}</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
+            ${hasRakuten ? `<a href="${esc(s.rakuten.url)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:8px;background:#BF0000;color:#fff;font-size:12px;text-decoration:none;font-weight:500;">🛒 楽天</a>` : ''}
+            <a href="${esc(s.amazonUrl)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:8px;background:#FF9900;color:#000;font-size:12px;text-decoration:none;font-weight:500;">🛒 Amazon</a>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:8px;">
+            <button onclick="saveAiSuggestionDirect('wish',${i})" style="padding:6px 12px;border-radius:8px;background:var(--pickup);border:1px solid var(--pickup-border);color:var(--text);font-size:12px;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">⭐ 保存</button>
+          </div>
+        </div>`;
+      });
+      html += `<div style="text-align:center;margin-top:12px;">
+        <button class="btn btn-secondary" onclick="runGroupAiSuggest('${groupId}')" style="font-size:13px;padding:8px 20px;">🔄 別の提案を探す</button>
+      </div>`;
+      resultDiv.innerHTML = html;
+    } else {
+      const text = typeof result === 'string' ? result : (result.reply || '');
+      resultDiv.innerHTML = `<div style="background:var(--pickup);border:1px solid var(--pickup-border);border-radius:14px;padding:14px;">
+        <div style="font-weight:600;margin-bottom:8px;font-family:'Shippori Mincho',serif;">💡 ${esc(group.name)} への提案</div>
+        <div>${mdToHtml(text)}</div></div>
+      <div style="text-align:center;margin-top:12px;">
+        <button class="btn btn-secondary" onclick="runGroupAiSuggest('${groupId}')" style="font-size:13px;padding:8px 20px;">🔄 別の提案を探す</button>
+      </div>`;
+    }
   } catch(e) {
     resultDiv.innerHTML = `<div style="color:#c97070;padding:12px;">エラー: ${esc(e.message)}</div>`;
   }
@@ -8280,7 +8302,9 @@ function mdToHtml(text) {
     .replace(/\n/g, '<br>');
 }
 
-async function callAI(prompt, context) {
+let _lastAiSuggestions = [];
+
+async function callAI(prompt, context, structured) {
   if (!_sbUser) throw new Error('AIコンシェルジュを使うにはログインが必要です');
   const session = await _sb.auth.getSession();
   const token = session?.data?.session?.access_token;
@@ -8292,7 +8316,7 @@ async function callAI(prompt, context) {
       'Authorization': 'Bearer ' + token,
       'apikey': SUPABASE_KEY
     },
-    body: JSON.stringify({ message: prompt, context: context || '' })
+    body: JSON.stringify({ message: prompt, context: context || '', structured: !!structured })
   });
   if (!res.ok) {
     const errText = await res.text();
@@ -8301,7 +8325,99 @@ async function callAI(prompt, context) {
   }
   const json = await res.json();
   if (json.error) throw new Error(json.error);
+  if (structured && json.suggestions) return json;
   return json.reply;
+}
+
+function renderAiCards(suggestions, personId, container) {
+  const person = data.people.find(p=>p.id===personId);
+  _lastAiSuggestions = suggestions;
+  let html = '';
+  suggestions.forEach((s, i) => {
+    const hasRakuten = s.rakuten && s.rakuten.url;
+    const rakutenImg = s.rakuten?.image ? `<div style="text-align:center;margin-bottom:10px;"><img src="${esc(s.rakuten.image)}" style="max-width:120px;max-height:120px;border-radius:8px;object-fit:cover;"></div>` : '';
+    const price = s.rakuten?.price ? `¥${Number(s.rakuten.price).toLocaleString()}` : (s.budget ? `約¥${Number(s.budget).toLocaleString()}` : '');
+    const rakutenBtn = hasRakuten ? `<a href="${esc(s.rakuten.url)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:8px;background:#BF0000;color:#fff;font-size:12px;text-decoration:none;font-weight:500;">🛒 楽天</a>` : '';
+    const amazonBtn = `<a href="${esc(s.amazonUrl)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:8px;background:#FF9900;color:#000;font-size:12px;text-decoration:none;font-weight:500;">🛒 Amazon</a>`;
+    const saveBtn = `<button onclick="saveAiSuggestion('wish','${personId}',${i})" style="padding:6px 12px;border-radius:8px;background:var(--pickup);border:1px solid var(--pickup-border);color:var(--text);font-size:12px;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">⭐ 保存</button>`;
+    const placeBtn = s.isPlace ? `<button onclick="saveAiSuggestion('place','${personId}',${i})" style="padding:6px 12px;border-radius:8px;background:var(--pickup);border:1px solid var(--pickup-border);color:var(--text);font-size:12px;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">📍 行きたい</button>` : '';
+
+    html += `<div style="background:var(--pickup);border:1px solid var(--pickup-border);border-radius:14px;padding:14px;margin-bottom:12px;">
+      ${rakutenImg}
+      <div style="font-weight:600;font-size:14px;font-family:'Shippori Mincho',serif;">${esc(s.name)}</div>
+      <div style="font-size:12px;color:var(--sub);margin:4px 0;">${esc(s.shop)}${price ? ' | ' + price : ''}</div>
+      <div style="font-size:13px;margin:8px 0;line-height:1.6;">${esc(s.reason)}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
+        ${rakutenBtn}${amazonBtn}
+      </div>
+      <div style="display:flex;gap:6px;margin-top:8px;">
+        ${saveBtn}${placeBtn}
+      </div>
+    </div>`;
+  });
+
+  html += `<div style="text-align:center;margin-top:12px;">
+    <button class="btn btn-secondary" onclick="runAiSuggest('${personId}')" style="font-size:13px;padding:8px 20px;">🔄 別の提案を探す</button>
+  </div>`;
+  container.innerHTML = html;
+}
+
+function saveAiSuggestion(tab, personId, idx) {
+  const s = _lastAiSuggestions[idx];
+  if (!s) return;
+  const person = data.people.find(p=>p.id===personId);
+  const now = new Date().toISOString();
+
+  if (tab === 'wish') {
+    const item = {
+      id: genId(),
+      title: s.name,
+      purpose: null,
+      giftTarget: person?.nickname || null,
+      person: person?.nickname || null,
+      labelIdx: null,
+      itemCategory: null,
+      occasion: null,
+      amount: String(s.rakuten?.price || s.budget || ''),
+      date: new Date().toISOString().split('T')[0],
+      rating: 0,
+      tags: null,
+      url: s.rakuten?.url || s.amazonUrl || null,
+      memo: `${s.shop} — ${s.reason}`,
+      img: s.rakuten?.image || null,
+      pinned: false,
+      createdAt: now,
+      updatedAt: now
+    };
+    data.wish.push(item);
+    saveData(); render();
+    showToast(`⭐ "${s.name}" をお気に入りに保存しました`);
+  } else if (tab === 'place') {
+    const item = {
+      id: genId(),
+      title: s.shop || s.name,
+      withPeople: person ? [person.id] : [],
+      withGroups: [],
+      person: person?.nickname || null,
+      labelIdx: null,
+      address: null,
+      mapUrl: null,
+      url: s.rakuten?.url || s.amazonUrl || null,
+      googleMapUrl: `https://www.google.com/maps/search/${encodeURIComponent(s.shop || s.name)}`,
+      phone: null,
+      tags: null,
+      placeCategory: null,
+      rating: 0,
+      memo: s.reason,
+      img: null,
+      pinned: false,
+      createdAt: now,
+      updatedAt: now
+    };
+    data.place.push(item);
+    saveData(); render();
+    showToast(`📍 "${s.shop || s.name}" を行きたいに保存しました`);
+  }
 }
 
 function openAiSuggest(personId) {
@@ -8400,7 +8516,7 @@ async function runAiSuggest(personId) {
   const scene = document.getElementById('aiScene')?.value.trim()||'';
   const budget = document.getElementById('aiBudget')?.value.trim()||'';
 
-  const prompt = `あなたはギフトコンシェルジュです。以下の人物プロフィールを元に、心のこもった贈り物を3つ提案してください。
+  const prompt = `以下の人物に心のこもった贈り物を3つ提案してください。
 
 ## 相手のプロフィール
 名前: ${person.nickname}
@@ -8409,30 +8525,131 @@ ${history.length ? '\n## 過去の贈り物\n'+history.join('\n') : ''}
 ${scene ? '\n## 場面\n'+scene : ''}
 ${budget ? '\n## 予算\n約'+budget+'円' : ''}
 
-## ルール
-- 相手の好みや個性に合った提案をしてください
-- 苦手なものは絶対に避けてください
-- 過去にあげたものと被らないようにしてください
-- Amazonや楽天ではなく、知る人ぞ知る名店やブランド、体験型ギフトなどセンスの良い提案を心がけてください
-- 各提案は「商品名」「店名やブランド名」「なぜこの人に合うか」「予算目安」を含めてください
-- 各提案の最後に「🔍 探し方:」として、その商品や店を見つけるための具体的な検索ワードを1〜2個提示してください（例:「○○○ 公式サイト」「○○○ Instagram」「○○○ ぐるなび」など）
-- 存在が不確実なURLは絶対に載せないでください。検索ワードの提示に留めてください
-- 日本語で回答してください
-- 簡潔に、各提案は4-5行程度で`;
+苦手なものは絶対に避けてください。過去にあげたものと被らないでください。`;
 
   try {
-    const text = await callAI(prompt, profileLines.join('\n'));
-    resultDiv.innerHTML = `<div style="background:var(--pickup);border:1px solid var(--pickup-border);border-radius:14px;padding:14px;">
-      <div style="font-weight:600;margin-bottom:8px;font-family:'Shippori Mincho',serif;">💡 ${esc(person.nickname)} への提案</div>
-      <div>${mdToHtml(text)}</div>
-    </div>
-    <div style="text-align:center;margin-top:12px;">
-      <button class="btn btn-secondary" onclick="runAiSuggest('${personId}')" style="font-size:13px;padding:8px 20px;">🔄 別の提案を探す</button>
-    </div>`;
+    const result = await callAI(prompt, profileLines.join('\n'), true);
+    if (result.suggestions && result.suggestions.length) {
+      renderAiCards(result.suggestions, personId, resultDiv);
+    } else {
+      // フォールバック: テキスト表示
+      const text = typeof result === 'string' ? result : (result.reply || '提案を生成できませんでした');
+      resultDiv.innerHTML = `<div style="background:var(--pickup);border:1px solid var(--pickup-border);border-radius:14px;padding:14px;">
+        <div style="font-weight:600;margin-bottom:8px;font-family:'Shippori Mincho',serif;">💡 ${esc(person.nickname)} への提案</div>
+        <div>${mdToHtml(text)}</div>
+      </div>
+      <div style="text-align:center;margin-top:12px;">
+        <button class="btn btn-secondary" onclick="runAiSuggest('${personId}')" style="font-size:13px;padding:8px 20px;">🔄 別の提案を探す</button>
+      </div>`;
+    }
   } catch(e) {
     resultDiv.innerHTML = `<div style="color:#c97070;padding:12px;">エラー: ${esc(e.message)}</div>`;
   }
   btn.disabled = false; btn.textContent = '✨ 提案をもらう';
+}
+
+// ===== Card Search =====
+function searchFromCard(tab, itemId) {
+  const item = tab === 'place' ? data.place.find(i=>i.id===itemId) : data[tab]?.find(i=>i.id===itemId);
+  if (!item) return;
+  // 関連する人を探す
+  let personId = null;
+  if (item.withPeople?.length) personId = item.withPeople[0];
+  else if (item.person) {
+    const p = data.people.find(x=>x.nickname===item.person);
+    if (p) personId = p.id;
+  }
+  if (personId) {
+    openAiSuggest(personId);
+    // シーン欄にアイテム情報をプリフィル
+    setTimeout(() => {
+      const sceneEl = document.getElementById('aiScene');
+      if (sceneEl) sceneEl.value = `「${item.title}」に似たもの・関連するもの`;
+    }, 100);
+  } else {
+    // 人が紐づいていない場合はキーワード検索
+    const keyword = item.title || '';
+    const modal = document.getElementById('aiModal');
+    modal.innerHTML = `<h2>🔍 「${esc(keyword)}」で探す</h2>
+      <div class="form-group"><label>探したいもの</label>
+        <input id="aiCardSearch" value="${esc(keyword)}">
+      </div>
+      <div class="form-group"><label>予算（任意）</label>
+        <input id="aiCardBudget" placeholder="例：5000" value="${item.amount||''}">
+      </div>
+      <div class="form-btns" style="margin-bottom:12px;">
+        <button class="btn btn-secondary" onclick="document.getElementById('aiModalOverlay').classList.remove('open')">閉じる</button>
+        <button class="btn btn-primary" id="aiCardSearchBtn" onclick="runCardSearch()">🔍 検索</button>
+      </div>
+      <div id="aiCardResult" style="font-size:13px;line-height:1.8;"></div>`;
+    document.getElementById('aiModalOverlay').classList.add('open');
+  }
+}
+
+async function runCardSearch() {
+  const keyword = document.getElementById('aiCardSearch')?.value.trim();
+  const budget = document.getElementById('aiCardBudget')?.value.trim();
+  if (!keyword) return;
+  const resultDiv = document.getElementById('aiCardResult');
+  const btn = document.getElementById('aiCardSearchBtn');
+  btn.disabled = true; btn.textContent = '検索中...';
+  resultDiv.innerHTML = '<div style="text-align:center;color:var(--sub);padding:20px;">💭 AIが探しています...</div>';
+
+  const prompt = `「${keyword}」に関連するおすすめの商品・ギフト・体験を3つ提案してください。
+${budget ? '予算: 約'+budget+'円' : ''}
+知る人ぞ知る名店やブランド、体験型ギフトなどセンスの良い提案を心がけてください。`;
+
+  try {
+    const result = await callAI(prompt, '', true);
+    if (result.suggestions && result.suggestions.length) {
+      _lastAiSuggestions = result.suggestions;
+      let html = '';
+      result.suggestions.forEach((s, i) => {
+        const hasRakuten = s.rakuten && s.rakuten.url;
+        const rakutenImg = s.rakuten?.image ? `<div style="text-align:center;margin-bottom:10px;"><img src="${esc(s.rakuten.image)}" style="max-width:120px;max-height:120px;border-radius:8px;object-fit:cover;"></div>` : '';
+        const price = s.rakuten?.price ? `¥${Number(s.rakuten.price).toLocaleString()}` : (s.budget ? `約¥${Number(s.budget).toLocaleString()}` : '');
+        html += `<div style="background:var(--pickup);border:1px solid var(--pickup-border);border-radius:14px;padding:14px;margin-bottom:12px;">
+          ${rakutenImg}
+          <div style="font-weight:600;font-size:14px;font-family:'Shippori Mincho',serif;">${esc(s.name)}</div>
+          <div style="font-size:12px;color:var(--sub);margin:4px 0;">${esc(s.shop)}${price ? ' | ' + price : ''}</div>
+          <div style="font-size:13px;margin:8px 0;line-height:1.6;">${esc(s.reason)}</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
+            ${hasRakuten ? `<a href="${esc(s.rakuten.url)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:8px;background:#BF0000;color:#fff;font-size:12px;text-decoration:none;font-weight:500;">🛒 楽天</a>` : ''}
+            <a href="${esc(s.amazonUrl)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:8px;background:#FF9900;color:#000;font-size:12px;text-decoration:none;font-weight:500;">🛒 Amazon</a>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:8px;">
+            <button onclick="saveAiSuggestionDirect('wish',${i})" style="padding:6px 12px;border-radius:8px;background:var(--pickup);border:1px solid var(--pickup-border);color:var(--text);font-size:12px;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">⭐ 保存</button>
+            ${s.isPlace ? `<button onclick="saveAiSuggestionDirect('place',${i})" style="padding:6px 12px;border-radius:8px;background:var(--pickup);border:1px solid var(--pickup-border);color:var(--text);font-size:12px;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">📍 行きたい</button>` : ''}
+          </div>
+        </div>`;
+      });
+      html += `<div style="text-align:center;margin-top:12px;">
+        <button class="btn btn-secondary" onclick="runCardSearch()" style="font-size:13px;padding:8px 20px;">🔄 別の提案を探す</button>
+      </div>`;
+      resultDiv.innerHTML = html;
+    } else {
+      const text = typeof result === 'string' ? result : (result.reply || '');
+      resultDiv.innerHTML = `<div style="background:var(--pickup);border:1px solid var(--pickup-border);border-radius:14px;padding:14px;">${mdToHtml(text)}</div>`;
+    }
+  } catch(e) {
+    resultDiv.innerHTML = `<div style="color:#c97070;padding:12px;">エラー: ${esc(e.message)}</div>`;
+  }
+  btn.disabled = false; btn.textContent = '🔍 検索';
+}
+
+function saveAiSuggestionDirect(tab, idx) {
+  const s = _lastAiSuggestions[idx];
+  if (!s) return;
+  const now = new Date().toISOString();
+  if (tab === 'wish') {
+    data.wish.push({ id:genId(), title:s.name, person:null, amount:String(s.rakuten?.price||s.budget||''), url:s.rakuten?.url||s.amazonUrl||null, memo:`${s.shop} — ${s.reason}`, img:s.rakuten?.image||null, tags:null, pinned:false, createdAt:now, updatedAt:now });
+    saveData(); render();
+    showToast(`⭐ "${s.name}" をお気に入りに保存しました`);
+  } else if (tab === 'place') {
+    data.place.push({ id:genId(), title:s.shop||s.name, person:null, url:s.rakuten?.url||s.amazonUrl||null, googleMapUrl:`https://www.google.com/maps/search/${encodeURIComponent(s.shop||s.name)}`, memo:s.reason, tags:null, pinned:false, createdAt:now, updatedAt:now });
+    saveData(); render();
+    showToast(`📍 "${s.shop||s.name}" を行きたいに保存しました`);
+  }
 }
 
 // ===== Init =====

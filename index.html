@@ -5083,14 +5083,17 @@ function openSettings() {
       `}
     </div>
 
-    <!-- クラウド保存状態 -->
+    <!-- バックアップ -->
     <div style="${_sc}">
-      <div style="${_sl}">☁️ データ保存</div>
-      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;">
+      <div style="${_sl}">☁️ バックアップ</div>
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;margin-bottom:8px;">
         <span style="color:#6bab8a;font-size:20px;">✅</span>
-        <div style="font-size:14px;">クラウドに自動保存されています</div>
+        <div style="font-size:13px;">データは自動保存されています</div>
       </div>
-      <div style="font-size:12px;color:var(--sub);">スマホを変えてもデータは消えません</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <button class="card-btn" onclick="createBackup()" style="flex:1;font-size:14px;padding:10px;">☁️ バックアップを作成</button>
+      </div>
+      <div id="backupListArea" style="font-size:12px;color:var(--sub);text-align:center;">読み込み中...</div>
     </div>
 
     <!-- AI設定（上級者向け） -->
@@ -5109,6 +5112,7 @@ function openSettings() {
     </div>`;
   document.getElementById('settingsModalOverlay').classList.add('open');
   setTimeout(showQR, 100);
+  setTimeout(loadBackupList, 200);
 }
 
 // ===== Developer Memo =====
@@ -7354,6 +7358,79 @@ function updateNotifBadge(count) {
   } else {
     badge.style.display = 'none';
   }
+}
+
+// ===== Cloud Backup =====
+async function createBackup() {
+  if (!_sb || !_sbUser || !_sbUser.email) { alert('ログインが必要です'); return; }
+  try {
+    const dataObj = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    const profileObj = JSON.parse(localStorage.getItem('awai_my_profile') || '{}');
+    const { error } = await _sb.from('user_backups').insert({
+      user_id: _sbUser.id,
+      data: dataObj,
+      profile: profileObj,
+      memo: new Date().toLocaleString('ja-JP')
+    });
+    if (error) throw error;
+    showToast('☁️ バックアップを作成しました');
+    loadBackupList();
+  } catch(e) { alert('バックアップに失敗しました'); }
+}
+
+async function loadBackupList() {
+  const area = document.getElementById('backupListArea');
+  if (!area || !_sb || !_sbUser || !_sbUser.email) {
+    if (area) area.innerHTML = '<div style="font-size:12px;color:var(--sub);">ログインするとバックアップが使えます</div>';
+    return;
+  }
+  try {
+    const { data: rows, error } = await _sb.from('user_backups')
+      .select('id,created_at,memo')
+      .eq('user_id', _sbUser.id)
+      .order('created_at', { ascending: false })
+      .limit(5);
+    if (error) throw error;
+    if (!rows || !rows.length) {
+      area.innerHTML = '<div style="font-size:12px;color:var(--sub);">バックアップはまだありません</div>';
+      return;
+    }
+    area.innerHTML = rows.map(r => {
+      const date = new Date(r.created_at).toLocaleString('ja-JP', {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">
+        <span style="font-size:13px;">${date}</span>
+        <button class="card-btn" onclick="restoreBackup('${r.id}')" style="font-size:12px;padding:4px 12px;">↩ 戻す</button>
+      </div>`;
+    }).join('');
+  } catch(e) { area.innerHTML = '<div style="font-size:12px;color:#c07070;">読み込みに失敗しました</div>'; }
+}
+
+async function restoreBackup(backupId) {
+  if (!confirm('このバックアップに戻しますか？\n現在のデータは上書きされます。')) return;
+  if (!_sb || !_sbUser) return;
+  try {
+    const { data: row, error } = await _sb.from('user_backups')
+      .select('data,profile,user_id')
+      .eq('id', backupId)
+      .eq('user_id', _sbUser.id)
+      .single();
+    if (error) throw error;
+    if (row.user_id !== _sbUser.id) { alert('自分のバックアップではありません'); return; }
+    if (row.data) {
+      TABS.forEach(t => { if (Array.isArray(row.data[t])) data[t] = row.data[t]; });
+      if (row.data.labels) data.labels = {...data.labels, ...row.data.labels};
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      localStorage.setItem('awai_data_updated', new Date().toISOString());
+    }
+    if (row.profile) {
+      localStorage.setItem('awai_my_profile', JSON.stringify(row.profile));
+    }
+    saveData();
+    await sbSave();
+    render();
+    showToast('☁️ バックアップから復元しました');
+    document.getElementById('settingsModalOverlay').classList.remove('open');
+  } catch(e) { alert('復元に失敗しました'); }
 }
 
 function replayOnboarding() {

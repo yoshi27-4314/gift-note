@@ -794,7 +794,10 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 
 <div class="header">
   <button class="season-btn" id="notifBtn" style="left:16px;right:auto;position:absolute;" onclick="openNotifications()">🔔<span id="notifBadge" style="display:none;position:absolute;top:-2px;right:-2px;background:#c97070;color:#fff;font-size:9px;width:16px;height:16px;border-radius:50%;align-items:center;justify-content:center;">0</span></button>
-  <button class="season-btn" id="backBtn" style="left:56px;right:auto;position:absolute;font-size:16px;" onclick="goBack()">←</button>
+  <div style="position:absolute;left:54px;top:20px;display:flex;gap:2px;">
+    <button class="season-btn" id="navBackBtn" style="position:static;font-size:20px;padding:4px 8px;" onclick="goBack()">◀</button>
+    <button class="season-btn" id="navFwdBtn" style="position:static;font-size:20px;padding:4px 8px;" onclick="goForward()">▶</button>
+  </div>
   <div class="app-title">AWAI</div>
   <div class="app-subtitle">友だちと記憶がここに</div>
   <button class="season-btn" id="seasonBtn" style="right:52px;">🌸</button>
@@ -3303,21 +3306,57 @@ function scheduleUpdateCheck() {
   }
 }
 
+let _navHistory = [];
+let _navFuture = [];
+
 function updateBackBtn() {
-  const btn = document.getElementById('backBtn');
-  if (!btn) return;
-  const canGoBack = openPersonId || openGroupId || openItemId || openAllRecordId || history.length > 1;
-  const isDetail = openPersonId || openGroupId || openItemId || openAllRecordId;
-  btn.textContent = isDetail ? '←' : '→';
-  btn.style.opacity = isDetail ? '1' : '0.4';
+  const backBtn = document.getElementById('navBackBtn');
+  const fwdBtn = document.getElementById('navFwdBtn');
+  if (!backBtn || !fwdBtn) return;
+  const canBack = openPersonId || openGroupId || openItemId || openAllRecordId || _navHistory.length > 0;
+  const canFwd = _navFuture.length > 0;
+  backBtn.style.opacity = canBack ? '1' : '0.3';
+  fwdBtn.style.opacity = canFwd ? '1' : '0.3';
+}
+
+function navPushState() {
+  _navHistory.push({ tab: currentTab, label: currentLabel, person: openPersonId, group: openGroupId, item: openItemId, record: openAllRecordId });
+  _navFuture = [];
 }
 
 function goBack() {
-  if (openPersonId) { openPersonId = null; render(); return; }
-  if (openGroupId) { openGroupId = null; render(); return; }
-  if (openItemId) { openItemId = null; render(); return; }
-  if (openAllRecordId) { openAllRecordId = null; render(); return; }
-  history.back();
+  if (openPersonId) { _navFuture.push({person:openPersonId}); openPersonId = null; render(); return; }
+  if (openGroupId) { _navFuture.push({group:openGroupId}); openGroupId = null; render(); return; }
+  if (openItemId) { _navFuture.push({item:openItemId}); openItemId = null; render(); return; }
+  if (openAllRecordId) { _navFuture.push({record:openAllRecordId}); openAllRecordId = null; render(); return; }
+  if (_navHistory.length > 0) {
+    _navFuture.push({ tab: currentTab, label: currentLabel });
+    const prev = _navHistory.pop();
+    currentTab = prev.tab;
+    currentLabel = prev.label;
+    openPersonId = prev.person || null;
+    openGroupId = prev.group || null;
+    openItemId = prev.item || null;
+    openAllRecordId = prev.record || null;
+    document.querySelectorAll('.tab').forEach(el => el.classList.toggle('active', el.dataset.tab===currentTab));
+    render();
+  }
+}
+
+function goForward() {
+  if (_navFuture.length === 0) return;
+  const next = _navFuture.pop();
+  if (next.person) { openPersonId = next.person; render(); return; }
+  if (next.group) { openGroupId = next.group; render(); return; }
+  if (next.item) { openItemId = next.item; render(); return; }
+  if (next.record) { openAllRecordId = next.record; render(); return; }
+  if (next.tab) {
+    _navHistory.push({ tab: currentTab, label: currentLabel });
+    currentTab = next.tab;
+    currentLabel = next.label || null;
+    document.querySelectorAll('.tab').forEach(el => el.classList.toggle('active', el.dataset.tab===currentTab));
+    render();
+  }
 }
 
 function render() {
@@ -3726,6 +3765,7 @@ function switchTab(tab) {
   localStorage.setItem('awai_last_tab', currentTab);
   localStorage.setItem('awai_last_label', currentLabel === null ? '' : currentLabel);
   // ブラウザ履歴にpush（戻るボタン用）
+  navPushState();
   history.pushState({tab: currentTab, label: currentLabel}, '');
   render();
   showTabGuide(tab);

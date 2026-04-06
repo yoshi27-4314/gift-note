@@ -1208,7 +1208,7 @@ function saveData() {
     try { sessionStorage.setItem('awai_auto_backup', JSON.stringify(data)); } catch(e2) {}
     // クラウド同期（非同期・失敗してもローカル保存は成功）
     sbSave();
-    // マイルスト���ン祝福チェック
+    // マイルストーン祝福チェック
     setTimeout(() => checkMilestoneCelebration(), 500);
   } catch(e) {
     console.error('Save error:', e);
@@ -9487,7 +9487,7 @@ function openPeopleFabMenu() {
     <div style="display:flex;flex-direction:column;gap:10px;">
       <button onclick="document.getElementById('aiModalOverlay').classList.remove('open');openPeopleModal()" style="display:flex;align-items:center;gap:12px;padding:16px;border-radius:14px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;text-align:left;">
         <span style="font-size:24px;">👤</span>
-        <div><div style="font-size:14px;font-weight:500;">手動で追��</div><div style="font-size:11px;color:var(--sub);">名前や情報を入力して登録</div></div>
+        <div><div style="font-size:14px;font-weight:500;">手動で追加</div><div style="font-size:11px;color:var(--sub);">名前や情報を入力して登録</div></div>
       </button>
       <button onclick="document.getElementById('aiModalOverlay').classList.remove('open');startOcr('line_friends')" style="display:flex;align-items:center;gap:12px;padding:16px;border-radius:14px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;text-align:left;">
         <span style="font-size:24px;">📷</span>
@@ -9511,7 +9511,7 @@ function openWishFabMenu() {
     <div style="display:flex;flex-direction:column;gap:10px;">
       <button onclick="document.getElementById('aiModalOverlay').classList.remove('open');openItemModal()" class="fab-menu-btn">
         <span style="font-size:24px;">✏️</span>
-        <div><div style="font-size:14px;font-weight:500;">手動で追��</div><div style="font-size:11px;color:var(--sub);">名前やカテゴリを入力して登録</div></div>
+        <div><div style="font-size:14px;font-weight:500;">手動で追加</div><div style="font-size:11px;color:var(--sub);">名前やカテゴリを入力して登録</div></div>
       </button>
       <button onclick="document.getElementById('aiModalOverlay').classList.remove('open');startItemOcr('item_ocr','wish','camera')" class="fab-menu-btn">
         <span style="font-size:24px;">📷</span>
@@ -9531,7 +9531,7 @@ function openWishFabMenu() {
 // ===== FAB Menu for Place (行きたい) Tab =====
 function openPlaceFabMenu() {
   const modal = document.getElementById('aiModal');
-  modal.innerHTML = `<h2>行きたい場��を登録</h2>
+  modal.innerHTML = `<h2>行きたい場所を登録</h2>
     <div style="display:flex;flex-direction:column;gap:10px;">
       <button onclick="document.getElementById('aiModalOverlay').classList.remove('open');openPlaceModal()" class="fab-menu-btn">
         <span style="font-size:24px;">✏️</span>
@@ -9543,7 +9543,7 @@ function openPlaceFabMenu() {
       </button>
       <button onclick="document.getElementById('aiModalOverlay').classList.remove('open');startItemOcr('place_ocr','place','file')" class="fab-menu-btn">
         <span style="font-size:24px;">📁</span>
-        <div><div style="font-size:14px;font-weight:500;">ファ���ルから選択</div><div style="font-size:11px;color:var(--sub);">スクリーン���ョットもOK！</div></div>
+        <div><div style="font-size:14px;font-weight:500;">ファイルから選択</div><div style="font-size:11px;color:var(--sub);">スクリーンショットもOK！</div></div>
       </button>
     </div>
     <div class="form-btns" style="margin-top:12px;">
@@ -9569,7 +9569,7 @@ function openGiftFabMenu() {
     <div id="giftFabActions" style="display:flex;flex-direction:column;gap:10px;opacity:0.35;pointer-events:none;transition:opacity 0.3s ease;">
       <button onclick="proceedGiftFab('manual')" class="fab-menu-btn">
         <span style="font-size:24px;">✏️</span>
-        <div><div style="font-size:14px;font-weight:500;">手動��追加</div><div style="font-size:11px;color:var(--sub);">名前やカテゴリを入力して登録</div></div>
+        <div><div style="font-size:14px;font-weight:500;">手動で追加</div><div style="font-size:11px;color:var(--sub);">名前やカテゴリを入力して登録</div></div>
       </button>
       <button onclick="proceedGiftFab('camera')" class="fab-menu-btn">
         <span style="font-size:24px;">📷</span>
@@ -9577,7 +9577,7 @@ function openGiftFabMenu() {
       </button>
       <button onclick="proceedGiftFab('file')" class="fab-menu-btn">
         <span style="font-size:24px;">📁</span>
-        <div><div style="font-size:14px;font-weight:500;">ファイ���から選択</div><div style="font-size:11px;color:var(--sub);">スクリーンショットもOK！</div></div>
+        <div><div style="font-size:14px;font-weight:500;">ファイルから選択</div><div style="font-size:11px;color:var(--sub);">スクリーンショットもOK！</div></div>
       </button>
     </div>
     <div class="form-btns" style="margin-top:12px;">
@@ -9602,7 +9602,7 @@ function selectGiftFabType(type) {
 }
 
 function proceedGiftFab(method) {
-  if (!_giftFabType) { showToast('「もらった」か��あげた」を選んでください'); return; }
+  if (!_giftFabType) { showToast('「もらった」か「あげた」を選んでください'); return; }
   document.getElementById('aiModalOverlay').classList.remove('open');
   if (method === 'manual') {
     const origTab = currentTab;
@@ -9635,7 +9635,7 @@ function startItemOcr(ocrMode, tabType, inputMethod) {
     <div id="itemOcrPreview" style="text-align:center;margin-bottom:12px;"></div>
     <div id="itemOcrResult"></div>
     <div class="form-btns">
-      <button class="btn btn-secondary" onclick="document.getElementById('aiModalOverlay').classList.remove('open')">��じる</button>
+      <button class="btn btn-secondary" onclick="document.getElementById('aiModalOverlay').classList.remove('open')">閉じる</button>
     </div>`;
   document.getElementById('aiModalOverlay').classList.add('open');
 }
@@ -9652,7 +9652,7 @@ async function processItemOcrImage(input, ocrMode, tabType) {
   reader.onload = async (e) => {
     const base64 = e.target.result;
     previewDiv.innerHTML = `<img src="${base64}" style="max-width:200px;max-height:200px;border-radius:12px;margin:4px;box-shadow:0 2px 8px rgba(0,0,0,0.1);">`;
-    resultDiv.innerHTML = '<div style="text-align:center;color:var(--sub);padding:20px;">💭 AIが読み��り中...</div>';
+    resultDiv.innerHTML = '<div style="text-align:center;color:var(--sub);padding:20px;">💭 AIが読み取り中...</div>';
 
     try {
       if (!_sbUser) throw new Error('ログインが必要です');

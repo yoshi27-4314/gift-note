@@ -785,17 +785,17 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
     <div id="obStep4" class="ob-step" style="display:none;">
       <div style="text-align:center;margin-bottom:24px;font-size:48px;">🎁</div>
       <h2 style="text-align:center;font-family:'Shippori Mincho',serif;font-size:22px;margin-bottom:16px;">友だちへのギフトも<br>コンシェルジュが提案します</h2>
-      <p style="text-align:center;color:var(--sub);font-size:14px;line-height:1.8;margin-bottom:16px;">友だちの好みを登録すれば<br>ぴったりのギフトをコンシェルジュが見つけます</p>
-      <div style="background:var(--card);border-radius:16px;padding:20px;margin-bottom:32px;box-shadow:0 1px 6px var(--shadow);">
-        <div style="font-size:13px;color:var(--sub);line-height:1.8;">
-          <div style="margin-bottom:8px;">📌 できること</div>
-          <div>• 友だちの好み・記念日を記録</div>
-          <div>• コンシェルジュがギフトを提案</div>
-          <div>• 記念日が近づいたらお知らせ</div>
-          <div>• 贈った・もらったを記録</div>
+      <p style="text-align:center;color:var(--sub);font-size:14px;line-height:1.8;margin-bottom:16px;">友だち登録でギフト選びが楽しい</p>
+      <div style="background:var(--card);border-radius:16px;padding:20px;margin-bottom:32px;box-shadow:0 1px 6px var(--shadow);text-align:center;">
+        <div style="font-size:13px;color:var(--sub);line-height:2;">
+          <div style="margin-bottom:8px;font-weight:600;">📌 できること</div>
+          <div>友だちの好み・記念日を記録</div>
+          <div>コンシェルジュがギフトを提案</div>
+          <div>記念日が近づいたらお知らせ</div>
+          <div>贈った・もらったを記録</div>
         </div>
       </div>
-      <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;" onclick="obFinish()">本編へ</button>
+      <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;" onclick="obFinishWithFriend()">本編へ</button>
     </div>
   </div>
 </div>
@@ -8842,7 +8842,7 @@ async function obRunAiSuggest() {
 
   const resultDiv = document.getElementById('obAiResult');
   const nextBtn = document.getElementById('obAiNextBtn');
-  resultDiv.innerHTML = '<div style="text-align:center;color:var(--sub);padding:30px;">コンシェルジュが考えています...</div>';
+  resultDiv.innerHTML = '<div style="text-align:center;color:var(--sub);padding:30px;">あなたの代わりに探します・・・</div>';
 
   const profileParts = [];
   if (like) profileParts.push(`好きなモノ: ${like}`);
@@ -8912,6 +8912,17 @@ function obFinish() {
   render();
   checkReminders();
   showAnnPopup();
+}
+
+function obFinishWithFriend() {
+  localStorage.setItem(OB_KEY, '1');
+  document.getElementById('onboardingOverlay').style.display = 'none';
+  loadData();
+  // 友だちタブに切り替えて＋ボタンメニューを開く
+  currentTab = 'people';
+  render();
+  checkReminders();
+  setTimeout(() => openPeopleFabMenu(), 500);
 }
 
 function createSampleData() {

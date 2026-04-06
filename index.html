@@ -785,18 +785,79 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
     <div id="obStep4" class="ob-step" style="display:none;">
       <div style="text-align:center;margin-bottom:24px;font-size:48px;">🎁</div>
       <h2 style="text-align:center;font-family:'Shippori Mincho',serif;font-size:22px;margin-bottom:16px;">友だちへのギフトも<br>コンシェルジュが提案します</h2>
-      <p style="text-align:center;color:var(--sub);font-size:14px;line-height:1.8;margin-bottom:16px;">友だち登録でギフト選びが楽しい</p>
-      <div style="background:var(--card);border-radius:16px;padding:20px;margin-bottom:32px;box-shadow:0 1px 6px var(--shadow);text-align:center;">
-        <div style="font-size:13px;color:var(--sub);line-height:2;">
-          <div style="margin-bottom:8px;font-weight:600;">📌 できること</div>
-          <div>友だちの好み・記念日を記録</div>
-          <div>コンシェルジュがギフトを提案</div>
-          <div>記念日が近づいたらお知らせ</div>
-          <div>贈った・もらったを記録</div>
+      <p style="text-align:center;color:var(--sub);font-size:14px;line-height:1.8;margin-bottom:20px;">友だち登録でギフト選びが楽しい</p>
+      <!-- LINE スクショ登録アニメーション -->
+      <div style="background:var(--card);border-radius:20px;padding:20px;margin-bottom:24px;box-shadow:0 2px 12px var(--shadow);overflow:hidden;">
+        <div id="obLineDemo" style="position:relative;height:220px;">
+          <!-- Step A: LINEっぽい画面 -->
+          <div id="obLineMock" style="position:absolute;inset:0;display:flex;flex-direction:column;background:#f7f7f7;border-radius:12px;overflow:hidden;transition:all 0.8s ease;">
+            <div style="background:#06C755;color:#fff;padding:8px 12px;font-size:12px;font-weight:600;">友だちリスト</div>
+            <div style="padding:8px 10px;display:flex;flex-direction:column;gap:6px;">
+              <div style="display:flex;align-items:center;gap:8px;"><div style="width:28px;height:28px;border-radius:50%;background:#ddd;"></div><span style="font-size:12px;color:#333;">田中 花子</span></div>
+              <div style="display:flex;align-items:center;gap:8px;"><div style="width:28px;height:28px;border-radius:50%;background:#ddd;"></div><span style="font-size:12px;color:#333;">鈴木 太郎</span></div>
+              <div style="display:flex;align-items:center;gap:8px;"><div style="width:28px;height:28px;border-radius:50%;background:#ddd;"></div><span style="font-size:12px;color:#333;">佐藤 美咲</span></div>
+              <div style="display:flex;align-items:center;gap:8px;"><div style="width:28px;height:28px;border-radius:50%;background:#ddd;"></div><span style="font-size:12px;color:#333;">山田 健一</span></div>
+            </div>
+          </div>
+          <!-- Step B: スクショ撮影フラッシュ -->
+          <div id="obFlash" style="position:absolute;inset:0;background:#fff;border-radius:12px;opacity:0;transition:opacity 0.15s ease;z-index:2;pointer-events:none;"></div>
+          <!-- Step C: AWAIに取り込み -->
+          <div id="obAwaiImport" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;transition:all 0.6s ease;z-index:3;">
+            <div style="font-size:28px;margin-bottom:8px;">📷 → 👤</div>
+            <div style="font-size:13px;font-weight:600;color:var(--text);">スクショで友だち一括登録！</div>
+            <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;" id="obImportedNames"></div>
+          </div>
         </div>
       </div>
+      <div style="text-align:center;font-size:12px;color:var(--sub);margin-bottom:24px;line-height:1.6;">LINEの友だちリストをスクリーンショットするだけ<br>AWAIが名前を自動で読み取ります</div>
       <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;" onclick="obFinishWithFriend()">本編へ</button>
     </div>
+    <script>
+    // LINEスクショ→AWAI取り込みアニメーション
+    function obPlayLineDemo() {
+      const mock = document.getElementById('obLineMock');
+      const flash = document.getElementById('obFlash');
+      const imp = document.getElementById('obAwaiImport');
+      const names = document.getElementById('obImportedNames');
+      if (!mock || !flash || !imp || !names) return;
+
+      // リセット
+      mock.style.opacity = '1'; mock.style.transform = 'scale(1)';
+      flash.style.opacity = '0';
+      imp.style.opacity = '0';
+      names.innerHTML = '';
+
+      // 1.5秒後: フラッシュ（スクショ撮影）
+      setTimeout(() => {
+        flash.style.opacity = '1';
+        setTimeout(() => { flash.style.opacity = '0'; }, 200);
+      }, 1500);
+
+      // 2秒後: LINEが縮小
+      setTimeout(() => {
+        mock.style.transform = 'scale(0.8)';
+        mock.style.opacity = '0.3';
+      }, 2000);
+
+      // 2.5秒後: AWAI取り込み表示
+      setTimeout(() => {
+        imp.style.opacity = '1';
+        const friendNames = ['田中 花子','鈴木 太郎','佐藤 美咲','山田 健一'];
+        friendNames.forEach((n, i) => {
+          setTimeout(() => {
+            const tag = document.createElement('div');
+            tag.style.cssText = 'background:var(--accent);color:#fff;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:500;opacity:0;transform:scale(0.5);transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);';
+            tag.textContent = '👤 ' + n;
+            names.appendChild(tag);
+            requestAnimationFrame(() => { tag.style.opacity = '1'; tag.style.transform = 'scale(1)'; });
+          }, i * 300);
+        });
+      }, 2500);
+
+      // 5.5秒後: ループ
+      setTimeout(() => obPlayLineDemo(), 6000);
+    }
+    </script>
   </div>
 </div>
 
@@ -8470,6 +8531,10 @@ function obNext(step) {
   // Step 3: コンシェルジュ提案を自動実行
   if (step === 3 || step === '3') {
     obRunAiSuggest();
+  }
+  // Step 4: LINEスクショアニメーション開始
+  if (step === 4 || step === '4') {
+    setTimeout(() => obPlayLineDemo(), 500);
   }
 }
 

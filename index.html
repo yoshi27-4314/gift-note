@@ -745,25 +745,23 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
     </div>
     <!-- Step 2: My Profile -->
     <div id="obStep2" class="ob-step" style="display:none;">
-      <h2 style="text-align:center;font-family:'Shippori Mincho',serif;font-size:22px;margin-bottom:8px;">まず、あなた自身のことを<br>教えてください</h2>
+      <h2 style="text-align:center;font-family:'Shippori Mincho',serif;font-size:22px;margin-bottom:8px;">プロフィール登録をしてください</h2>
       <p style="text-align:center;color:var(--sub);font-size:13px;margin-bottom:32px;">他の情報はあとで設定できます</p>
       <div class="form-group"><label>名前</label><input id="obMyName" placeholder="あなたの名前" style="padding:14px 16px;font-size:16px;border-radius:12px;border:1px solid var(--border);width:100%;"></div>
-      <div class="form-group" style="margin-top:16px;"><label>誕生日（任意）</label>
+      <div class="form-group" style="margin-top:16px;"><label>生年月日</label>
         <div style="display:flex;gap:4px;margin-bottom:8px;">
-          <div class="date-type-chip" onclick="obSetDateType('my','full',this)" style="flex:1;text-align:center;font-size:13px;">年月日</div>
-          <div class="date-type-chip active" onclick="obSetDateType('my','monthday',this)" style="flex:1;text-align:center;font-size:13px;">月日</div>
-          <div class="date-type-chip" onclick="obSetDateType('my','month',this)" style="flex:1;text-align:center;font-size:13px;">月のみ</div>
+          <div class="date-type-chip active" onclick="obSetDateType('my','full',this)" style="flex:1;text-align:center;font-size:13px;">生年月日</div>
+          <div class="date-type-chip" onclick="obSetDateType('my','monthday',this)" style="flex:1;text-align:center;font-size:13px;">月日</div>
         </div>
-        <input type="hidden" id="obMyDateType" value="monthday">
+        <input type="hidden" id="obMyDateType" value="full">
         <div style="display:flex;gap:8px;">
-          <input id="obMyBirthYear" type="number" min="1900" max="2100" placeholder="年" style="flex:1;padding:14px 12px;font-size:16px;border-radius:12px;border:1px solid var(--border);display:none;">
+          <input id="obMyBirthYear" type="number" min="1900" max="2100" placeholder="年" style="flex:1;padding:14px 12px;font-size:16px;border-radius:12px;border:1px solid var(--border);">
           <input id="obMyBirthMonth" type="number" min="1" max="12" placeholder="月" style="flex:1;padding:14px 12px;font-size:16px;border-radius:12px;border:1px solid var(--border);">
           <input id="obMyBirthDay" type="number" min="1" max="31" placeholder="日" style="flex:1;padding:14px 12px;font-size:16px;border-radius:12px;border:1px solid var(--border);">
         </div>
       </div>
-      <div class="form-group" style="margin-top:16px;"><label>好きなこと・趣味（任意）</label>
+      <div class="form-group" style="margin-top:16px;"><label>好きなこと・趣味</label>
         <input id="obMyInterests" placeholder="例：ゴルフ、ワイン、旅行、料理" style="padding:14px 16px;font-size:16px;border-radius:12px;border:1px solid var(--border);width:100%;">
-        <div style="font-size:11px;color:var(--sub);margin-top:4px;">あなたの体験に合わせたガイドをします</div>
       </div>
       <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;margin-top:32px;" onclick="obSaveProfile()">次へ</button>
     </div>
@@ -772,7 +770,7 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
       <div style="text-align:center;margin-bottom:24px;font-size:48px;">💡</div>
       <h2 style="text-align:center;font-family:'Shippori Mincho',serif;font-size:22px;margin-bottom:16px;">AIコンシェルジュが<br>友だちのギフトを提案します</h2>
       <p style="text-align:center;color:var(--sub);font-size:14px;line-height:1.8;margin-bottom:40px;">あなたの友だちや家族の好みを教えてくれれば<br>ぴったりのギフトをAIが見つけます</p>
-      <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;" onclick="obNext(5)">試してみる</button>
+      <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;" onclick="obNext(5)">友だちを思い浮かべてください</button>
     </div>
     <!-- Step 5: 好み入力 -->
     <div id="obStep5" class="ob-step" style="display:none;">
@@ -783,28 +781,28 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
         <input id="obLike" placeholder="例：ワイン、チョコレート、ゴルフ" style="padding:14px 16px;font-size:16px;border-radius:12px;border:1px solid var(--border);width:100%;">
       </div>
       <div class="form-group" style="margin-top:12px;">
-        <label>苦手なもの（任意）</label>
+        <label>苦手なもの</label>
         <input id="obDislike" placeholder="例：甘いもの、お酒" style="padding:14px 16px;font-size:16px;border-radius:12px;border:1px solid var(--border);width:100%;">
       </div>
       <div class="form-group" style="margin-top:12px;">
         <label>好み・興味</label>
         <input id="obTaste" placeholder="例：話題のお菓子、趣のある宿、アウトドア" style="padding:14px 16px;font-size:16px;border-radius:12px;border:1px solid var(--border);width:100%;">
       </div>
-      <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;margin-top:24px;" onclick="obNext(6)">AIに提案してもらう</button>
+      <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;margin-top:24px;" onclick="obNext(6)">GO</button>
     </div>
     <!-- Step 6: AI提案 -->
     <div id="obStep6" class="ob-step" style="display:none;">
       <div style="text-align:center;margin-bottom:16px;font-size:40px;">✨</div>
-      <h2 style="text-align:center;font-family:'Shippori Mincho',serif;font-size:20px;margin-bottom:16px;">AIコンシェルジュの提案</h2>
+      <h2 style="text-align:center;font-family:'Shippori Mincho',serif;font-size:20px;margin-bottom:16px;">コンシェルジュからのご提案</h2>
       <div id="obAiResult" style="margin-bottom:20px;"></div>
-      <button class="btn btn-primary" id="obAiNextBtn" style="width:100%;padding:16px;font-size:17px;border-radius:14px;display:none;" onclick="obNext(7)">次へ</button>
+      <button class="btn btn-primary" id="obAiNextBtn" style="width:100%;padding:16px;font-size:17px;border-radius:14px;display:none;" onclick="obNext(7)">保存して次へ</button>
     </div>
     <!-- Step 7: 友だち登録 -->
     <div id="obStep7" class="ob-step" style="display:none;">
       <h2 style="text-align:center;font-family:'Shippori Mincho',serif;font-size:22px;margin-bottom:8px;">お友達のお名前を<br>教えてください</h2>
       <p style="text-align:center;color:var(--sub);font-size:13px;margin-bottom:24px;">先ほどの提案をこの方に紐づけます</p>
       <div class="form-group"><label>呼び名</label><input id="obPersonName" placeholder="その人の名前" style="padding:14px 16px;font-size:16px;border-radius:12px;border:1px solid var(--border);width:100%;"></div>
-      <div class="form-group" style="margin-top:12px;"><label>性別（任意）</label>
+      <div class="form-group" style="margin-top:12px;"><label>性別</label>
         <div style="display:flex;gap:8px;">
           <div class="date-type-chip" onclick="obSelectGender(this,'female')" style="flex:1;text-align:center;font-size:14px;padding:12px;">女性</div>
           <div class="date-type-chip" onclick="obSelectGender(this,'male')" style="flex:1;text-align:center;font-size:14px;padding:12px;">男性</div>
@@ -812,20 +810,19 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
         </div>
         <input type="hidden" id="obPersonGender" value="unset">
       </div>
-      <div class="form-group" style="margin-top:12px;"><label>生年月日（任意）</label>
+      <div class="form-group" style="margin-top:12px;"><label>生年月日</label>
         <div style="display:flex;gap:4px;margin-bottom:8px;">
-          <div class="date-type-chip" onclick="obSetDateType('person','full',this)" style="flex:1;text-align:center;font-size:13px;">年月日</div>
-          <div class="date-type-chip active" onclick="obSetDateType('person','monthday',this)" style="flex:1;text-align:center;font-size:13px;">月日</div>
-          <div class="date-type-chip" onclick="obSetDateType('person','month',this)" style="flex:1;text-align:center;font-size:13px;">月のみ</div>
+          <div class="date-type-chip active" onclick="obSetDateType('person','full',this)" style="flex:1;text-align:center;font-size:13px;">生年月日</div>
+          <div class="date-type-chip" onclick="obSetDateType('person','monthday',this)" style="flex:1;text-align:center;font-size:13px;">月日</div>
         </div>
-        <input type="hidden" id="obPersonDateType" value="monthday">
+        <input type="hidden" id="obPersonDateType" value="full">
         <div style="display:flex;gap:8px;">
-          <input id="obPersonBirthYear" type="number" min="1900" max="2100" placeholder="年" style="flex:1;padding:14px 12px;font-size:16px;border-radius:12px;border:1px solid var(--border);display:none;">
+          <input id="obPersonBirthYear" type="number" min="1900" max="2100" placeholder="年" style="flex:1;padding:14px 12px;font-size:16px;border-radius:12px;border:1px solid var(--border);">
           <input id="obPersonBirthMonth" type="number" min="1" max="12" placeholder="月" style="flex:1;padding:14px 12px;font-size:16px;border-radius:12px;border:1px solid var(--border);">
           <input id="obPersonBirthDay" type="number" min="1" max="31" placeholder="日" style="flex:1;padding:14px 12px;font-size:16px;border-radius:12px;border:1px solid var(--border);">
         </div>
       </div>
-      <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;margin-top:24px;" onclick="obSavePersonNew()">登録して完了</button>
+      <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;margin-top:24px;" onclick="obSavePersonNew()">本編へ</button>
     </div>
     <!-- Step 4: Complete -->
     <div id="obStep4" class="ob-step" style="display:none;">

@@ -465,6 +465,13 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 }
 .fab:active { transform: scale(0.88); box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
 @media (max-width: 480px) { .fab { right: 20px; } }
+.fab-menu-btn {
+  display: flex; align-items: center; gap: 12px; padding: 16px;
+  border-radius: 14px; border: 1px solid var(--border); background: var(--card);
+  cursor: pointer; font-family: 'Zen Maru Gothic', sans-serif; text-align: left;
+  transition: all 0.2s ease; width: 100%;
+}
+.fab-menu-btn:active { transform: scale(0.97); background: var(--bg); }
 
 /* Modal */
 .modal-overlay {
@@ -481,6 +488,7 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
   animation: slideUp 0.35s cubic-bezier(0.32, 0.72, 0, 1);
 }
 @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@keyframes milestoneBounce { 0% { transform: scale(0.3); opacity: 0; } 50% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
 .modal h2 { font-size: 20px; margin-bottom: 20px; text-align: center; }
 .form-group { margin-bottom: 16px; }
 .form-group label { display: block; font-size: 13px; color: var(--sub); margin-bottom: 6px; font-weight: 500; }
@@ -1200,6 +1208,8 @@ function saveData() {
     try { sessionStorage.setItem('awai_auto_backup', JSON.stringify(data)); } catch(e2) {}
     // クラウド同期（非同期・失敗してもローカル保存は成功）
     sbSave();
+    // マイルスト���ン祝福チェック
+    setTimeout(() => checkMilestoneCelebration(), 500);
   } catch(e) {
     console.error('Save error:', e);
     alert('保存に失敗しました。写真が多すぎる可能性があります。不要な写真を削除してください。');
@@ -1382,6 +1392,85 @@ function checkSpecialEvent() {
 
   // アニメーション
   setTimeout(() => showSpecialAnimation(event.anim), 1000);
+}
+
+// ===== Milestone Celebration =====
+const MILESTONES = [5, 10, 30, 50];
+const MILESTONE_MSGS = {
+  5:  { emoji: '🌱', title: 'はじめの一歩！', sub: '5個の大切なものが集まりました', chars: ['🎉','✨','🌱','💚','🌿'] },
+  10: { emoji: '🌿', title: 'いい調子！', sub: '10個！あなたの世界が広がっています', chars: ['🎊','✨','🌿','💫','⭐'] },
+  30: { emoji: '🌸', title: 'すごい！', sub: '30個の思い出と想い。素敵なコレクション', chars: ['🎊','🌸','✨','💖','🌟','💫'] },
+  50: { emoji: '🎉', title: 'おめでとうございます！', sub: '50個達成！AWAIマスターへの道', chars: ['🎊','🎉','✨','💎','🌟','💫','⭐','💖'] }
+};
+
+function getTotalItemCount() {
+  return (data.wish?.length||0) + (data.received?.length||0) + (data.gave?.length||0)
+       + (data.place?.length||0) + (data.people?.filter(p=>!p.isMemory)?.length||0);
+}
+
+function checkMilestoneCelebration() {
+  const total = getTotalItemCount();
+  if (!MILESTONES.includes(total)) return;
+  const shownKey = 'awai_milestone_' + total;
+  if (localStorage.getItem(shownKey)) return;
+  localStorage.setItem(shownKey, new Date().toISOString());
+
+  const ms = MILESTONE_MSGS[total];
+  // パーティクルアニメーション
+  setTimeout(() => {
+    const container = document.createElement('div');
+    container.id = 'milestoneAnim';
+    container.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:9999;overflow:hidden;';
+    document.body.appendChild(container);
+    let count = 0;
+    const maxP = total >= 30 ? 50 : 35;
+    const iv = setInterval(() => {
+      if (count >= maxP) { clearInterval(iv); return; }
+      const el = document.createElement('div');
+      el.textContent = ms.chars[Math.floor(Math.random() * ms.chars.length)];
+      el.style.cssText = `position:absolute;top:-20px;left:${Math.random()*100}%;font-size:${18+Math.random()*18}px;opacity:0.9;`;
+      container.appendChild(el);
+      const dur = 2500 + Math.random() * 3000;
+      const swayX = (Math.random() - 0.5) * 250;
+      el.animate([
+        { transform: 'translateY(0) translateX(0) rotate(0deg)', opacity: 0.95 },
+        { transform: `translateY(${window.innerHeight+60}px) translateX(${swayX}px) rotate(${Math.random()*720-360}deg)`, opacity: 0 }
+      ], { duration: dur, easing: 'ease-in' }).onfinish = () => el.remove();
+      count++;
+    }, 120);
+    setTimeout(() => { if (container.parentNode) container.remove(); }, 10000);
+  }, 300);
+
+  // メッセージカード
+  setTimeout(() => {
+    const overlay = document.createElement('div');
+    overlay.id = 'milestoneOverlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:10000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);opacity:0;transition:opacity 0.5s ease;';
+    const card = document.createElement('div');
+    card.style.cssText = 'background:var(--card);border-radius:24px;padding:36px 28px;text-align:center;max-width:320px;width:85%;box-shadow:0 20px 60px rgba(0,0,0,0.25);transform:scale(0.7);transition:transform 0.5s cubic-bezier(0.34,1.56,0.64,1);';
+    card.innerHTML = `
+      <div style="font-size:56px;margin-bottom:12px;animation:milestoneBounce 0.6s ease 0.5s both;">${ms.emoji}</div>
+      <div style="font-size:22px;font-weight:700;color:var(--text);margin-bottom:8px;">${ms.title}</div>
+      <div style="font-size:14px;color:var(--sub);margin-bottom:6px;line-height:1.6;">${ms.sub}</div>
+      <div style="font-size:40px;font-weight:800;color:var(--accent);margin:16px 0;">${total}</div>
+      <div style="font-size:12px;color:var(--sub);margin-bottom:20px;">アイテム登録数</div>
+      <button onclick="closeMilestone()" style="padding:12px 32px;border-radius:50px;border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;box-shadow:0 4px 12px rgba(193,154,132,0.4);transition:transform 0.2s ease;">ありがとう！</button>
+    `;
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+    requestAnimationFrame(() => {
+      overlay.style.opacity = '1';
+      card.style.transform = 'scale(1)';
+    });
+  }, 600);
+}
+
+function closeMilestone() {
+  const ov = document.getElementById('milestoneOverlay');
+  if (ov) {
+    ov.style.opacity = '0';
+    setTimeout(() => ov.remove(), 500);
+  }
 }
 
 // ===== Anniversary helpers =====
@@ -9398,7 +9487,7 @@ function openPeopleFabMenu() {
     <div style="display:flex;flex-direction:column;gap:10px;">
       <button onclick="document.getElementById('aiModalOverlay').classList.remove('open');openPeopleModal()" style="display:flex;align-items:center;gap:12px;padding:16px;border-radius:14px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;text-align:left;">
         <span style="font-size:24px;">👤</span>
-        <div><div style="font-size:14px;font-weight:500;">手動で追加</div><div style="font-size:11px;color:var(--sub);">名前や情報を入力して登録</div></div>
+        <div><div style="font-size:14px;font-weight:500;">手動で追��</div><div style="font-size:11px;color:var(--sub);">名前や情報を入力して登録</div></div>
       </button>
       <button onclick="document.getElementById('aiModalOverlay').classList.remove('open');startOcr('line_friends')" style="display:flex;align-items:center;gap:12px;padding:16px;border-radius:14px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;text-align:left;">
         <span style="font-size:24px;">📷</span>
@@ -9413,6 +9502,283 @@ function openPeopleFabMenu() {
       <button class="btn btn-secondary" onclick="document.getElementById('aiModalOverlay').classList.remove('open')">閉じる</button>
     </div>`;
   document.getElementById('aiModalOverlay').classList.add('open');
+}
+
+// ===== FAB Menu for Wish (お気に入り) Tab =====
+function openWishFabMenu() {
+  const modal = document.getElementById('aiModal');
+  modal.innerHTML = `<h2>ほしいものを登録</h2>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <button onclick="document.getElementById('aiModalOverlay').classList.remove('open');openItemModal()" class="fab-menu-btn">
+        <span style="font-size:24px;">✏️</span>
+        <div><div style="font-size:14px;font-weight:500;">手動で追��</div><div style="font-size:11px;color:var(--sub);">名前やカテゴリを入力して登録</div></div>
+      </button>
+      <button onclick="document.getElementById('aiModalOverlay').classList.remove('open');startItemOcr('item_ocr','wish','camera')" class="fab-menu-btn">
+        <span style="font-size:24px;">📷</span>
+        <div><div style="font-size:14px;font-weight:500;">カメラで撮影</div><div style="font-size:11px;color:var(--sub);">商品を撮影してAIが自動判定</div></div>
+      </button>
+      <button onclick="document.getElementById('aiModalOverlay').classList.remove('open');startItemOcr('item_ocr','wish','file')" class="fab-menu-btn">
+        <span style="font-size:24px;">📁</span>
+        <div><div style="font-size:14px;font-weight:500;">ファイルから選択</div><div style="font-size:11px;color:var(--sub);">スクリーンショットもOK！</div></div>
+      </button>
+    </div>
+    <div class="form-btns" style="margin-top:12px;">
+      <button class="btn btn-secondary" onclick="document.getElementById('aiModalOverlay').classList.remove('open')">閉じる</button>
+    </div>`;
+  document.getElementById('aiModalOverlay').classList.add('open');
+}
+
+// ===== FAB Menu for Place (行きたい) Tab =====
+function openPlaceFabMenu() {
+  const modal = document.getElementById('aiModal');
+  modal.innerHTML = `<h2>行きたい場��を登録</h2>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <button onclick="document.getElementById('aiModalOverlay').classList.remove('open');openPlaceModal()" class="fab-menu-btn">
+        <span style="font-size:24px;">✏️</span>
+        <div><div style="font-size:14px;font-weight:500;">手動で追加</div><div style="font-size:11px;color:var(--sub);">場所の名前や情報を入力して登録</div></div>
+      </button>
+      <button onclick="document.getElementById('aiModalOverlay').classList.remove('open');startItemOcr('place_ocr','place','camera')" class="fab-menu-btn">
+        <span style="font-size:24px;">📷</span>
+        <div><div style="font-size:14px;font-weight:500;">カメラで撮影</div><div style="font-size:11px;color:var(--sub);">お店や場所を撮影してAIが自動判定</div></div>
+      </button>
+      <button onclick="document.getElementById('aiModalOverlay').classList.remove('open');startItemOcr('place_ocr','place','file')" class="fab-menu-btn">
+        <span style="font-size:24px;">📁</span>
+        <div><div style="font-size:14px;font-weight:500;">ファ���ルから選択</div><div style="font-size:11px;color:var(--sub);">スクリーン���ョットもOK！</div></div>
+      </button>
+    </div>
+    <div class="form-btns" style="margin-top:12px;">
+      <button class="btn btn-secondary" onclick="document.getElementById('aiModalOverlay').classList.remove('open')">閉じる</button>
+    </div>`;
+  document.getElementById('aiModalOverlay').classList.add('open');
+}
+
+// ===== FAB Menu for Gift (ギフト) Tab =====
+let _giftFabType = null; // 'received' or 'gave'
+function openGiftFabMenu() {
+  _giftFabType = null;
+  const modal = document.getElementById('aiModal');
+  modal.innerHTML = `<h2>ギフトを登録</h2>
+    <div style="display:flex;gap:10px;margin-bottom:16px;">
+      <button id="giftFabRecv" onclick="selectGiftFabType('received')" style="flex:1;padding:14px 8px;border-radius:14px;border:2px solid var(--border);background:var(--card);cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;font-size:15px;font-weight:600;transition:all 0.25s ease;text-align:center;">
+        <div style="font-size:28px;margin-bottom:4px;">🎀</div>もらった
+      </button>
+      <button id="giftFabGave" onclick="selectGiftFabType('gave')" style="flex:1;padding:14px 8px;border-radius:14px;border:2px solid var(--border);background:var(--card);cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;font-size:15px;font-weight:600;transition:all 0.25s ease;text-align:center;">
+        <div style="font-size:28px;margin-bottom:4px;">🎁</div>あげた
+      </button>
+    </div>
+    <div id="giftFabActions" style="display:flex;flex-direction:column;gap:10px;opacity:0.35;pointer-events:none;transition:opacity 0.3s ease;">
+      <button onclick="proceedGiftFab('manual')" class="fab-menu-btn">
+        <span style="font-size:24px;">✏️</span>
+        <div><div style="font-size:14px;font-weight:500;">手動��追加</div><div style="font-size:11px;color:var(--sub);">名前やカテゴリを入力して登録</div></div>
+      </button>
+      <button onclick="proceedGiftFab('camera')" class="fab-menu-btn">
+        <span style="font-size:24px;">📷</span>
+        <div><div style="font-size:14px;font-weight:500;">カメラで撮影</div><div style="font-size:11px;color:var(--sub);">商品を撮影してAIが自動判定</div></div>
+      </button>
+      <button onclick="proceedGiftFab('file')" class="fab-menu-btn">
+        <span style="font-size:24px;">📁</span>
+        <div><div style="font-size:14px;font-weight:500;">ファイ���から選択</div><div style="font-size:11px;color:var(--sub);">スクリーンショットもOK！</div></div>
+      </button>
+    </div>
+    <div class="form-btns" style="margin-top:12px;">
+      <button class="btn btn-secondary" onclick="document.getElementById('aiModalOverlay').classList.remove('open')">閉じる</button>
+    </div>`;
+  document.getElementById('aiModalOverlay').classList.add('open');
+}
+
+function selectGiftFabType(type) {
+  _giftFabType = type;
+  const recv = document.getElementById('giftFabRecv');
+  const gave = document.getElementById('giftFabGave');
+  const actions = document.getElementById('giftFabActions');
+  recv.style.borderColor = type === 'received' ? 'var(--accent)' : 'var(--border)';
+  recv.style.background = type === 'received' ? 'var(--accent-light, rgba(193,154,132,0.12))' : 'var(--card)';
+  recv.style.transform = type === 'received' ? 'scale(1.04)' : 'scale(1)';
+  gave.style.borderColor = type === 'gave' ? 'var(--accent)' : 'var(--border)';
+  gave.style.background = type === 'gave' ? 'var(--accent-light, rgba(193,154,132,0.12))' : 'var(--card)';
+  gave.style.transform = type === 'gave' ? 'scale(1.04)' : 'scale(1)';
+  actions.style.opacity = '1';
+  actions.style.pointerEvents = 'auto';
+}
+
+function proceedGiftFab(method) {
+  if (!_giftFabType) { showToast('「もらった」か��あげた」を選んでください'); return; }
+  document.getElementById('aiModalOverlay').classList.remove('open');
+  if (method === 'manual') {
+    const origTab = currentTab;
+    currentTab = _giftFabType;
+    openItemModal();
+    currentTab = origTab;
+  } else {
+    startItemOcr('item_ocr', _giftFabType, method);
+  }
+}
+
+// ===== Item/Place OCR =====
+function startItemOcr(ocrMode, tabType, inputMethod) {
+  const modal = document.getElementById('aiModal');
+  const titles = {wish:'ほしいもの',received:'もらったギフト',gave:'あげたギフト',place:'行きたい場所'};
+  const title = titles[tabType] || 'アイテム';
+  const isPlace = tabType === 'place';
+  const hint = inputMethod === 'camera' ? '撮影した写真からAIが自動で判定します' : 'スクリーンショットや写真からAIが自動で判定します';
+
+  const fileInput = inputMethod === 'camera'
+    ? `<input type="file" id="itemOcrFile" accept="image/*" capture="environment" style="display:none;" onchange="processItemOcrImage(this,'${ocrMode}','${tabType}')">`
+    : `<input type="file" id="itemOcrFile" accept="image/*" multiple style="display:none;" onchange="processItemOcrImage(this,'${ocrMode}','${tabType}')">`;
+
+  modal.innerHTML = `<h2>📷 ${title}を画像から登録</h2>
+    <div style="font-size:13px;color:var(--sub);margin-bottom:12px;">${hint}</div>
+    <div style="margin-bottom:12px;">
+      <button onclick="document.getElementById('itemOcrFile').click()" style="width:100%;padding:16px;border-radius:14px;border:1px solid var(--accent);background:var(--card);cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;font-size:14px;font-weight:500;color:var(--accent);transition:all 0.2s ease;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='scale(1)'">${inputMethod==='camera'?'📷 撮影する':'📁 ファイルを選ぶ'}</button>
+    </div>
+    ${fileInput}
+    <div id="itemOcrPreview" style="text-align:center;margin-bottom:12px;"></div>
+    <div id="itemOcrResult"></div>
+    <div class="form-btns">
+      <button class="btn btn-secondary" onclick="document.getElementById('aiModalOverlay').classList.remove('open')">��じる</button>
+    </div>`;
+  document.getElementById('aiModalOverlay').classList.add('open');
+}
+
+async function processItemOcrImage(input, ocrMode, tabType) {
+  const files = input.files;
+  if (!files || !files.length) return;
+
+  const previewDiv = document.getElementById('itemOcrPreview');
+  const resultDiv = document.getElementById('itemOcrResult');
+
+  const file = files[0];
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const base64 = e.target.result;
+    previewDiv.innerHTML = `<img src="${base64}" style="max-width:200px;max-height:200px;border-radius:12px;margin:4px;box-shadow:0 2px 8px rgba(0,0,0,0.1);">`;
+    resultDiv.innerHTML = '<div style="text-align:center;color:var(--sub);padding:20px;">💭 AIが読み��り中...</div>';
+
+    try {
+      if (!_sbUser) throw new Error('ログインが必要です');
+      const session = await _sb.auth.getSession();
+      const token = session?.data?.session?.access_token;
+
+      const res = await fetch(OCR_EDGE_FN, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + (token || ''),
+          'apikey': SUPABASE_KEY
+        },
+        body: JSON.stringify({ image: base64, mode: ocrMode })
+      });
+      const json = await res.json();
+      if (json.error) throw new Error(json.error);
+
+      if (json.result) {
+        renderItemOcrResult(json.result, tabType);
+      } else {
+        resultDiv.innerHTML = '<div style="color:#c97070;padding:12px;line-height:1.6;">読み取れませんでした。別の画像でお試しください。</div>';
+      }
+    } catch (err) {
+      resultDiv.innerHTML = `<div style="color:#c97070;padding:12px;">エラー: ${esc(err.message)}</div>`;
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function renderItemOcrResult(result, tabType) {
+  const resultDiv = document.getElementById('itemOcrResult');
+  const isPlace = tabType === 'place';
+  const catData = isPlace ? _placeCatData : _itemCatData;
+  const catEmoji = isPlace ? _placeCatEmoji : _itemCatEmoji;
+  const catIdx = catData.indexOf(result.category);
+
+  let html = '<div style="font-weight:600;margin-bottom:10px;">読み取り結果</div>';
+  html += '<div style="background:var(--bg);border-radius:14px;padding:14px;font-size:13px;line-height:2;">';
+  if (result.title) html += `<div>📌 <strong>${esc(result.title)}</strong></div>`;
+  if (result.category) html += `<div>📂 ${catIdx >= 0 ? catEmoji[catIdx]+' ' : ''}${esc(result.category)}</div>`;
+  if (result.genres?.length) html += `<div>🏷 ${result.genres.map(g => esc(g)).join(', ')}</div>`;
+  if (result.price) html += `<div>💰 ¥${Number(result.price).toLocaleString()}</div>`;
+  if (result.address) html += `<div>📍 ${esc(result.address)}</div>`;
+  if (result.memo) html += `<div>📝 ${esc(result.memo)}</div>`;
+  html += '</div>';
+
+  html += `<div style="margin-top:14px;display:flex;gap:8px;">
+    <button class="btn btn-primary" onclick="saveItemOcrResult('${tabType}')" style="flex:1;font-size:14px;padding:12px;">✅ この内容で登録</button>
+    <button class="btn btn-secondary" onclick="editItemOcrResult('${tabType}')" style="flex:1;font-size:14px;padding:12px;">✏️ 編集して登録</button>
+  </div>`;
+
+  resultDiv.innerHTML = html;
+  resultDiv._ocrResult = result;
+}
+
+function saveItemOcrResult(tabType) {
+  const resultDiv = document.getElementById('itemOcrResult');
+  const r = resultDiv._ocrResult;
+  if (!r) return;
+  const now = new Date().toISOString();
+  const isPlace = tabType === 'place';
+
+  if (isPlace) {
+    const item = {
+      id: genId(), title: r.title || '名称なし',
+      placeCategory: r.category || '', tags: r.genres || [],
+      address: r.address || '', memo: r.memo || '',
+      withPeople: [], pinned: false, createdAt: now, updatedAt: now
+    };
+    data.place.push(item);
+    saveData(); render();
+    showToast(`📍 ${item.title} を登録しました`);
+  } else {
+    const tab = tabType; // wish, received, gave
+    if (!data[tab]) data[tab] = [];
+    const item = {
+      id: genId(), title: r.title || '名称なし',
+      itemCategory: r.category || '', tags: r.genres || [],
+      price: r.price ? String(r.price) : '', memo: r.memo || '',
+      person: '', occasion: '', url: '',
+      pinned: false, createdAt: now, updatedAt: now
+    };
+    data[tab].push(item);
+    saveData(); render();
+    const labels = {wish:'ほしいもの',received:'もらったギフト',gave:'あげたギフト'};
+    showToast(`✅ ${item.title} を${labels[tab]||''}に登録しました`);
+  }
+  document.getElementById('aiModalOverlay').classList.remove('open');
+}
+
+function editItemOcrResult(tabType) {
+  const resultDiv = document.getElementById('itemOcrResult');
+  const r = resultDiv._ocrResult;
+  if (!r) return;
+  document.getElementById('aiModalOverlay').classList.remove('open');
+
+  const isPlace = tabType === 'place';
+  if (isPlace) {
+    // 一時データを作って編集モーダルを開く
+    const tempId = genId();
+    const now = new Date().toISOString();
+    data.place.push({
+      id: tempId, title: r.title || '', placeCategory: r.category || '',
+      tags: r.genres || [], address: r.address || '', memo: r.memo || '',
+      withPeople: [], pinned: false, createdAt: now, updatedAt: now
+    });
+    saveData();
+    openPlaceModal(tempId);
+  } else {
+    const tab = tabType;
+    if (!data[tab]) data[tab] = [];
+    const tempId = genId();
+    const now = new Date().toISOString();
+    data[tab].push({
+      id: tempId, title: r.title || '', itemCategory: r.category || '',
+      tags: r.genres || [], price: r.price ? String(r.price) : '',
+      memo: r.memo || '', person: '', occasion: '', url: '',
+      pinned: false, createdAt: now, updatedAt: now
+    });
+    saveData();
+    const origTab = currentTab;
+    currentTab = tab;
+    openItemModal(tempId);
+    currentTab = origTab;
+  }
 }
 
 // ===== Image OCR =====
@@ -10171,10 +10537,10 @@ if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().t
     else if (currentTab==='people' && currentLabel==='groups') openGroupModal();
     else if (currentTab==='people') openPeopleFabMenu();
     else if (currentTab==='place' && currentLabel==='closed') openPlaceMemoryModal();
-    else if (currentTab==='place') openPlaceModal();
-    else if (currentTab==='gift') { currentTab='gave'; openItemModal(); currentTab='gift'; }
+    else if (currentTab==='place') openPlaceFabMenu();
+    else if (currentTab==='gift') openGiftFabMenu();
     else if (currentTab==='calendar') { const t=new Date(); calDayTap(t.getFullYear(),t.getMonth(),t.getDate()); }
-    else openItemModal();
+    else openWishFabMenu();
   });
 
   // 背景タップでモーダルを閉じる（入力フォームがない場合のみ）

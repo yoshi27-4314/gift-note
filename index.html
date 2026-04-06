@@ -3351,24 +3351,21 @@ async function runGroupAiSuggest(groupId) {
   const scene = document.getElementById('aiGroupScene')?.value.trim()||'';
   const budget = document.getElementById('aiGroupBudget')?.value.trim()||'';
 
+  // 匿名化: メンバーにABC...のラベルを割り当て
   let memberProfiles = '';
-  members.forEach(m => {
-    const lines = [`名前: ${m.nickname}`];
-    if (m.relation) lines.push(`関係: ${m.relation}`);
-    if (m.interests?.length) lines.push(`好きなもの: ${m.interests.join(', ')}`);
-    if (m.foodLike?.length) lines.push(`好きな食べ物: ${m.foodLike.join(', ')}`);
-    if (m.foodDislike?.length) lines.push(`苦手: ${m.foodDislike.join(', ')}`);
-    if (m.drinking) lines.push(`お酒: ${m.drinking}`);
-    if (m.smoking) lines.push(`タバコ: ${m.smoking}`);
-    if (m.personality?.length) lines.push(`性格: ${m.personality.join(', ')}`);
-    if (m.memo) lines.push(`メモ: ${m.memo}`);
-    memberProfiles += '\n### ' + m.nickname + '\n' + lines.join('\n') + '\n';
+  const anonLabels = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const anonMap = {}; // anonLabel -> real nickname
+  members.forEach((m, idx) => {
+    const label = anonLabels[idx] || `メンバー${idx+1}`;
+    anonMap[label] = m.nickname;
+    const lines = buildAnonymizedProfile(m);
+    memberProfiles += `\n### ${label}さん\n${lines.join('\n')}\n`;
   });
 
   const prompt = `以下のグループメンバー全員に対して、それぞれに合った贈り物を提案してください。
 
-## グループ: ${group.name}
-${group.description ? '説明: '+group.description : ''}
+## グループの説明
+${group.description || 'なし'}
 
 ## メンバー
 ${memberProfiles}
@@ -9334,7 +9331,7 @@ function openAiSuggest(personId) {
   if (!person) return;
   const modal = document.getElementById('aiModal');
 
-  // Build profile summary for prompt
+  // Build profile summary for display (ローカル表示用・実名OK)
   const profile = [];
   profile.push(`呼び名: ${person.nickname}`);
   if (person.relation) profile.push(`関係: ${person.relation}`);
@@ -9390,6 +9387,48 @@ function openAiSuggest(personId) {
   document.getElementById('aiModalOverlay').classList.add('open');
 }
 
+// ===== 匿名化ユーティリティ =====
+// 個人名をAIに送信せず、属性情報のみで提案を受ける
+function buildAnonymizedProfile(person) {
+  const profileLines = [];
+  if (person.relation) profileLines.push(`関係: ${person.relation}`);
+  if (person.gender) profileLines.push(`性別: ${person.gender === 'male' ? '男性' : person.gender === 'female' ? '女性' : '未設定'}`);
+  if (person.interests?.length) profileLines.push(`好きなもの: ${person.interests.join(', ')}`);
+  if (person.brands?.length) profileLines.push(`好きなブランド: ${person.brands.join(', ')}`);
+  if (person.oshi?.length) profileLines.push(`推し活: ${person.oshi.join(', ')}`);
+  if (person.foodLike?.length) profileLines.push(`好きな食べ物: ${person.foodLike.join(', ')}`);
+  if (person.foodDislike?.length) profileLines.push(`苦手な食べ物: ${person.foodDislike.join(', ')}`);
+  if (person.drinking) profileLines.push(`お酒: ${person.drinking}`);
+  if (person.smoking) profileLines.push(`タバコ: ${person.smoking}`);
+  if (person.personality?.length) profileLines.push(`性格: ${person.personality.join(', ')}`);
+  // メモは個人名が含まれる可能性があるので匿名化
+  if (person.memo) profileLines.push(`メモ: ${anonymizeText(person.memo)}`);
+  const sizes = person.sizes ? Object.entries(person.sizes).filter(([k,v])=>v).map(([k,v])=>`${k}:${v}`) : [];
+  if (sizes.length) profileLines.push(`サイズ: ${sizes.join(', ')}`);
+  // 家族情報は関係性のみ（名前を除去）
+  if (person.family?.length) profileLines.push(`家族: ${person.family.map(f=>(f.note||'家族')).join(', ')}`);
+  return profileLines;
+}
+
+function anonymizeText(text) {
+  if (!text) return text;
+  let result = text;
+  // 登録済みの人物名を「〇〇」に置換
+  data.people.forEach(p => {
+    if (p.nickname && p.nickname.length >= 2) {
+      result = result.replace(new RegExp(escapeRegex(p.nickname), 'g'), '相手');
+    }
+    if (p.fullName && p.fullName.length >= 2) {
+      result = result.replace(new RegExp(escapeRegex(p.fullName), 'g'), '相手');
+    }
+  });
+  return result;
+}
+
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 async function runAiSuggest(personId) {
   const person = data.people.find(p=>p.id===personId);
   if (!person) return;
@@ -9399,19 +9438,8 @@ async function runAiSuggest(personId) {
   btn.disabled = true; btn.textContent = '考え中...';
   resultDiv.innerHTML = '<div style="text-align:center;color:var(--sub);padding:20px;">💭 AIが考えています...</div>';
 
-  const profileLines = [];
-  if (person.relation) profileLines.push(`関係: ${person.relation}`);
-  if (person.interests?.length) profileLines.push(`好きなもの: ${person.interests.join(', ')}`);
-  if (person.brands?.length) profileLines.push(`好きなブランド: ${person.brands.join(', ')}`);
-  if (person.foodLike?.length) profileLines.push(`好きな食べ物: ${person.foodLike.join(', ')}`);
-  if (person.foodDislike?.length) profileLines.push(`苦手な食べ物: ${person.foodDislike.join(', ')}`);
-  if (person.drinking) profileLines.push(`お酒: ${person.drinking}`);
-  if (person.smoking) profileLines.push(`タバコ: ${person.smoking}`);
-  if (person.personality?.length) profileLines.push(`性格: ${person.personality.join(', ')}`);
-  if (person.memo) profileLines.push(`メモ: ${person.memo}`);
-  const sizes = person.sizes ? Object.entries(person.sizes).filter(([k,v])=>v).map(([k,v])=>`${k}:${v}`) : [];
-  if (sizes.length) profileLines.push(`サイズ: ${sizes.join(', ')}`);
-  if (person.family?.length) profileLines.push(`家族: ${person.family.map(f=>f.name+(f.note?' ('+f.note+')':'')).join(', ')}`);
+  // 匿名化されたプロフィールを構築（名前・個人特定情報を除去）
+  const profileLines = buildAnonymizedProfile(person);
 
   const history = [];
   ['gave','received'].forEach(tab => {
@@ -9425,10 +9453,10 @@ async function runAiSuggest(personId) {
   const scene = document.getElementById('aiScene')?.value.trim()||'';
   const budget = document.getElementById('aiBudget')?.value.trim()||'';
 
-  const prompt = `以下の人物に心のこもった贈り物を3つ提案してください。
+  // 匿名化プロンプト: 名前の代わりに「この方」を使用
+  const prompt = `以下の方に心のこもった贈り物を3つ提案してください。
 
 ## 相手のプロフィール
-名前: ${person.nickname}
 ${profileLines.join('\n')}
 ${history.length ? '\n## 過去の贈り物\n'+history.join('\n') : ''}
 ${scene ? '\n## 場面\n'+scene : ''}

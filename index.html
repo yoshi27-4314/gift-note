@@ -8759,20 +8759,24 @@ async function obCreateAccount() {
   const msgDiv = document.getElementById('obAccountMsg');
   msgDiv.innerHTML = '<span style="color:var(--sub);">アカウントを作成中...</span>';
   try {
-    // パスワードなしでサインアップ（確認メールなし）
+    // 自動生成パスワードでサインアップ（確認メールなし）
+    const autoPass = 'awai_' + email.split('@')[0] + '_' + Date.now();
     const { data: authData, error } = await _sb.auth.signUp({
       email,
-      password: email + '_awai_' + Date.now(),
+      password: autoPass,
       options: { emailRedirectTo: window.location.origin }
     });
     if (error) {
-      // 既にアカウントがある場合はログイン画面へ
       if (error.message?.includes('already registered')) {
         msgDiv.innerHTML = '<span style="color:var(--accent);">このメールアドレスは登録済みです</span>';
         setTimeout(() => showLoginScreen(), 1500);
         return;
       }
       throw error;
+    }
+    // サインアップ成功 → 自動的にログイン状態になる（confirm email OFF時）
+    if (authData?.user) {
+      _sbUser = authData.user;
     }
     msgDiv.innerHTML = '';
     obNext('install');

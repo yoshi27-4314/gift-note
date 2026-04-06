@@ -1220,6 +1220,12 @@ function personIcon(p) {
   return {emoji:svg('#b0a49e'), bg:'#fff'};
 }
 
+// ===== Date Helper (timezone safe) =====
+function toLocalDateStr(d) {
+  const dt = d || new Date();
+  return dt.getFullYear() + '-' + String(dt.getMonth()+1).padStart(2,'0') + '-' + String(dt.getDate()).padStart(2,'0');
+}
+
 // ===== Season =====
 function getAutoSeason() {
   const m = new Date().getMonth()+1;
@@ -2135,7 +2141,7 @@ function showRegiftConfirm(recipientName) {
   const item = data[regiftSourceTab]?.find(i=>i.id===regiftSourceId);
   if (!item) return;
   const modal = document.getElementById('modal');
-  const today = new Date().toISOString().split('T')[0];
+  const today = toLocalDateStr();
 
   let html = `<h2>🎁 あげる内容を確認</h2>`;
   html += `<div style="background:var(--bg);border-radius:12px;padding:12px;margin-bottom:14px;">
@@ -2220,7 +2226,7 @@ function markVisited(id) {
   }
   // Show date input
   const modal = document.getElementById('modal');
-  const today = new Date().toISOString().split('T')[0];
+  const today = toLocalDateStr();
   modal.innerHTML = `<h2>✅ 行った！</h2>
     <div style="background:var(--bg);border-radius:12px;padding:12px;margin-bottom:14px;">
       <div style="font-size:15px;font-weight:600;">${esc(item.title)}</div>
@@ -3364,7 +3370,7 @@ function getUpcomingAnniversaries() {
 function showAnnPopup() {
   const upcoming = getUpcomingAnniversaries();
   if (!upcoming.length) return;
-  const today = new Date().toISOString().split('T')[0];
+  const today = toLocalDateStr();
   const lastShown = localStorage.getItem(ANN_POPUP_KEY);
   const hasToday = upcoming.some(u => u.days === 0);
   // 当日は毎回、それ以外は1日1回
@@ -3411,7 +3417,7 @@ function showMemoryPopup() {
   const todayM = today.getMonth()+1, todayD = today.getDate();
   const memoryKey = 'awai_memory_popup_date';
   const lastShown = localStorage.getItem(memoryKey);
-  const todayStr = today.toISOString().split('T')[0];
+  const todayStr = toLocalDateStr(today);
 
   const memoryPeople = data.people.filter(p => p.isMemory && p.memoryDate && p.reminderMode !== 'none');
   const matches = [];
@@ -3580,7 +3586,7 @@ function checkAppUpdate() {
 function shouldCheckNow() {
   const now = new Date();
   const hour = now.getHours();
-  const today = now.toISOString().split('T')[0];
+  const today = toLocalDateStr(now);
   const lastCheck = localStorage.getItem(UPDATE_CHECK_KEY) || '';
   // チェック時間帯（9時台 or 19時台）かつ、今日のその時間帯でまだチェックしていない
   for (const h of CHECK_HOURS) {
@@ -7226,7 +7232,7 @@ function incrementCounter(personId, counterIdx) {
   const p = data.people.find(x=>x.id===personId);
   if (!p || !p.counters || !p.counters[counterIdx]) return;
   const c = p.counters[counterIdx];
-  const today = new Date().toISOString().slice(0, 10);
+  const today = toLocalDateStr();
 
   // Show confirmation with date change option
   const overlay = document.createElement('div');
@@ -7252,7 +7258,7 @@ function confirmIncrement(personId, counterIdx) {
   if (!p || !p.counters || !p.counters[counterIdx]) return;
   const c = p.counters[counterIdx];
   const dateInput = document.getElementById('counterDateInput');
-  const date = dateInput ? dateInput.value : new Date().toISOString().slice(0, 10);
+  const date = dateInput ? dateInput.value : toLocalDateStr();
   c.count = (c.count||0) + 1;
   if (!c.logs) c.logs = [];
   c.logs.unshift(date);
@@ -8574,7 +8580,7 @@ function exportData() {
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    const dateStr = new Date().toISOString().slice(0, 10);
+    const dateStr = toLocalDateStr();
     a.href = url;
     a.download = 'awai_backup_' + dateStr + '.json';
     document.body.appendChild(a);

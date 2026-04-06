@@ -705,14 +705,18 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 <!-- Onboarding -->
 <div id="onboardingOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:99999;overflow-y:auto;">
   <div style="max-width:480px;margin:0 auto;padding:40px 24px;min-height:100dvh;display:flex;flex-direction:column;justify-content:center;">
-    <!-- Step 1: Welcome -->
+    <!-- Step 1: Welcome + Login -->
     <div id="obStep1" class="ob-step">
       <div style="text-align:center;margin-bottom:32px;font-size:48px;">🕊️</div>
       <h1 style="text-align:center;font-family:'Shippori Mincho',serif;font-size:28px;font-weight:600;margin-bottom:16px;color:var(--text);">AWAIへようこそ</h1>
-      <p style="text-align:center;color:var(--sub);font-size:15px;line-height:1.8;margin-bottom:40px;">お気に入りと友だちの記録。</p>
-      <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;" onclick="obNext('install')">はじめる</button>
+      <p style="text-align:center;color:var(--sub);font-size:15px;line-height:1.8;margin-bottom:32px;">お気に入りと友だちの記録。</p>
+      <div class="form-group" style="margin-bottom:24px;">
+        <input id="obEmail" type="email" placeholder="メールアドレスを入力" style="padding:16px;font-size:16px;border-radius:14px;border:1px solid var(--border);width:100%;text-align:center;">
+      </div>
+      <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;" onclick="obLogin()">はじめる</button>
       <p style="text-align:center;margin-top:16px;font-size:11px;color:var(--sub);">続けることで<a href="privacy.html" target="_blank" style="color:var(--accent);">プライバシーポリシー</a>に同意したものとみなします</p>
       <p style="text-align:center;margin-top:24px;"><a href="#" onclick="event.preventDefault();showLoginScreen()" style="color:var(--accent);font-size:13px;">すでにアカウントをお持ちの方はログイン</a></p>
+      <div id="obLoginMsg" style="text-align:center;margin-top:12px;font-size:13px;color:var(--sub);"></div>
     </div>
     <!-- Step Install: ホーム画面に追加 -->
     <div id="obStepinstall" class="ob-step" style="display:none;">
@@ -767,22 +771,52 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
       </div>
       <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;margin-top:32px;" onclick="obSaveProfile()">次へ</button>
     </div>
-    <!-- Step 2b: 気づきの質問 -->
-    <div id="obStep2b" class="ob-step" style="display:none;">
-      <div style="text-align:center;margin-bottom:24px;font-size:36px;" id="obInsightEmoji">💭</div>
-      <h2 style="text-align:center;font-family:'Shippori Mincho',serif;font-size:20px;margin-bottom:12px;" id="obInsightTitle">友だち、家族を<br>一人思い浮かべてください</h2>
-      <p style="text-align:center;color:var(--sub);font-size:13px;margin-bottom:24px;"></p>
-      <div id="obInsightQuestions"></div>
-      <div id="obInsightResult" style="display:none;text-align:center;margin-top:20px;"></div>
-      <button class="btn btn-primary" id="obInsightBtn" style="width:100%;padding:16px;font-size:17px;border-radius:14px;margin-top:24px;" onclick="obShowInsightResult()">結果を見る</button>
+    <!-- Step 4: AI予告 -->
+    <div id="obStep4intro" class="ob-step" style="display:none;">
+      <div style="text-align:center;margin-bottom:24px;font-size:48px;">💡</div>
+      <h2 style="text-align:center;font-family:'Shippori Mincho',serif;font-size:22px;margin-bottom:16px;">AIコンシェルジュが<br>友だちのギフトを提案します</h2>
+      <p style="text-align:center;color:var(--sub);font-size:14px;line-height:1.8;margin-bottom:40px;">あなたの友だちや家族の好みを教えてくれれば<br>ぴったりのギフトをAIが見つけます</p>
+      <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;" onclick="obNext(5)">試してみる</button>
     </div>
-    <!-- Step 3: First Person -->
-    <div id="obStep3" class="ob-step" style="display:none;">
-      <h2 style="text-align:center;font-family:'Shippori Mincho',serif;font-size:22px;margin-bottom:8px;">友だちか家族を<br>ひとり登録してみましょう</h2>
-      <p style="text-align:center;color:var(--sub);font-size:13px;margin-bottom:32px;"></p>
+    <!-- Step 5: 好み入力 -->
+    <div id="obStep5" class="ob-step" style="display:none;">
+      <h2 style="text-align:center;font-family:'Shippori Mincho',serif;font-size:22px;margin-bottom:8px;">少し教えてください</h2>
+      <p style="text-align:center;color:var(--sub);font-size:13px;margin-bottom:24px;">贈りたい相手のことを思い浮かべて</p>
+      <div class="form-group">
+        <label>好きなもの</label>
+        <input id="obLike" placeholder="例：ワイン、チョコレート、ゴルフ" style="padding:14px 16px;font-size:16px;border-radius:12px;border:1px solid var(--border);width:100%;">
+      </div>
+      <div class="form-group" style="margin-top:12px;">
+        <label>苦手なもの（任意）</label>
+        <input id="obDislike" placeholder="例：甘いもの、お酒" style="padding:14px 16px;font-size:16px;border-radius:12px;border:1px solid var(--border);width:100%;">
+      </div>
+      <div class="form-group" style="margin-top:12px;">
+        <label>好み・興味</label>
+        <input id="obTaste" placeholder="例：話題のお菓子、趣のある宿、アウトドア" style="padding:14px 16px;font-size:16px;border-radius:12px;border:1px solid var(--border);width:100%;">
+      </div>
+      <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;margin-top:24px;" onclick="obNext(6)">AIに提案してもらう</button>
+    </div>
+    <!-- Step 6: AI提案 -->
+    <div id="obStep6" class="ob-step" style="display:none;">
+      <div style="text-align:center;margin-bottom:16px;font-size:40px;">✨</div>
+      <h2 style="text-align:center;font-family:'Shippori Mincho',serif;font-size:20px;margin-bottom:16px;">AIコンシェルジュの提案</h2>
+      <div id="obAiResult" style="margin-bottom:20px;"></div>
+      <button class="btn btn-primary" id="obAiNextBtn" style="width:100%;padding:16px;font-size:17px;border-radius:14px;display:none;" onclick="obNext(7)">次へ</button>
+    </div>
+    <!-- Step 7: 友だち登録 -->
+    <div id="obStep7" class="ob-step" style="display:none;">
+      <h2 style="text-align:center;font-family:'Shippori Mincho',serif;font-size:22px;margin-bottom:8px;">お友達のお名前を<br>教えてください</h2>
+      <p style="text-align:center;color:var(--sub);font-size:13px;margin-bottom:24px;">先ほどの提案をこの方に紐づけます</p>
       <div class="form-group"><label>呼び名</label><input id="obPersonName" placeholder="その人の名前" style="padding:14px 16px;font-size:16px;border-radius:12px;border:1px solid var(--border);width:100%;"></div>
-      <div class="form-group" style="margin-top:16px;"><label>関係（任意）</label><input id="obPersonRelation" placeholder="例：母、妻、親友、上司" style="padding:14px 16px;font-size:16px;border-radius:12px;border:1px solid var(--border);width:100%;"></div>
-      <div class="form-group" style="margin-top:16px;"><label>誕生日（任意）</label>
+      <div class="form-group" style="margin-top:12px;"><label>性別（任意）</label>
+        <div style="display:flex;gap:8px;">
+          <div class="date-type-chip" onclick="obSelectGender(this,'female')" style="flex:1;text-align:center;font-size:14px;padding:12px;">女性</div>
+          <div class="date-type-chip" onclick="obSelectGender(this,'male')" style="flex:1;text-align:center;font-size:14px;padding:12px;">男性</div>
+          <div class="date-type-chip" onclick="obSelectGender(this,'unset')" style="flex:1;text-align:center;font-size:14px;padding:12px;">未設定</div>
+        </div>
+        <input type="hidden" id="obPersonGender" value="unset">
+      </div>
+      <div class="form-group" style="margin-top:12px;"><label>生年月日（任意）</label>
         <div style="display:flex;gap:4px;margin-bottom:8px;">
           <div class="date-type-chip" onclick="obSetDateType('person','full',this)" style="flex:1;text-align:center;font-size:13px;">年月日</div>
           <div class="date-type-chip active" onclick="obSetDateType('person','monthday',this)" style="flex:1;text-align:center;font-size:13px;">月日</div>
@@ -795,34 +829,7 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
           <input id="obPersonBirthDay" type="number" min="1" max="31" placeholder="日" style="flex:1;padding:14px 12px;font-size:16px;border-radius:12px;border:1px solid var(--border);">
         </div>
       </div>
-      <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;margin-top:32px;" onclick="obSavePerson()">次へ</button>
-    </div>
-    <!-- Step 3b: あげた/もらった -->
-    <div id="obStep3b" class="ob-step" style="display:none;">
-      <h2 style="text-align:center;font-family:'Shippori Mincho',serif;font-size:22px;margin-bottom:8px;"><span id="obGiftPersonName"></span>さんへの<br>プレゼントを覚えていますか？</h2>
-      <p style="text-align:center;color:var(--sub);font-size:13px;margin-bottom:24px;">覚えていることだけでOKです</p>
-      <div style="background:var(--card);border-radius:16px;padding:20px;margin-bottom:16px;box-shadow:0 1px 6px var(--shadow);">
-        <div style="font-size:14px;font-weight:600;color:var(--accent);margin-bottom:12px;">🎁 あげたものを教えてください</div>
-        <input id="obLastGave" placeholder="例：ワイン、お菓子、花束" style="width:100%;padding:14px 16px;font-size:16px;border-radius:12px;border:1px solid var(--border);">
-        <input id="obLastGaveWhen" placeholder="いつ？（例：去年の誕生日）" style="width:100%;padding:12px 16px;font-size:14px;border-radius:12px;border:1px solid var(--border);margin-top:8px;color:var(--sub);">
-      </div>
-      <div style="background:var(--card);border-radius:16px;padding:20px;margin-bottom:16px;box-shadow:0 1px 6px var(--shadow);">
-        <div style="font-size:14px;font-weight:600;color:#7a9ad4;margin-bottom:12px;">🎀 もらったものを教えてください</div>
-        <input id="obLastReceived" placeholder="例：ネクタイ、チョコレート" style="width:100%;padding:14px 16px;font-size:16px;border-radius:12px;border:1px solid var(--border);">
-        <input id="obLastReceivedWhen" placeholder="いつ？（例：お中元、クリスマス）" style="width:100%;padding:12px 16px;font-size:14px;border-radius:12px;border:1px solid var(--border);margin-top:8px;color:var(--sub);">
-      </div>
-      <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;" onclick="obSaveGifts()">次へ</button>
-    </div>
-    <!-- Step 3c: 好きなもの + AI提案体験 -->
-    <div id="obStep3c" class="ob-step" style="display:none;">
-      <div style="text-align:center;margin-bottom:20px;font-size:40px;">💡</div>
-      <h2 style="text-align:center;font-family:'Shippori Mincho',serif;font-size:22px;margin-bottom:8px;"><span id="obAiPersonName"></span>さんの<br>好きなものを教えてください</h2>
-      <p style="text-align:center;color:var(--sub);font-size:13px;margin-bottom:24px;">1つだけでいいですよ。AIコンシェルジュがギフトを提案します</p>
-      <div class="form-group">
-        <input id="obPersonLike" placeholder="例：ワイン、チョコレート、ゴルフ、猫" style="padding:16px;font-size:16px;border-radius:14px;border:1px solid var(--border);width:100%;text-align:center;">
-      </div>
-      <button class="btn btn-primary" id="obAiBtn" style="width:100%;padding:16px;font-size:17px;border-radius:14px;margin-top:16px;" onclick="obRunAiSuggest()">✨ AIコンシェルジュに提案してもらう</button>
-      <div id="obAiResult" style="margin-top:20px;"></div>
+      <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;margin-top:24px;" onclick="obSavePersonNew()">登録して完了</button>
     </div>
     <!-- Step 4: Complete -->
     <div id="obStep4" class="ob-step" style="display:none;">
@@ -8338,6 +8345,30 @@ function obNext(step) {
       else { iosEl.style.display = ''; androidEl.style.display = ''; }
     }
   }
+  // Step 6: AI提案を自動実行
+  if (step === 6 || step === '6') {
+    obRunAiSuggest();
+  }
+}
+
+function obSelectGender(el, gender) {
+  el.parentElement.querySelectorAll('.date-type-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('obPersonGender').value = gender;
+}
+
+async function obLogin() {
+  const email = document.getElementById('obEmail')?.value.trim();
+  if (!email) { showToast('メールアドレスを入力してください'); return; }
+  const msgDiv = document.getElementById('obLoginMsg');
+  msgDiv.innerHTML = '送信中...';
+  try {
+    const { error } = await _sb.auth.signInWithOtp({ email });
+    if (error) throw error;
+    msgDiv.innerHTML = '<div style="color:#6bab8a;font-weight:600;">確認メールを送信しました。<br>メール内のリンクをタップしてください。</div>';
+  } catch(e) {
+    msgDiv.innerHTML = `<div style="color:#c97070;">${esc(e.message)}</div>`;
+  }
 }
 
 function obPwaInstall() {
@@ -8395,8 +8426,7 @@ function obSaveProfile() {
   }
   localStorage.setItem(MY_PROFILE_KEY, JSON.stringify(profile));
   sbSave();
-  obBuildInsight(profile.interests || []);
-  obNext('2b');
+  obNext('4intro');
 }
 
 // パーソナライズされた気づきの質問を生成
@@ -8602,34 +8632,33 @@ function obBuildComplete() {
 }
 
 async function obRunAiSuggest() {
-  const like = document.getElementById('obPersonLike')?.value.trim();
-  if (!like) { showToast('好きなものを1つ入力してください'); return; }
+  const like = document.getElementById('obLike')?.value.trim() || '';
+  const dislike = document.getElementById('obDislike')?.value.trim() || '';
+  const taste = document.getElementById('obTaste')?.value.trim() || '';
 
-  const btn = document.getElementById('obAiBtn');
   const resultDiv = document.getElementById('obAiResult');
-  btn.disabled = true; btn.textContent = '💭 AIが考えています...';
-  resultDiv.innerHTML = '<div style="text-align:center;color:var(--sub);padding:20px;">提案を準備しています...</div>';
+  const nextBtn = document.getElementById('obAiNextBtn');
+  resultDiv.innerHTML = '<div style="text-align:center;color:var(--sub);padding:30px;">💭 AIコンシェルジュが考えています...</div>';
 
-  // 好きなものを人物データに保存
-  const person = data.people.find(p => p.id === _obPersonId);
-  if (person) {
-    person.interests = like.split(/[,、\s]+/).filter(Boolean);
-    saveData();
-  }
+  const profileParts = [];
+  if (like) profileParts.push(`好きなもの: ${like}`);
+  if (dislike) profileParts.push(`苦手なもの: ${dislike}`);
+  if (taste) profileParts.push(`好み・興味: ${taste}`);
+  const context = profileParts.join('\n');
 
-  const relation = person?.relation || '大切な人';
+  window._obPrefs = { like, dislike, taste };
+
   const prompt = `以下の方に心のこもった贈り物を3つ提案してください。
 
 ## 相手のプロフィール
-関係: ${relation}
-好きなもの: ${like}
+${context || '情報なし'}
 
-センスの良い、喜ばれる提案をしてください。`;
+センスの良い、喜ばれる提案をしてください。苦手なものは絶対に避けてください。`;
 
   try {
-    const result = await callAI(prompt, `関係: ${relation}\n好きなもの: ${like}`, true);
+    const result = await callAI(prompt, context, true);
     if (result.suggestions && result.suggestions.length) {
-      let html = '<div style="font-size:14px;font-weight:600;color:var(--accent);margin-bottom:12px;text-align:center;">💡 こんな贈り物はいかがですか？</div>';
+      let html = '';
       result.suggestions.forEach(s => {
         const price = s.budget ? `約¥${Number(s.budget).toLocaleString()}` : '';
         html += `<div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;box-shadow:0 1px 6px var(--shadow);">
@@ -8638,19 +8667,40 @@ async function obRunAiSuggest() {
           <div style="font-size:13px;margin-top:6px;line-height:1.6;">${esc(s.reason||'')}</div>
         </div>`;
       });
-      html += `<div style="text-align:center;margin-top:16px;font-size:13px;color:var(--sub);line-height:1.8;">もっと情報を教えてくれると<br>もっと良い提案ができます</div>`;
-      html += `<button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;margin-top:16px;" onclick="obBuildComplete();obNext(4)">AWAIをはじめる</button>`;
+      html += `<div style="text-align:center;margin-top:12px;font-size:13px;color:var(--sub);line-height:1.8;">もっと情報を教えてくれると<br>もっと良い提案ができます</div>`;
       resultDiv.innerHTML = html;
     } else {
       resultDiv.innerHTML = '<div style="color:var(--sub);padding:12px;text-align:center;">提案を取得できませんでした</div>';
-      btn.disabled = false; btn.textContent = '✨ AIコンシェルジュに提案してもらう';
     }
   } catch(e) {
-    resultDiv.innerHTML = `<div style="color:var(--sub);padding:12px;text-align:center;">接続エラー: ログイン後に試してみてください</div>`;
-    resultDiv.innerHTML += `<button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;margin-top:16px;" onclick="obBuildComplete();obNext(4)">AWAIをはじめる</button>`;
-    skipBtn.style.display = 'none';
+    resultDiv.innerHTML = '<div style="color:var(--sub);padding:12px;text-align:center;">ログイン後にお試しください</div>';
   }
-  btn.disabled = false; btn.textContent = '✨ もう一度提案してもらう';
+  nextBtn.style.display = '';
+}
+
+function obSavePersonNew() {
+  const name = document.getElementById('obPersonName')?.value.trim();
+  if (!name) { showToast('名前を入力してください'); return; }
+  const gender = document.getElementById('obPersonGender')?.value || 'unset';
+  const prefs = window._obPrefs || {};
+
+  const person = {
+    id: genId(), nickname: name, type: 'individual', gender: gender,
+    avatar: null, fullName: null, relation: null, companyLink: null,
+    anniversaries: [], sizes: {}, smoking: null, drinking: null,
+    interests: prefs.like ? prefs.like.split(/[,、\s]+/).filter(Boolean) : [],
+    brands: [],
+    foodLike: prefs.taste ? prefs.taste.split(/[,、\s]+/).filter(Boolean) : [],
+    foodDislike: prefs.dislike ? prefs.dislike.split(/[,、\s]+/).filter(Boolean) : [],
+    personality: [], family: [], memo: null, oshi: [], corpPhoto: null
+  };
+  const bd = obBuildDate('obPerson');
+  if (bd) {
+    person.anniversaries = [{name:'🎂 誕生日', date: bd.date, dateType: bd.dateType, repeat:'yearly', reminders:[30]}];
+  }
+  data.people.push(person);
+  saveData();
+  obFinish();
 }
 
 function obFinish() {

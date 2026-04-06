@@ -1404,54 +1404,176 @@ function checkSpecialEvent() {
   setTimeout(() => showSpecialAnimation(event.anim), 1000);
 }
 
-// ===== Milestone Celebration =====
-const MILESTONES = [5, 10, 30, 50];
-const MILESTONE_MSGS = {
-  5:  { emoji: '🌱', title: 'はじめの一歩！', sub: '5個の大切なものが集まりました', chars: ['🎉','✨','🌱','💚','🌿'] },
-  10: { emoji: '🌿', title: 'いい調子！', sub: '10個！あなたの世界が広がっています', chars: ['🎊','✨','🌿','💫','⭐'] },
-  30: { emoji: '🌸', title: 'すごい！', sub: '30個の思い出と想い。素敵なコレクション', chars: ['🎊','🌸','✨','💖','🌟','💫'] },
-  50: { emoji: '🎉', title: 'おめでとうございます！', sub: '50個達成！AWAIマスターへの道', chars: ['🎊','🎉','✨','💎','🌟','💫','⭐','💖'] }
-};
-
+// ===== Celebration System =====
 function getTotalItemCount() {
   return (data.wish?.length||0) + (data.received?.length||0) + (data.gave?.length||0)
-       + (data.place?.length||0) + (data.people?.filter(p=>!p.isMemory)?.length||0);
+       + (data.place?.length||0) + (data.people?.filter(p=>!p.isMemory&&!p.isSample)?.length||0);
+}
+function getTabCount(tab) {
+  if (tab === 'people') return data.people?.filter(p=>!p.isMemory&&!p.isSample)?.length||0;
+  return data[tab]?.length||0;
 }
 
-function checkMilestoneCelebration() {
-  const total = getTotalItemCount();
-  if (!MILESTONES.includes(total)) return;
-  const shownKey = 'awai_milestone_' + total;
-  if (localStorage.getItem(shownKey)) return;
-  localStorage.setItem(shownKey, new Date().toISOString());
+// 合計マイルストーン（100以降も20刻みで永続）
+function getTotalMilestone(n) {
+  const fixed = [5,10,20,30,50,75,100];
+  if (fixed.includes(n)) return true;
+  if (n > 100 && n % 20 === 0) return true;
+  return false;
+}
+const TOTAL_MS = {
+  5:   { emoji:'🌱', title:'はじめの一歩！', sub:'5個の大切なものが集まりました' },
+  10:  { emoji:'🌿', title:'いい調子！', sub:'あなたの世界が広がっています' },
+  20:  { emoji:'✨', title:'20個！', sub:'習慣になってきましたね' },
+  30:  { emoji:'🌸', title:'すごい！', sub:'素敵なコレクション' },
+  50:  { emoji:'🎉', title:'50個達成！', sub:'AWAIマスターへの道' },
+  75:  { emoji:'💫', title:'75個！', sub:'あなたの記録はかけがえのない宝物' },
+  100: { emoji:'💎', title:'100個達成！', sub:'あなたの世界は豊かです' },
+};
+function getTotalMsData(n) {
+  if (TOTAL_MS[n]) return TOTAL_MS[n];
+  if (n >= 200 && n % 100 === 0) return { emoji:'🏆', title:`${n}個！`, sub:'素晴らしい継続力です' };
+  return { emoji:'🎊', title:`${n}個！`, sub:'どんどん豊かになっていますね' };
+}
 
-  const ms = MILESTONE_MSGS[total];
-  // パーティクルアニメーション
-  setTimeout(() => {
-    const container = document.createElement('div');
-    container.id = 'milestoneAnim';
-    container.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:9999;overflow:hidden;';
-    document.body.appendChild(container);
-    let count = 0;
-    const maxP = total >= 30 ? 50 : 35;
-    const iv = setInterval(() => {
-      if (count >= maxP) { clearInterval(iv); return; }
+// タブ別マイルストーン
+const TAB_MS = {
+  people: { points:[3,5,10,20,30,50], msgs:{
+    3:{emoji:'👥',title:'3人の大切な人'},5:{emoji:'👥',title:'5人！素敵な輪'},10:{emoji:'👥',title:'10人！豊かな人間関係'},
+    20:{emoji:'👥',title:'20人！'},30:{emoji:'👥',title:'30人！'},50:{emoji:'👥',title:'50人！'}
+  }},
+  wish: { points:[3,5,10,20,30,50], msgs:{
+    3:{emoji:'⭐',title:'3つのお気に入り'},5:{emoji:'⭐',title:'5つ！好きなものがわかってきた'},10:{emoji:'⭐',title:'10個！センスが光ります'},
+    20:{emoji:'⭐',title:'20個！'},30:{emoji:'⭐',title:'30個！'},50:{emoji:'⭐',title:'50個！'}
+  }},
+  place: { points:[3,5,10,20,30], msgs:{
+    3:{emoji:'📍',title:'3つの行きたい場所'},5:{emoji:'📍',title:'5つ！冒険心'},10:{emoji:'📍',title:'10か所！旅の地図が広がる'},
+    20:{emoji:'📍',title:'20か所！'},30:{emoji:'📍',title:'30か所！'}
+  }},
+  received: { points:[1,3,5,10,20], msgs:{
+    1:{emoji:'🎀',title:'最初のギフト記録！'},3:{emoji:'🎀',title:'3つのもらった記録'},5:{emoji:'🎀',title:'5つ！大切にされていますね'},
+    10:{emoji:'🎀',title:'10個！'},20:{emoji:'🎀',title:'20個！'}
+  }},
+  gave: { points:[1,3,5,10,20], msgs:{
+    1:{emoji:'🎁',title:'最初の贈り物記録！'},3:{emoji:'🎁',title:'3つのあげた記録'},5:{emoji:'🎁',title:'5つ！あなたの優しさ'},
+    10:{emoji:'🎁',title:'10個！'},20:{emoji:'🎁',title:'20個！'}
+  }}
+};
+
+// 行動ベース演出
+function checkActionCelebration(action) {
+  const key = 'awai_action_' + action;
+  if (localStorage.getItem(key)) return;
+  localStorage.setItem(key, new Date().toISOString());
+  const actions = {
+    first_ai: { emoji:'💡', title:'コンシェルジュデビュー！', sub:'AIがあなたの力になります' },
+    first_photo: { emoji:'📷', title:'最初の写真登録！', sub:'撮るだけで記録が増えていきます' },
+    first_gift: { emoji:'🎁', title:'最初のギフト記録！', sub:'忘れない気持ちが素敵です' },
+    first_place: { emoji:'📍', title:'最初の場所登録！', sub:'行きたい場所がある人生は楽しい' },
+  };
+  const a = actions[action];
+  if (a) showMiniCelebration(a.emoji, a.title, a.sub);
+}
+
+// 連続ログイン
+function checkLoginStreak() {
+  const today = new Date().toISOString().split('T')[0];
+  const lastOpen = localStorage.getItem('awai_last_open_date');
+  const streak = parseInt(localStorage.getItem('awai_login_streak')||'0');
+
+  if (lastOpen === today) return; // 今日は既にカウント済み
+
+  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+  let newStreak = (lastOpen === yesterday) ? streak + 1 : 1;
+  localStorage.setItem('awai_last_open_date', today);
+  localStorage.setItem('awai_login_streak', String(newStreak));
+
+  const streakMS = {3:'3日連続！',5:'5日連続！',7:'1週間！',14:'2週間！',21:'3週間！',30:'1ヶ月！',60:'2ヶ月！',90:'3ヶ月！',180:'半年！',365:'1年！'};
+  if (streakMS[newStreak]) {
+    const key = 'awai_streak_' + newStreak;
+    if (!localStorage.getItem(key)) {
+      localStorage.setItem(key, today);
+      setTimeout(() => showMiniCelebration('🔥', streakMS[newStreak], `${newStreak}日連続でAWAIを開いています`), 1500);
+    }
+  }
+}
+
+// AWAI記念日（インストールからの日数）
+function checkAwaiAnniversary() {
+  const installed = localStorage.getItem('awai_installed_date');
+  const today = new Date().toISOString().split('T')[0];
+  if (!installed) { localStorage.setItem('awai_installed_date', today); return; }
+  const days = Math.floor((new Date(today) - new Date(installed)) / 86400000);
+  const annivs = {7:'1週間',30:'1ヶ月',90:'3ヶ月',180:'半年',365:'1年',730:'2年'};
+  if (annivs[days]) {
+    const key = 'awai_anniv_' + days;
+    if (!localStorage.getItem(key)) {
+      localStorage.setItem(key, today);
+      setTimeout(() => showMiniCelebration('🎂', `AWAIと${annivs[days]}！`, `${days}日間、一緒に歩んできました`), 2000);
+    }
+  }
+}
+
+// ミニ演出（トースト風・パーティクル少なめ）
+function showMiniCelebration(emoji, title, sub) {
+  // ミニパーティクル
+  const container = document.createElement('div');
+  container.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:9998;overflow:hidden;';
+  document.body.appendChild(container);
+  const chars = ['✨','💫','⭐','🌟'];
+  for (let i = 0; i < 15; i++) {
+    setTimeout(() => {
       const el = document.createElement('div');
-      el.textContent = ms.chars[Math.floor(Math.random() * ms.chars.length)];
-      el.style.cssText = `position:absolute;top:-20px;left:${Math.random()*100}%;font-size:${18+Math.random()*18}px;opacity:0.9;`;
+      el.textContent = chars[Math.floor(Math.random()*chars.length)];
+      el.style.cssText = `position:absolute;top:-20px;left:${Math.random()*100}%;font-size:${14+Math.random()*12}px;`;
       container.appendChild(el);
-      const dur = 2500 + Math.random() * 3000;
-      const swayX = (Math.random() - 0.5) * 250;
       el.animate([
-        { transform: 'translateY(0) translateX(0) rotate(0deg)', opacity: 0.95 },
-        { transform: `translateY(${window.innerHeight+60}px) translateX(${swayX}px) rotate(${Math.random()*720-360}deg)`, opacity: 0 }
-      ], { duration: dur, easing: 'ease-in' }).onfinish = () => el.remove();
-      count++;
-    }, 120);
-    setTimeout(() => { if (container.parentNode) container.remove(); }, 10000);
-  }, 300);
+        { transform:'translateY(0) rotate(0deg)', opacity:0.8 },
+        { transform:`translateY(${window.innerHeight+40}px) rotate(${Math.random()*360}deg)`, opacity:0 }
+      ], { duration:2500+Math.random()*2000, easing:'ease-in' }).onfinish = () => el.remove();
+    }, i * 100);
+  }
+  setTimeout(() => container.remove(), 6000);
 
-  // メッセージカード
+  // バナー表示
+  const banner = document.createElement('div');
+  banner.style.cssText = 'position:fixed;top:60px;left:50%;transform:translateX(-50%) translateY(-20px);z-index:10000;background:var(--card);border-radius:20px;padding:16px 24px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.18);opacity:0;transition:all 0.5s cubic-bezier(0.34,1.56,0.64,1);max-width:300px;width:85%;';
+  banner.innerHTML = `<div style="font-size:32px;margin-bottom:6px;">${emoji}</div>
+    <div style="font-size:16px;font-weight:700;color:var(--text);">${title}</div>
+    <div style="font-size:12px;color:var(--sub);margin-top:4px;">${sub}</div>`;
+  document.body.appendChild(banner);
+  requestAnimationFrame(() => { banner.style.opacity='1'; banner.style.transform='translateX(-50%) translateY(0)'; });
+  setTimeout(() => {
+    banner.style.opacity='0'; banner.style.transform='translateX(-50%) translateY(-20px)';
+    setTimeout(() => banner.remove(), 500);
+  }, 3500);
+}
+
+// フル演出（大きなマイルストーン用）
+function showFullCelebration(emoji, title, sub, number, label) {
+  // パーティクル
+  const container = document.createElement('div');
+  container.id = 'milestoneAnim';
+  container.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:9999;overflow:hidden;';
+  document.body.appendChild(container);
+  const pChars = ['🎊','✨','🎉','⭐','💫','🌟','💖'];
+  let cnt = 0;
+  const maxP = number >= 100 ? 50 : number >= 30 ? 40 : 30;
+  const iv = setInterval(() => {
+    if (cnt >= maxP) { clearInterval(iv); return; }
+    const el = document.createElement('div');
+    el.textContent = pChars[Math.floor(Math.random()*pChars.length)];
+    el.style.cssText = `position:absolute;top:-20px;left:${Math.random()*100}%;font-size:${18+Math.random()*18}px;opacity:0.9;`;
+    container.appendChild(el);
+    el.animate([
+      { transform:'translateY(0) translateX(0) rotate(0deg)', opacity:0.95 },
+      { transform:`translateY(${window.innerHeight+60}px) translateX(${(Math.random()-0.5)*250}px) rotate(${Math.random()*720-360}deg)`, opacity:0 }
+    ], { duration:2500+Math.random()*3000, easing:'ease-in' }).onfinish = () => el.remove();
+    cnt++;
+  }, 120);
+  setTimeout(() => { if (container.parentNode) container.remove(); }, 10000);
+
+  // カード
   setTimeout(() => {
     const overlay = document.createElement('div');
     overlay.id = 'milestoneOverlay';
@@ -1459,28 +1581,72 @@ function checkMilestoneCelebration() {
     const card = document.createElement('div');
     card.style.cssText = 'background:var(--card);border-radius:24px;padding:36px 28px;text-align:center;max-width:320px;width:85%;box-shadow:0 20px 60px rgba(0,0,0,0.25);transform:scale(0.7);transition:transform 0.5s cubic-bezier(0.34,1.56,0.64,1);';
     card.innerHTML = `
-      <div style="font-size:56px;margin-bottom:12px;animation:milestoneBounce 0.6s ease 0.5s both;">${ms.emoji}</div>
-      <div style="font-size:22px;font-weight:700;color:var(--text);margin-bottom:8px;">${ms.title}</div>
-      <div style="font-size:14px;color:var(--sub);margin-bottom:6px;line-height:1.6;">${ms.sub}</div>
-      <div style="font-size:40px;font-weight:800;color:var(--accent);margin:16px 0;">${total}</div>
-      <div style="font-size:12px;color:var(--sub);margin-bottom:20px;">アイテム登録数</div>
+      <div style="font-size:56px;margin-bottom:12px;animation:milestoneBounce 0.6s ease 0.5s both;">${emoji}</div>
+      <div style="font-size:22px;font-weight:700;color:var(--text);margin-bottom:8px;">${title}</div>
+      <div style="font-size:14px;color:var(--sub);margin-bottom:6px;line-height:1.6;">${sub}</div>
+      <div style="font-size:40px;font-weight:800;color:var(--accent);margin:16px 0;">${number}</div>
+      <div style="font-size:12px;color:var(--sub);margin-bottom:20px;">${label}</div>
       <button onclick="closeMilestone()" style="padding:12px 32px;border-radius:50px;border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;box-shadow:0 4px 12px rgba(193,154,132,0.4);transition:transform 0.2s ease;">ありがとう！</button>
     `;
     overlay.appendChild(card);
     document.body.appendChild(overlay);
-    requestAnimationFrame(() => {
-      overlay.style.opacity = '1';
-      card.style.transform = 'scale(1)';
-    });
+    requestAnimationFrame(() => { overlay.style.opacity='1'; card.style.transform='scale(1)'; });
   }, 600);
 }
 
 function closeMilestone() {
   const ov = document.getElementById('milestoneOverlay');
-  if (ov) {
-    ov.style.opacity = '0';
-    setTimeout(() => ov.remove(), 500);
+  if (ov) { ov.style.opacity='0'; setTimeout(() => ov.remove(), 500); }
+}
+
+// メインチェック（saveData から呼ばれる）
+function checkMilestoneCelebration() {
+  // 合計マイルストーン
+  const total = getTotalItemCount();
+  if (getTotalMilestone(total)) {
+    const key = 'awai_ms_total_' + total;
+    if (!localStorage.getItem(key)) {
+      localStorage.setItem(key, new Date().toISOString());
+      const ms = getTotalMsData(total);
+      if (total >= 50 || total % 100 === 0) {
+        showFullCelebration(ms.emoji, ms.title, ms.sub, total, 'アイテム登録数');
+      } else {
+        showMiniCelebration(ms.emoji, ms.title, ms.sub);
+      }
+      return; // 1回の保存で1演出まで
+    }
   }
+
+  // タブ別マイルストーン
+  for (const [tab, conf] of Object.entries(TAB_MS)) {
+    const count = getTabCount(tab);
+    if (conf.points.includes(count)) {
+      const key = 'awai_ms_' + tab + '_' + count;
+      if (!localStorage.getItem(key)) {
+        localStorage.setItem(key, new Date().toISOString());
+        const m = conf.msgs[count] || { emoji:'🎊', title:`${count}個！` };
+        const tabNames = {people:'友だち',wish:'お気に入り',place:'行きたい場所',received:'もらったギフト',gave:'あげたギフト'};
+        showMiniCelebration(m.emoji, m.title, tabNames[tab]+'が'+count+(tab==='people'?'人':'個'));
+        return;
+      }
+    }
+    // タブ別も10個以降は10刻みで永続
+    if (count > 50 && count % 10 === 0) {
+      const key = 'awai_ms_' + tab + '_' + count;
+      if (!localStorage.getItem(key)) {
+        localStorage.setItem(key, new Date().toISOString());
+        const tabNames = {people:'友だち',wish:'お気に入り',place:'行きたい場所',received:'もらったギフト',gave:'あげたギフト'};
+        showMiniCelebration('🎊', `${tabNames[tab]}${count}${tab==='people'?'人':'個'}！`, 'すごいペースです');
+        return;
+      }
+    }
+  }
+}
+
+// 起動時チェック
+function checkStartupCelebrations() {
+  checkLoginStreak();
+  checkAwaiAnniversary();
 }
 
 // ===== Anniversary helpers =====
@@ -9266,6 +9432,7 @@ function deleteAiHistory(personId, idx) {
 }
 
 async function callAI(prompt, context, structured) {
+  checkActionCelebration('first_ai');
   if (!_sbUser) throw new Error('AIコンシェルジュを使うにはログインが必要です');
   const session = await _sb.auth.getSession();
   const token = session?.data?.session?.access_token;
@@ -10651,6 +10818,7 @@ if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().t
   setTimeout(updateAwaiStageDisplay, 500);
   setTimeout(showAwaiMemory, 3000);
   setTimeout(checkSpecialEvent, 1500);
+  setTimeout(checkStartupCelebrations, 2500);
 
   // Supabase初期化（クラウド同期開始）
   sbInit();

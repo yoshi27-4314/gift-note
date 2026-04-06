@@ -778,9 +778,10 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
     </div>
     <!-- Step 3: First Person -->
     <div id="obStep3" class="ob-step" style="display:none;">
-      <h2 style="text-align:center;font-family:'Shippori Mincho',serif;font-size:22px;margin-bottom:8px;">まずは1人<br>友だちを登録しましょう</h2>
-      <p style="text-align:center;color:var(--sub);font-size:13px;margin-bottom:32px;">名前と誕生日だけで大丈夫です</p>
+      <h2 style="text-align:center;font-family:'Shippori Mincho',serif;font-size:22px;margin-bottom:8px;">一番大切な人は誰ですか？</h2>
+      <p style="text-align:center;color:var(--sub);font-size:13px;margin-bottom:32px;">友だちか家族をひとり登録しましょう</p>
       <div class="form-group"><label>呼び名</label><input id="obPersonName" placeholder="その人の名前" style="padding:14px 16px;font-size:16px;border-radius:12px;border:1px solid var(--border);width:100%;"></div>
+      <div class="form-group" style="margin-top:16px;"><label>関係（任意）</label><input id="obPersonRelation" placeholder="例：母、妻、親友、上司" style="padding:14px 16px;font-size:16px;border-radius:12px;border:1px solid var(--border);width:100%;"></div>
       <div class="form-group" style="margin-top:16px;"><label>誕生日（任意）</label>
         <div style="display:flex;gap:4px;margin-bottom:8px;">
           <div class="date-type-chip" onclick="obSetDateType('person','full',this)" style="flex:1;text-align:center;font-size:13px;">年月日</div>
@@ -811,8 +812,20 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
         <input id="obLastReceived" placeholder="例：ネクタイ、チョコレート" style="width:100%;padding:14px 16px;font-size:16px;border-radius:12px;border:1px solid var(--border);">
         <input id="obLastReceivedWhen" placeholder="いつ？（例：お中元、クリスマス）" style="width:100%;padding:12px 16px;font-size:14px;border-radius:12px;border:1px solid var(--border);margin-top:8px;color:var(--sub);">
       </div>
-      <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;" onclick="obSaveGifts()">完了</button>
-      <button class="btn btn-secondary" style="width:100%;padding:14px;font-size:15px;border-radius:14px;margin-top:12px;" onclick="obNext(4)">スキップ</button>
+      <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;" onclick="obSaveGifts()">次へ</button>
+      <button class="btn btn-secondary" style="width:100%;padding:14px;font-size:15px;border-radius:14px;margin-top:12px;" onclick="document.getElementById('obAiPersonName').textContent=_obPersonName;obNext('3c')">スキップ</button>
+    </div>
+    <!-- Step 3c: 好きなもの + AI提案体験 -->
+    <div id="obStep3c" class="ob-step" style="display:none;">
+      <div style="text-align:center;margin-bottom:20px;font-size:40px;">💡</div>
+      <h2 style="text-align:center;font-family:'Shippori Mincho',serif;font-size:22px;margin-bottom:8px;"><span id="obAiPersonName"></span>さんの<br>好きなものを教えてください</h2>
+      <p style="text-align:center;color:var(--sub);font-size:13px;margin-bottom:24px;">1つだけでOK。AIがギフトを提案します</p>
+      <div class="form-group">
+        <input id="obPersonLike" placeholder="例：ワイン、チョコレート、ゴルフ、猫" style="padding:16px;font-size:16px;border-radius:14px;border:1px solid var(--border);width:100%;text-align:center;">
+      </div>
+      <button class="btn btn-primary" id="obAiBtn" style="width:100%;padding:16px;font-size:17px;border-radius:14px;margin-top:16px;" onclick="obRunAiSuggest()">✨ AIに提案してもらう</button>
+      <div id="obAiResult" style="margin-top:20px;"></div>
+      <button class="btn btn-secondary" id="obAiSkip" style="width:100%;padding:14px;font-size:15px;border-radius:14px;margin-top:12px;" onclick="obNext(4)">スキップ</button>
     </div>
     <!-- Step 4: Complete -->
     <div id="obStep4" class="ob-step" style="display:none;">
@@ -8491,9 +8504,10 @@ let _obPersonName = '';
 function obSavePerson() {
   const name = document.getElementById('obPersonName').value.trim();
   if (!name) { alert('名前を入力してください'); return; }
+  const relation = document.getElementById('obPersonRelation')?.value.trim() || null;
   const person = {
     id: genId(), nickname: name, type: 'individual', gender: 'unset',
-    avatar: null, fullName: null, relation: null, companyLink: null,
+    avatar: null, fullName: null, relation: relation, companyLink: null,
     anniversaries: [], sizes: {}, smoking: null, drinking: null,
     interests: [], brands: [], foodLike: [], foodDislike: [],
     personality: [], family: [], memo: null, oshi: [], corpPhoto: null
@@ -8507,6 +8521,7 @@ function obSavePerson() {
   _obPersonId = person.id;
   _obPersonName = name;
   document.getElementById('obGiftPersonName').textContent = name;
+  document.getElementById('obAiPersonName').textContent = name;
   obNext('3b');
 }
 
@@ -8533,8 +8548,8 @@ function obSaveGifts() {
     });
   }
   saveData();
-  obBuildComplete();
-  obNext(4);
+  document.getElementById('obAiPersonName').textContent = _obPersonName;
+  obNext('3c');
 }
 
 function obBuildComplete() {
@@ -8589,11 +8604,64 @@ function obBuildComplete() {
   summary.innerHTML = summaryHtml;
 }
 
+async function obRunAiSuggest() {
+  const like = document.getElementById('obPersonLike')?.value.trim();
+  if (!like) { showToast('好きなものを1つ入力してください'); return; }
+
+  const btn = document.getElementById('obAiBtn');
+  const resultDiv = document.getElementById('obAiResult');
+  const skipBtn = document.getElementById('obAiSkip');
+  btn.disabled = true; btn.textContent = '💭 AIが考えています...';
+  resultDiv.innerHTML = '<div style="text-align:center;color:var(--sub);padding:20px;">提案を準備しています...</div>';
+
+  // 好きなものを人物データに保存
+  const person = data.people.find(p => p.id === _obPersonId);
+  if (person) {
+    person.interests = like.split(/[,、\s]+/).filter(Boolean);
+    saveData();
+  }
+
+  const relation = person?.relation || '大切な人';
+  const prompt = `以下の方に心のこもった贈り物を3つ提案してください。
+
+## 相手のプロフィール
+関係: ${relation}
+好きなもの: ${like}
+
+センスの良い、喜ばれる提案をしてください。`;
+
+  try {
+    const result = await callAI(prompt, `関係: ${relation}\n好きなもの: ${like}`, true);
+    if (result.suggestions && result.suggestions.length) {
+      let html = '<div style="font-size:14px;font-weight:600;color:var(--accent);margin-bottom:12px;text-align:center;">💡 こんな贈り物はいかがですか？</div>';
+      result.suggestions.forEach(s => {
+        const price = s.budget ? `約¥${Number(s.budget).toLocaleString()}` : '';
+        html += `<div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;box-shadow:0 1px 6px var(--shadow);">
+          <div style="font-weight:600;font-size:14px;">${esc(s.name)}</div>
+          <div style="font-size:12px;color:var(--sub);margin:4px 0;">${esc(s.shop||'')}${price ? ' | ' + price : ''}</div>
+          <div style="font-size:13px;margin-top:6px;line-height:1.6;">${esc(s.reason||'')}</div>
+        </div>`;
+      });
+      html += `<div style="text-align:center;margin-top:16px;font-size:13px;color:var(--sub);line-height:1.8;">もっと情報を教えてくれると<br>もっと良い提案ができます</div>`;
+      html += `<button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;margin-top:16px;" onclick="obBuildComplete();obNext(4)">AWAIをはじめる</button>`;
+      resultDiv.innerHTML = html;
+      skipBtn.style.display = 'none';
+    } else {
+      resultDiv.innerHTML = '<div style="color:var(--sub);padding:12px;text-align:center;">提案を取得できませんでした</div>';
+      btn.disabled = false; btn.textContent = '✨ AIに提案してもらう';
+    }
+  } catch(e) {
+    resultDiv.innerHTML = `<div style="color:var(--sub);padding:12px;text-align:center;">接続エラー: ログイン後に試してみてください</div>`;
+    resultDiv.innerHTML += `<button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;margin-top:16px;" onclick="obBuildComplete();obNext(4)">AWAIをはじめる</button>`;
+    skipBtn.style.display = 'none';
+  }
+  btn.disabled = false; btn.textContent = '✨ もう一度提案してもらう';
+}
+
 function obFinish() {
   localStorage.setItem(OB_KEY, '1');
   document.getElementById('onboardingOverlay').style.display = 'none';
   loadData();
-  createSampleData();
   render();
   checkReminders();
   showAnnPopup();

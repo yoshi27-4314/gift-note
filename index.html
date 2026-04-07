@@ -3173,6 +3173,9 @@ function renderPersonListItem(p) {
     <div class="list-meta">
       ${countdownHtml}
     </div>
+    <div style="flex-shrink:0;padding:4px;" onclick="event.stopPropagation();showLongPressMenu('people','${p.id}')">
+      <span style="font-size:18px;color:var(--sub);padding:4px 8px;">⋮</span>
+    </div>
   </div>`;
 }
 
@@ -4388,6 +4391,9 @@ function renderItemListItem(item, tab) {
       <div class="list-date">${item.date||''}</div>
       ${item.amount?`<div style="font-size:11px;color:var(--accent);font-weight:600;">¥${Number(item.amount).toLocaleString()}</div>`:''}
     </div>
+    <div style="flex-shrink:0;padding:4px;" onclick="event.stopPropagation();showLongPressMenu('${tab}','${item.id}')">
+      <span style="font-size:18px;color:var(--sub);padding:4px 8px;">⋮</span>
+    </div>
   </div>`;
 }
 
@@ -5516,10 +5522,23 @@ let _longPressTimer = null;
 let _longPressTarget = null;
 let _lpSX = 0, _lpSY = 0;
 
-// 長押し機能は一時無効化（安定化のため）
-function lpStart() {}
-function lpEnd() {}
-function lpMove() {}
+function lpStart(e, type, id) {
+  if (!e.touches || !e.touches[0]) return;
+  _lpSX = e.touches[0].clientX;
+  _lpSY = e.touches[0].clientY;
+  clearTimeout(_longPressTimer);
+  _longPressTimer = setTimeout(() => {
+    if (navigator.vibrate) navigator.vibrate(30);
+    showLongPressMenu(type, id);
+  }, 700);
+}
+function lpEnd() { clearTimeout(_longPressTimer); }
+function lpMove(e) {
+  if (!e.touches || !e.touches[0]) return;
+  if (Math.abs(e.touches[0].clientX - _lpSX) > 10 || Math.abs(e.touches[0].clientY - _lpSY) > 10) {
+    clearTimeout(_longPressTimer);
+  }
+}
 
 function initLongPress() {
   // PC: 右クリックのみ有効（タッチ長押しは一時無効化）

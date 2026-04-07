@@ -257,13 +257,13 @@ const STORAGE_KEY = 'awai_data';
 const SEASON_KEY = 'awai_season';
 const ANN_POPUP_KEY = 'awai_ann_popup_date';
 const VERSION_KEY = 'awai_last_version';
-const TABS = ['wish','received','gave','place','people','groups'];
+const TABS = ['wish','received','gave','place','people','groups','items'];
 const MODAL_TITLES = { wish:'お気に入り', received:'もらった', gave:'あげた', place:'行きたい', people:'友だち', groups:'グループ' };
 const SEASON_ICONS = { spring:'🌸', summer:'🌊', autumn:'🍂', winter:'❄️' };
 const LABEL_COLORS = ['#e8a598','#7a9ad4','#8abf7a','#c49a6c','#b07acc','#d4956a','#7ec8d9','#d48a7a','#8ea4bf','#6bab8a'];
 
 // ===== State =====
-let data = { wish:[], received:[], gave:[], place:[], people:[], groups:[], labels:{wish:[],received:[],gave:[],place:[]} };
+let data = { wish:[], received:[], gave:[], place:[], people:[], groups:[], items:[], labels:{wish:[],received:[],gave:[],place:[],items:[]} };
 let currentTab = localStorage.getItem('awai_last_tab') || 'people';
 let currentLabel = localStorage.getItem('awai_last_label') || (currentTab==='people'?'individual':null);
 if (currentLabel === '') currentLabel = null;
@@ -3108,6 +3108,13 @@ function render() {
   renderPickup();
   renderAnnSection();
 
+  // Items tab（完全独立）
+  if (currentTab === 'items') {
+    renderItemsTab(cardList);
+    document.getElementById('rankingToggle').style.display = 'none';
+    return;
+  }
+
   // Calendar tab
   if (currentTab === 'calendar') {
     renderCalendar(cardList);
@@ -3544,6 +3551,85 @@ function renderItems(items, cardList) {
   }
   // 全list-itemに⋮メニューを確実に追加（DOMフォールバック）
   setTimeout(() => addMenuButtons(cardList), 100);
+}
+
+// ===== Items Tab =====
+function openItemsTabModal(editId) {
+  const modal = document.getElementById('modal');
+  const item = editId ? data.items.find(i=>i.id===editId) : null;
+  const isEdit = !!editId;
+  let html = `<h2>📦 アイテムを${isEdit?'編集':'追加'}</h2>`;
+  html += `<div class="form-group"><label>名前 <span style="color:#c97070;font-size:11px;">* 必須</span></label><input id="fItemTitle" placeholder="例：商品名、アイテム名" value="${esc(item?.title||'')}"></div>`;
+  html += `<div class="form-group" style="margin-top:12px;"><label>メモ</label><textarea id="fItemMemo" rows="3" placeholder="詳細、説明など">${esc(item?.memo||'')}</textarea></div>`;
+  html += `<div class="form-group" style="margin-top:12px;"><label>金額</label><input id="fItemAmount" type="number" placeholder="例：5000" value="${esc(item?.amount||'')}"></div>`;
+  html += `<div class="form-group" style="margin-top:12px;"><label>日付</label><input id="fItemDate" type="date" value="${item?.date||''}"></div>`;
+  html += `<div class="form-group" style="margin-top:12px;"><label>URL</label><input id="fItemUrl" placeholder="https://..." value="${esc(item?.url||'')}"></div>`;
+  html += `<div class="form-group" style="margin-top:12px;"><label>タグ</label><input id="fItemTags" placeholder="カンマ区切り" value="${(item?.tags||[]).join(', ')}"></div>`;
+  html += `<div class="form-btns" style="margin-top:20px;">
+    <button class="btn btn-secondary" onclick="closeModal()">キャンセル</button>
+    <button class="btn btn-primary" onclick="saveItemsTabItem('${editId||''}')">保存</button>
+  </div>`;
+  modal.innerHTML = html;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function saveItemsTabItem(editId) {
+  const title = document.getElementById('fItemTitle').value.trim();
+  if (!title) { alert('名前を入力してください'); return; }
+  const now = new Date().toISOString();
+  const item = {
+    id: editId || genId(),
+    title,
+    memo: document.getElementById('fItemMemo')?.value.trim()||'',
+    amount: document.getElementById('fItemAmount')?.value||'',
+    date: document.getElementById('fItemDate')?.value||'',
+    url: document.getElementById('fItemUrl')?.value.trim()||'',
+    tags: parseTags(document.getElementById('fItemTags')?.value||''),
+    pinned: false,
+    createdAt: editId ? (data.items.find(i=>i.id===editId)?.createdAt||now) : now,
+    updatedAt: now
+  };
+  if (editId) {
+    const idx = data.items.findIndex(i=>i.id===editId);
+    if (idx >= 0) data.items[idx] = {...data.items[idx], ...item};
+  } else {
+    data.items.push(item);
+  }
+  saveData(); closeModal(); render();
+  showToast(editId ? '更新しました' : '登録しました ✓');
+}
+
+// ===== Items Tab（完全独立描画） =====
+function renderItemsTab(cardList) {
+  const items = (data.items||[]).filter(i => matchesSearch(i, 'items'));
+  if (!items.length) {
+    cardList.innerHTML = '<div class="empty-msg">📦 アイテムを追加しましょう<br>下の ＋ ボタンから追加できます</div>';
+    return;
+  }
+  const sorted = [...items].filter(i=>!i.hidden).sort((a,b) => {
+    if (a.pinned&&!b.pinned) return -1; if (!a.pinned&&b.pinned) return 1;
+    return (b.date||b.createdAt||'').localeCompare(a.date||a.createdAt||'');
+  });
+  let html = sorted.map(item => {
+    const preview = item.memo ? item.memo.substring(0,30) : (item.tags?.slice(0,3).map(t=>'#'+t).join(' ')||'');
+    const isOpen = openItemId === item.id;
+    return `<div class="list-item" style="display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid var(--border);cursor:pointer;${isOpen?'background:var(--accent-light);':''}" onclick="toggleItemDetail('${item.id}')">
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:16px;font-weight:600;">${item.pinned?'📌 ':''}${esc(item.title||'無題')}</div>
+        <div style="font-size:13px;color:var(--sub);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(preview)}</div>
+      </div>
+      <div style="flex-shrink:0;text-align:right;">
+        ${item.date?`<div style="font-size:12px;color:var(--sub);">${item.date}</div>`:''}
+        ${item.amount?`<div style="font-size:11px;color:var(--accent);font-weight:600;">¥${Number(item.amount).toLocaleString()}</div>`:''}
+      </div>
+      <button class="awai-menu-btn" style="font-size:22px;font-weight:bold;color:#3a302a;background:none;border:none;padding:8px;cursor:pointer;flex-shrink:0;" onclick="event.stopPropagation();showLongPressMenu('items','${item.id}')">⋮</button>
+    </div>`;
+  }).join('');
+  cardList.innerHTML = html;
+  if (openItemId) {
+    const item = items.find(x=>x.id===openItemId);
+    if (item) cardList.innerHTML += `<div id="itemDetail">${renderItemCard(item, 'items')}</div>`;
+  }
 }
 
 function addMenuButtons(container) {
@@ -4883,7 +4969,7 @@ function initSwipeGestures() {
   let startX = 0, startY = 0, startTime = 0;
   const SWIPE_THRESHOLD = 80;
   const EDGE_WIDTH = 30;
-  const tabs = ['people','wish','calendar','place','gift'];
+  const tabs = ['people','wish','items','calendar','place','gift'];
 
   let _swipeTarget = null;
   document.addEventListener('touchstart', e => {
@@ -10860,6 +10946,7 @@ if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().t
     else if (currentTab==='place' && currentLabel==='closed') openPlaceMemoryModal();
     else if (currentTab==='place') openPlaceFabMenu();
     else if (currentTab==='gift') openGiftFabMenu();
+    else if (currentTab==='items') openItemsTabModal();
     else if (currentTab==='calendar') { const t=new Date(); calDayTap(t.getFullYear(),t.getMonth(),t.getDate()); }
     else openWishFabMenu();
   });

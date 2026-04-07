@@ -4454,6 +4454,22 @@ function renderItems(items, cardList) {
       if (item) cardList.innerHTML += `<div id="itemDetail">${renderItemCard(item, currentTab)}</div>`;
     }
   }
+  // ⋮ボタンが表示されていない場合のフォールバック
+  setTimeout(() => {
+    cardList.querySelectorAll('.list-item[data-lp-type]').forEach(el => {
+      if (!el.querySelector('.lp-menu-btn')) {
+        const type = el.dataset.lpType;
+        const id = el.dataset.lpId;
+        el.style.position = 'relative';
+        const btn = document.createElement('div');
+        btn.className = 'lp-menu-btn';
+        btn.style.cssText = 'position:absolute;top:8px;right:8px;font-size:20px;color:var(--sub);padding:4px 8px;cursor:pointer;z-index:2;';
+        btn.textContent = '⋮';
+        btn.onclick = (e) => { e.stopPropagation(); showLongPressMenu(type, id); };
+        el.appendChild(btn);
+      }
+    });
+  }, 50);
 }
 
 // ===== Tab =====

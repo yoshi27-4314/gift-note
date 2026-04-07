@@ -3162,7 +3162,7 @@ function renderPersonListItem(p) {
 
   const isOpen = openPersonId === p.id;
 
-  return `<div class="list-item" onclick="togglePersonDetail('${p.id}')" style="${isOpen?'background:var(--accent-light);':''}">
+  return `<div class="list-item" data-lp-type="people" data-lp-id="${p.id}" onclick="togglePersonDetail('${p.id}')" style="${isOpen?'background:var(--accent-light);':''}">
     <div class="list-avatar" style="background:${p.avatar?'transparent':personIcon(p).bg}">${p.avatar?`<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;">`:(personIcon(p).emoji)}</div>
     <div class="list-body">
       <div class="list-name">${p.pinned?'📌 ':''}${esc(p.nickname||'名前なし')}</div>
@@ -4132,7 +4132,7 @@ function render() {
         const key = item._tab + ':' + item.id;
         const preview = item._icon + ' ' + (item.person?item.person+' ':'') + (item.occasion||'');
         const active = isOpenKey === key;
-        return `<div class="list-item" onclick="toggleAllRecordDetail('${item._tab}','${item.id}')" style="${active?'background:var(--accent-light);':''}">
+        return `<div class="list-item" data-lp-type="${item._tab}" data-lp-id="${item.id}" onclick="toggleAllRecordDetail('${item._tab}','${item.id}')" style="${active?'background:var(--accent-light);':''}">
           <div style="width:6px;height:40px;border-radius:3px;background:${item._tab==='gave'?'#d48a7a':'#7a9ad4'};flex-shrink:0;"></div>
           <div class="list-body">
             <div class="list-name">${item.pinned?'📌 ':''}${esc(item.title||'無題')}</div>
@@ -4146,7 +4146,7 @@ function render() {
         giftHtml += `<div style="margin-top:12px;padding:8px 12px;cursor:pointer;color:var(--sub);font-size:13px;text-align:center;border:1px dashed var(--border);border-radius:12px;" onclick="const b=document.getElementById('${hid}');const t=this;if(b.style.display==='none'){b.style.display='';t.textContent='▲ 非表示を閉じる (${hiddenGifts.length}件)';}else{b.style.display='none';t.textContent='▼ 非表示を表示 (${hiddenGifts.length}件)';}">▼ 非表示を表示 (${hiddenGifts.length}件)</div>`;
         giftHtml += `<div id="${hid}" style="display:none;opacity:0.5;">${hiddenGifts.map(item => {
           const preview = (item._tab==='gave'?'🎁':'🎀') + ' ' + (item.person||'');
-          return `<div class="list-item" onclick="toggleAllRecordDetail('${item._tab}','${item.id}')"><div style="width:6px;height:40px;border-radius:3px;background:${item._tab==='gave'?'#d48a7a':'#7a9ad4'};flex-shrink:0;"></div><div class="list-body"><div class="list-name">${esc(item.title||'無題')}</div><div class="list-preview">${esc(preview)}</div></div></div>`;
+          return `<div class="list-item" data-lp-type="${item._tab}" data-lp-id="${item.id}" onclick="toggleAllRecordDetail('${item._tab}','${item.id}')"><div style="width:6px;height:40px;border-radius:3px;background:${item._tab==='gave'?'#d48a7a':'#7a9ad4'};flex-shrink:0;"></div><div class="list-body"><div class="list-name">${esc(item.title||'無題')}</div><div class="list-preview">${esc(preview)}</div></div></div>`;
         }).join('')}</div>`;
       }
       cardList.innerHTML = giftHtml;
@@ -4179,7 +4179,7 @@ function render() {
         const key = item._tab + ':' + item.id;
         const preview = item._icon + ' ' + (item.person?item.person+' ':'') + (item.occasion||'');
         const active = isOpenKey === key;
-        return `<div class="list-item" onclick="toggleAllRecordDetail('${item._tab}','${item.id}')" style="${active?'background:var(--accent-light);':''}">
+        return `<div class="list-item" data-lp-type="${item._tab}" data-lp-id="${item.id}" onclick="toggleAllRecordDetail('${item._tab}','${item.id}')" style="${active?'background:var(--accent-light);':''}">
           <div style="width:6px;height:40px;border-radius:3px;background:${item._tab==='gave'?'#d48a7a':item._tab==='received'?'#7a9ad4':'var(--accent)'};flex-shrink:0;"></div>
           <div class="list-body">
             <div class="list-name">${item.pinned?'📌 ':''}${esc(item.title||'無題')}</div>
@@ -4221,7 +4221,7 @@ function render() {
       const key = item._tab + ':' + item.id;
       const preview = item._icon + ' ' + (item.person?item.person+' ':'') + (item.occasion||'');
       const active = isOpenKey === key;
-      return `<div class="list-item" onclick="toggleAllRecordDetail('${item._tab}','${item.id}')" style="${active?'background:var(--accent-light);':''}">
+      return `<div class="list-item" data-lp-type="${item._tab}" data-lp-id="${item.id}" onclick="toggleAllRecordDetail('${item._tab}','${item.id}')" style="${active?'background:var(--accent-light);':''}">
         <div style="width:6px;height:40px;border-radius:3px;background:${item._tab==='gave'?'#d48a7a':item._tab==='received'?'#7a9ad4':'var(--accent)'};flex-shrink:0;"></div>
         <div class="list-body">
           <div class="list-name">${item.pinned?'📌 ':''}${esc(item.title||'無題')}</div>
@@ -4376,7 +4376,7 @@ function renderItemListItem(item, tab) {
   const personPreview = item.person ? '👤 '+item.person : '';
   const preview = item.purpose ? (purposeIcon + giftTo + (personPreview&&!giftTo?' '+personPreview:'')) : (personPreview || tagPreview || (item.memo?item.memo.substring(0,20):''));
 
-  return `<div class="list-item" onclick="toggleItemDetail('${item.id}')" style="${isOpen?'background:var(--accent-light);':''}">
+  return `<div class="list-item" data-lp-type="${tab}" data-lp-id="${item.id}" onclick="toggleItemDetail('${item.id}')" style="${isOpen?'background:var(--accent-light);':''}">
     <div class="list-body">
       <div class="list-name">${item.visited?'✅ ':''}${item.pinned?'📌 ':''}${esc(item.title||'無題')}${stars?` <span style="color:#f0b040;font-size:12px;">${stars}</span>`:''}</div>
       <div class="list-preview">${esc(preview)}${tagPreview&&preview!==tagPreview?' '+tagPreview:''}</div>
@@ -5508,6 +5508,128 @@ function conciergeWaitingHtml(msg, prefix) {
     <div style="font-size:12px;color:var(--sub);animation:obFadeInOut 2s ease-in-out infinite;">少々お待ちください</div>
   </div>`;
 }
+// ===== Long Press Context Menu =====
+let _longPressTimer = null;
+let _longPressTarget = null;
+
+function initLongPress() {
+  document.addEventListener('touchstart', e => {
+    const item = e.target.closest('.list-item[data-lp-type]');
+    if (!item) return;
+    _longPressTarget = item;
+    _longPressTimer = setTimeout(() => {
+      e.preventDefault();
+      if (navigator.vibrate) navigator.vibrate(30);
+      showLongPressMenu(item.dataset.lpType, item.dataset.lpId);
+    }, 500);
+  }, { passive: false });
+
+  document.addEventListener('touchend', () => { clearTimeout(_longPressTimer); });
+  document.addEventListener('touchmove', () => { clearTimeout(_longPressTimer); });
+
+  // PC: 右クリック
+  document.addEventListener('contextmenu', e => {
+    const item = e.target.closest('.list-item[data-lp-type]');
+    if (!item) return;
+    e.preventDefault();
+    showLongPressMenu(item.dataset.lpType, item.dataset.lpId);
+  });
+}
+
+function showLongPressMenu(type, id) {
+  const existing = document.getElementById('longPressMenu');
+  if (existing) existing.remove();
+
+  const tabNames = { people:'友だち', wish:'お気に入り', received:'もらった', gave:'あげた', place:'行きたい' };
+  const isPlace = type === 'place';
+  const isPeople = type === 'people';
+  const item = isPeople ? data.people.find(p=>p.id===id) : (isPlace ? data.place.find(i=>i.id===id) : data[type]?.find(i=>i.id===id));
+  if (!item) return;
+  const name = item.nickname || item.title || '不明';
+
+  const overlay = document.createElement('div');
+  overlay.id = 'longPressMenu';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:10000;background:rgba(0,0,0,0.3);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.2s ease;';
+  overlay.onclick = e => { if (e.target === overlay) closeLongPressMenu(); };
+
+  const menu = document.createElement('div');
+  menu.style.cssText = 'background:var(--card);border-radius:20px;padding:8px 0;min-width:240px;max-width:300px;box-shadow:0 12px 40px rgba(0,0,0,0.2);transform:scale(0.9);transition:transform 0.2s cubic-bezier(0.34,1.56,0.64,1);';
+
+  const header = `<div style="padding:12px 20px;font-size:13px;font-weight:600;color:var(--text);border-bottom:1px solid var(--border);">${esc(name)}</div>`;
+
+  const btnStyle = 'display:flex;align-items:center;gap:12px;padding:14px 20px;width:100%;border:none;background:none;cursor:pointer;font-family:"Zen Maru Gothic",sans-serif;font-size:14px;color:var(--text);text-align:left;transition:background 0.15s;';
+
+  let buttons = '';
+  buttons += `<button style="${btnStyle}" onmousedown="this.style.background='var(--bg)'" onmouseup="this.style.background=''" onclick="closeLongPressMenu();${isPeople?`openPeopleModal('${id}')`:(isPlace?`openPlaceModal('${id}')`:`openItemModal('${id}')`)}"><span style="font-size:18px;">✏️</span>編集</button>`;
+  buttons += `<button style="${btnStyle}" onmousedown="this.style.background='var(--bg)'" onmouseup="this.style.background=''" onclick="closeLongPressMenu();duplicateCard('${type}','${id}')"><span style="font-size:18px;">📋</span>複製</button>`;
+  buttons += `<button style="${btnStyle}" onmousedown="this.style.background='var(--bg)'" onmouseup="this.style.background=''" onclick="closeLongPressMenu();shareCard('${type}','${id}')"><span style="font-size:18px;">📤</span>共有</button>`;
+  buttons += `<button style="${btnStyle}" onmousedown="this.style.background='var(--bg)'" onmouseup="this.style.background=''" onclick="closeLongPressMenu();togglePin('${isPeople?'people':type}','${id}');render()"><span style="font-size:18px;">📌</span>${item.pinned?'ピン留め解除':'ピン留め'}</button>`;
+  buttons += `<div style="height:1px;background:var(--border);margin:4px 0;"></div>`;
+  buttons += `<button style="${btnStyle}" onmousedown="this.style.background='var(--bg)'" onmouseup="this.style.background=''" onclick="closeLongPressMenu();selectModeStart('${type}')"><span style="font-size:18px;">☑️</span>まとめて選択</button>`;
+  buttons += `<div style="height:1px;background:var(--border);margin:4px 0;"></div>`;
+  buttons += `<button style="${btnStyle}color:#c97070;" onmousedown="this.style.background='#fff0f0'" onmouseup="this.style.background=''" onclick="closeLongPressMenu();deleteCardFromMenu('${type}','${id}')"><span style="font-size:18px;">🗑</span>削除</button>`;
+
+  menu.innerHTML = header + buttons;
+  overlay.appendChild(menu);
+  document.body.appendChild(overlay);
+  requestAnimationFrame(() => { overlay.style.opacity = '1'; menu.style.transform = 'scale(1)'; });
+}
+
+function closeLongPressMenu() {
+  const m = document.getElementById('longPressMenu');
+  if (m) { m.style.opacity = '0'; setTimeout(() => m.remove(), 200); }
+}
+
+function duplicateCard(type, id) {
+  const isPeople = type === 'people';
+  const isPlace = type === 'place';
+  const src = isPeople ? data.people.find(p=>p.id===id) : (isPlace ? data.place.find(i=>i.id===id) : data[type]?.find(i=>i.id===id));
+  if (!src) return;
+  const copy = JSON.parse(JSON.stringify(src));
+  copy.id = genId();
+  copy.createdAt = new Date().toISOString();
+  copy.updatedAt = new Date().toISOString();
+  if (copy.nickname) copy.nickname += '（コピー）';
+  if (copy.title) copy.title += '（コピー）';
+  if (isPeople) data.people.push(copy);
+  else if (isPlace) data.place.push(copy);
+  else data[type].push(copy);
+  saveData(); render();
+  showToast('複製しました');
+}
+
+function shareCard(type, id) {
+  const isPeople = type === 'people';
+  const isPlace = type === 'place';
+  const item = isPeople ? data.people.find(p=>p.id===id) : (isPlace ? data.place.find(i=>i.id===id) : data[type]?.find(i=>i.id===id));
+  if (!item) return;
+  const name = item.nickname || item.title || '';
+  let text = name;
+  if (item.relation) text += `（${item.relation}）`;
+  if (item.interests?.length) text += `\n好き: ${item.interests.join(', ')}`;
+  if (item.memo) text += `\n${item.memo}`;
+  if (navigator.share) {
+    navigator.share({ title: name, text: text }).catch(() => {});
+  } else {
+    navigator.clipboard.writeText(text).then(() => showToast('コピーしました'));
+  }
+}
+
+function deleteCardFromMenu(type, id) {
+  if (!confirm('削除しますか？')) return;
+  const isPeople = type === 'people';
+  const isPlace = type === 'place';
+  if (isPeople) { data.people = data.people.filter(p=>p.id!==id); }
+  else if (isPlace) { data.place = data.place.filter(i=>i.id!==id); }
+  else { data[type] = data[type].filter(i=>i.id!==id); }
+  saveData(); render();
+  showToast('削除しました');
+}
+
+function selectModeStart(type) {
+  showToast('まとめて選択は準備中です');
+}
+
 function showToast(msg, duration, onclick) {
   let el = document.getElementById('toast');
   if (!el) { el = document.createElement('div'); el.id='toast'; el.className='toast'; document.body.appendChild(el); }
@@ -11354,6 +11476,7 @@ if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().t
   setTimeout(showAwaiMemory, 3000);
   setTimeout(checkSpecialEvent, 1500);
   setTimeout(checkStartupCelebrations, 2500);
+  initLongPress();
 
   // Supabase初期化（クラウド同期開始）
   sbInit();

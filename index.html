@@ -9260,44 +9260,23 @@ function createSampleData() {
   // サンプルデータがなければ作成
   if (data.people.some(p=>p.id==='sample_person')) return;
 
-  // サンプル太郎（大切な人）
+  // 浅野さん（サンプル・開発者）
   data.people.push({
-    id: 'sample_person', nickname: 'サンプル太郎', fullName: '見本 太郎',
-    type: 'individual', gender: 'male', avatar: null, relation: '友人',
+    id: 'sample_person', nickname: '浅野', fullName: '浅野',
+    type: 'individual', gender: 'male', avatar: null, relation: 'AWAIの作り手',
     companyLink: null, position: null,
-    anniversaries: [{name:'🎂 誕生日', date:'06-15', dateType:'monthday', repeat:'yearly', reminders:[30]}],
-    sizes: {tops:'L', bottoms:'32', shoes:'26.5', ring:null},
-    smoking: null, drinking: 'ビール（エビス）',
-    interests: ['ゴルフ', '旅行', 'ワイン'],
-    brands: ['無印良品', 'ユニクロ'],
+    anniversaries: [],
+    sizes: {},
+    smoking: null, drinking: null,
+    interests: ['AI', 'アプリ開発', '経営', 'ゴルフ'],
+    brands: [],
     oshi: [],
-    foodLike: ['寿司', 'カレー', 'チョコレート'],
-    foodDislike: ['パクチー'],
-    family: [{name:'花子（奥さん）', note:'料理好き'}, {name:'太一（長男）', note:'高校2年'}],
-    personality: ['気配り上手', '話し上手'],
-    memo: 'これはサンプルです。編集や削除して、自分の友だちを登録してください。\n\n各項目の？ボタンを押すと使い方のヒントが見れます。',
-    counters: [{name:'一緒に食事した', count:3, logs:['2026-03-15','2026-02-20','2026-01-10']}],
-    isSample: true,
-    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
-  });
-
-  // サンプルアイテム
-  data.wish.push({
-    id: 'sample_item', title: 'サンプル：ヴィンテージのワイングラス',
-    purpose: 'gift', giftTarget: 'サンプル太郎',
-    url: '', amount: '5000', tags: ['ギフト', 'ワイン'],
-    rating: 4, memo: 'これはサンプルです。自由に編集・削除してください。',
-    isSample: true,
-    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
-  });
-
-  // サンプル場所
-  data.place.push({
-    id: 'sample_place', title: 'サンプル：京都の隠れ家カフェ',
-    placeCategory: '食事', person: 'サンプル太郎',
-    address: '京都市東山区', url: '',
-    rating: 5, memo: 'これはサンプルです。行きたい場所を登録してみてください。',
-    tags: ['カフェ', '京都'],
+    foodLike: [],
+    foodDislike: [],
+    family: [],
+    personality: ['行動が早い', '仕組みを作るのが好き'],
+    memo: 'AWAIを作った人です。このカードを参考に、あなたの友だちを登録してみてください。\n\n各項目の？ボタンを押すと使い方のヒントが見れます。',
+    counters: [],
     isSample: true,
     createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
   });

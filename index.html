@@ -4255,24 +4255,24 @@ function render() {
   if (currentTab === 'place' && currentLabel === null) items = items.filter(i => !i.isClosed);
   // Place tab: closed or category filter
   if (currentTab === 'place' && currentLabel==='closed') {
-    const filtered = items.filter(i => i.isClosed);
-    renderItems(filtered, cardList);
-  } else if (currentTab === 'place' && currentLabel !== null && typeof currentLabel === 'string' && currentLabel !== 'closed') {
+    items = items.filter(i => i.isClosed);
+  } else if (currentTab === 'place' && currentLabel !== null && currentLabel !== '' && typeof currentLabel === 'string' && currentLabel !== 'closed') {
     // Place category filter
     const filtered = items.filter(i => !i.isClosed && i.placeCategory === currentLabel);
     if (!filtered.length) {
       cardList.innerHTML = `<div class="empty-msg">「${esc(currentLabel)}」の場所はまだありません</div>`;
       return;
     }
-    renderItems(filtered, cardList);
-  } else if (['wish','received','gave'].includes(currentTab) && currentLabel !== null && typeof currentLabel === 'string') {
-    // Item tab: filter by category
+    items = filtered;
+  } else if (['wish','received','gave'].includes(currentTab) && currentLabel !== null && currentLabel !== '' && typeof currentLabel === 'string') {
+    // Item tab: filter by category（空文字は「すべて」と同じ扱い）
     const filtered = items.filter(i => i.itemCategory === currentLabel);
     if (!filtered.length) {
       cardList.innerHTML = `<div class="empty-msg">「${esc(currentLabel)}」のお気に入りはまだありません</div>`;
       return;
     }
-    renderItems(filtered, cardList);
+    // フィルター結果もitemsとして直接描画パスに渡す
+    items = filtered;
   } else if (currentTab !== 'people' && currentLabel !== null && typeof currentLabel === 'number') {
     const ln = (getLabels(currentTab)[currentLabel]?.name||'').toLowerCase();
     const filtered = items.filter(i => {
@@ -4284,7 +4284,7 @@ function render() {
       cardList.innerHTML = `<div class="empty-msg">「${esc(currentLabel)}」のお気に入りはまだありません</div>`;
       return;
     }
-    renderItems(filtered, cardList);
+    items = filtered;
   } else if (currentTab === 'groups') {
     const groups = (data.groups||[]).filter(g => matchesSearch(g, 'groups'));
     if (!groups.length) {

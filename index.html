@@ -632,7 +632,7 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
   font-size: 26px; overflow: hidden;
 }
 .list-body { flex: 1; min-width: 0; }
-.list-name { font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.list-name { font-size: 16px; font-weight: 600; }
 .list-preview { font-size: 13px; color: var(--sub); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .list-meta { text-align: right; flex-shrink: 0; }
 .list-date { font-size: 11px; color: var(--sub); }
@@ -4385,7 +4385,7 @@ function renderItemListItem(item, tab) {
     ${_selectMode&&_selectType===tab?`<input type="checkbox" id="sel_${item.id}" ${_selectedIds.has(item.id)?'checked':''} onclick="event.stopPropagation();toggleSelectItem('${item.id}')" style="width:20px;height:20px;flex-shrink:0;accent-color:var(--accent);">`:''}
     <div class="list-body">
       <div class="list-name" style="display:flex;align-items:center;justify-content:space-between;">
-        <span>${item.visited?'✅ ':''}${item.pinned?'📌 ':''}${esc(item.title||'無題')}${stars?` <span style="color:#f0b040;font-size:12px;">${stars}</span>`:''}</span>
+        <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;">${item.visited?'✅ ':''}${item.pinned?'📌 ':''}${esc(item.title||'無題')}${stars?` <span style="color:#f0b040;font-size:12px;">${stars}</span>`:''}</span>
         <span style="font-size:18px;color:var(--sub);padding:2px 4px;cursor:pointer;flex-shrink:0;" onclick="event.stopPropagation();showLongPressMenu('${tab}','${item.id}')">⋮</span>
       </div>
       <div class="list-preview">${esc(preview)}${tagPreview&&preview!==tagPreview?' '+tagPreview:''}</div>

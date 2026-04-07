@@ -5516,67 +5516,19 @@ let _longPressTimer = null;
 let _longPressTarget = null;
 let _lpSX = 0, _lpSY = 0;
 
-function lpStart(e, type, id) {
-  if (!e.touches || !e.touches[0]) return;
-  _lpSX = e.touches[0].clientX;
-  _lpSY = e.touches[0].clientY;
-  clearTimeout(_longPressTimer);
-  _longPressTimer = setTimeout(() => {
-    // iOS: デフォルトの選択・コールアウトを防止
-    window.getSelection()?.removeAllRanges();
-    if (navigator.vibrate) navigator.vibrate(30);
-    showLongPressMenu(type, id);
-  }, 600);
-}
-function lpEnd() { clearTimeout(_longPressTimer); }
-function lpMove(e) {
-  if (!e.touches || !e.touches[0]) return;
-  if (Math.abs(e.touches[0].clientX - _lpSX) > 10 || Math.abs(e.touches[0].clientY - _lpSY) > 10) {
-    clearTimeout(_longPressTimer);
-  }
-}
+// 長押し機能は一時無効化（安定化のため）
+function lpStart() {}
+function lpEnd() {}
+function lpMove() {}
 
 function initLongPress() {
-  let _lpStartX = 0, _lpStartY = 0;
-  document.addEventListener('touchstart', e => {
-    const item = e.target.closest('[data-lp-type]');
-    if (!item) return;
-    _longPressTarget = item;
-    _lpStartX = e.touches[0].clientX;
-    _lpStartY = e.touches[0].clientY;
-    _longPressTimer = setTimeout(() => {
-      if (navigator.vibrate) navigator.vibrate(30);
-      showLongPressMenu(item.dataset.lpType, item.dataset.lpId);
-    }, 500);
-  });
-
-  document.addEventListener('touchend', () => { clearTimeout(_longPressTimer); });
-  document.addEventListener('touchmove', e => {
-    if (Math.abs(e.touches[0].clientX - _lpStartX) > 10 || Math.abs(e.touches[0].clientY - _lpStartY) > 10) {
-      clearTimeout(_longPressTimer);
-    }
-  });
-
-  // PC: 右クリック
+  // PC: 右クリックのみ有効（タッチ長押しは一時無効化）
   document.addEventListener('contextmenu', e => {
     const item = e.target.closest('[data-lp-type]');
     if (!item) return;
     e.preventDefault();
     showLongPressMenu(item.dataset.lpType, item.dataset.lpId);
   });
-
-  // PC: マウス長押し
-  let _mouseTimer = null;
-  document.addEventListener('mousedown', e => {
-    if (e.button !== 0) return; // 左クリックのみ
-    const item = e.target.closest('[data-lp-type]');
-    if (!item) return;
-    _mouseTimer = setTimeout(() => {
-      showLongPressMenu(item.dataset.lpType, item.dataset.lpId);
-    }, 500);
-  });
-  document.addEventListener('mouseup', () => { clearTimeout(_mouseTimer); });
-  document.addEventListener('mousemove', () => { clearTimeout(_mouseTimer); });
 }
 
 function showLongPressMenu(type, id) {
@@ -5789,26 +5741,7 @@ function selectActionShare() {
   selectModeEnd();
 }
 
-// ===== Double Tap to Pin =====
-let _lastTapTime = 0;
-let _lastTapId = '';
-document.addEventListener('click', e => {
-  const item = e.target.closest('[data-lp-type]');
-  if (!item || _selectMode) return;
-  const now = Date.now();
-  if (_lastTapId === item.dataset.lpId && now - _lastTapTime < 400) {
-    // ダブルタップ → ピン留めトグル
-    e.preventDefault();
-    e.stopPropagation();
-    togglePin(item.dataset.lpType === 'people' ? 'people' : item.dataset.lpType, item.dataset.lpId);
-    render();
-    showToast('📌 ピン留めを切り替えました');
-    _lastTapId = '';
-    return;
-  }
-  _lastTapId = item.dataset.lpId;
-  _lastTapTime = now;
-});
+// ===== Double Tap to Pin（一時無効化） =====
 
 // ===== Swipe Gestures =====
 function initSwipeGestures() {

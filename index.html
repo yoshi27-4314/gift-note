@@ -17,10 +17,10 @@
 :root {
   --bg: #fdf8f3;
   --card: #ffffff;
-  --accent: #e8a598;
-  --text: #4a3f3a;
-  --sub: #7a6e68;
-  --border: #ede3dd;
+  --accent: #c1856e;
+  --text: #3a302a;
+  --sub: #6a5e58;
+  --border: #ddd3cc;
   --shadow: rgba(180,140,120,0.12);
   --tag-bg: #fdeee9;
   --accent-light: #fdf0ed;
@@ -5515,23 +5515,29 @@ let _longPressTimer = null;
 let _longPressTarget = null;
 
 function initLongPress() {
+  let _lpStartX = 0, _lpStartY = 0;
   document.addEventListener('touchstart', e => {
-    const item = e.target.closest('.list-item[data-lp-type]');
+    const item = e.target.closest('[data-lp-type]');
     if (!item) return;
     _longPressTarget = item;
+    _lpStartX = e.touches[0].clientX;
+    _lpStartY = e.touches[0].clientY;
     _longPressTimer = setTimeout(() => {
-      e.preventDefault();
       if (navigator.vibrate) navigator.vibrate(30);
       showLongPressMenu(item.dataset.lpType, item.dataset.lpId);
     }, 500);
-  }, { passive: false });
+  });
 
   document.addEventListener('touchend', () => { clearTimeout(_longPressTimer); });
-  document.addEventListener('touchmove', () => { clearTimeout(_longPressTimer); });
+  document.addEventListener('touchmove', e => {
+    if (Math.abs(e.touches[0].clientX - _lpStartX) > 10 || Math.abs(e.touches[0].clientY - _lpStartY) > 10) {
+      clearTimeout(_longPressTimer);
+    }
+  });
 
   // PC: 右クリック
   document.addEventListener('contextmenu', e => {
-    const item = e.target.closest('.list-item[data-lp-type]');
+    const item = e.target.closest('[data-lp-type]');
     if (!item) return;
     e.preventDefault();
     showLongPressMenu(item.dataset.lpType, item.dataset.lpId);
@@ -5618,7 +5624,8 @@ function shareCard(type, id) {
 }
 
 function deleteCardFromMenu(type, id) {
-  if (!confirm('削除しますか？')) return;
+  const input = prompt('削除するには「削除」と入力してください');
+  if (input !== '削除') { if (input !== null) showToast('「削除」と入力してください'); return; }
   const isPeople = type === 'people';
   const isPlace = type === 'place';
   if (isPeople) { data.people = data.people.filter(p=>p.id!==id); }
@@ -5673,13 +5680,13 @@ function updateSelectBar() {
   const bar = document.getElementById('selectBar');
   if (!bar) return;
   const count = _selectedIds.size;
-  const btnS = 'padding:8px 14px;border-radius:10px;border:none;font-size:12px;cursor:pointer;font-family:"Zen Maru Gothic",sans-serif;font-weight:500;';
+  const btnS = 'padding:12px 18px;border-radius:12px;border:none;font-size:15px;cursor:pointer;font-family:"Zen Maru Gothic",sans-serif;font-weight:600;min-width:48px;';
   bar.innerHTML = `
-    <div style="flex:1;font-size:14px;font-weight:600;color:var(--text);">${count}件選択</div>
+    <div style="flex:1;font-size:16px;font-weight:700;color:var(--text);">${count}件選択</div>
     <button style="${btnS}background:var(--bg);color:var(--text);" onclick="selectAll()">全選択</button>
-    <button style="${btnS}background:var(--accent);color:#fff;" onclick="selectActionPin()" ${count?'':'disabled'}>📌</button>
-    <button style="${btnS}background:#4a90d9;color:#fff;" onclick="selectActionShare()" ${count?'':'disabled'}>📤</button>
-    <button style="${btnS}background:#c97070;color:#fff;" onclick="selectActionDelete()" ${count?'':'disabled'}>🗑</button>
+    <button style="${btnS}background:var(--accent);color:#fff;" onclick="selectActionPin()" ${count?'':'disabled opacity:0.4;'}>📌</button>
+    <button style="${btnS}background:#4a90d9;color:#fff;" onclick="selectActionShare()" ${count?'':'disabled opacity:0.4;'}>📤</button>
+    <button style="${btnS}background:#c97070;color:#fff;" onclick="selectActionDelete()" ${count?'':'disabled opacity:0.4;'}>🗑</button>
     <button style="${btnS}background:var(--border);color:var(--text);" onclick="selectModeEnd()">✕</button>
   `;
 }
@@ -5699,7 +5706,8 @@ function selectAll() {
 
 function selectActionDelete() {
   if (!_selectedIds.size) return;
-  if (!confirm(`${_selectedIds.size}件を削除しますか？`)) return;
+  const input = prompt(`${_selectedIds.size}件を削除するには「削除」と入力してください`);
+  if (input !== '削除') { if (input !== null) showToast('「削除」と入力してください'); return; }
   const ids = [..._selectedIds];
   const isPeople = _selectType === 'people';
   const isPlace = _selectType === 'place';

@@ -4381,7 +4381,7 @@ function renderItemListItem(item, tab) {
   const personPreview = item.person ? '👤 '+item.person : '';
   const preview = item.purpose ? (purposeIcon + giftTo + (personPreview&&!giftTo?' '+personPreview:'')) : (personPreview || tagPreview || (item.memo?item.memo.substring(0,20):''));
 
-  return `<div class="list-item" data-lp-type="${tab}" data-lp-id="${item.id}" ontouchstart="lpStart(event,'${tab}','${item.id}')" ontouchend="lpEnd()" ontouchmove="lpMove(event)" onclick="${_selectMode&&_selectType===tab?`toggleSelectItem('${item.id}')`:`toggleItemDetail('${item.id}')`}" style="position:relative;${isOpen?'background:var(--accent-light);':''}${_selectMode&&_selectedIds.has(item.id)?'background:rgba(193,154,132,0.15);':''}">
+  return `<div class="list-item" data-lp-type="${tab}" data-lp-id="${item.id}" ontouchstart="lpStart(event,'${tab}','${item.id}')" ontouchend="lpEnd()" ontouchmove="lpMove(event)" onclick="${_selectMode&&_selectType===tab?`toggleSelectItem('${item.id}')`:`toggleItemDetail('${item.id}')`}" style="${isOpen?'background:var(--accent-light);':''}${_selectMode&&_selectedIds.has(item.id)?'background:rgba(193,154,132,0.15);':''}">
     ${_selectMode&&_selectType===tab?`<input type="checkbox" id="sel_${item.id}" ${_selectedIds.has(item.id)?'checked':''} onclick="event.stopPropagation();toggleSelectItem('${item.id}')" style="width:20px;height:20px;flex-shrink:0;accent-color:var(--accent);">`:''}
     <div class="list-body">
       <div class="list-name">${item.visited?'✅ ':''}${item.pinned?'📌 ':''}${esc(item.title||'無題')}${stars?` <span style="color:#f0b040;font-size:12px;">${stars}</span>`:''}</div>
@@ -4391,9 +4391,7 @@ function renderItemListItem(item, tab) {
       <div class="list-date">${item.date||''}</div>
       ${item.amount?`<div style="font-size:11px;color:var(--accent);font-weight:600;">¥${Number(item.amount).toLocaleString()}</div>`:''}
     </div>
-    <div style="position:absolute;top:8px;right:8px;" onclick="event.stopPropagation();showLongPressMenu('${tab}','${item.id}')">
-      <span style="font-size:20px;color:var(--sub);padding:4px 8px;cursor:pointer;">⋮</span>
-    </div>
+    <span style="font-size:22px;color:var(--sub);padding:8px;cursor:pointer;flex-shrink:0;line-height:1;" onclick="event.stopPropagation();showLongPressMenu('${tab}','${item.id}')">⋮</span>
   </div>`;
 }
 
@@ -4454,22 +4452,6 @@ function renderItems(items, cardList) {
       if (item) cardList.innerHTML += `<div id="itemDetail">${renderItemCard(item, currentTab)}</div>`;
     }
   }
-  // ⋮ボタンが表示されていない場合のフォールバック
-  setTimeout(() => {
-    cardList.querySelectorAll('.list-item[data-lp-type]').forEach(el => {
-      if (!el.querySelector('.lp-menu-btn')) {
-        const type = el.dataset.lpType;
-        const id = el.dataset.lpId;
-        el.style.position = 'relative';
-        const btn = document.createElement('div');
-        btn.className = 'lp-menu-btn';
-        btn.style.cssText = 'position:absolute;top:8px;right:8px;font-size:20px;color:var(--sub);padding:4px 8px;cursor:pointer;z-index:2;';
-        btn.textContent = '⋮';
-        btn.onclick = (e) => { e.stopPropagation(); showLongPressMenu(type, id); };
-        el.appendChild(btn);
-      }
-    });
-  }, 50);
 }
 
 // ===== Tab =====

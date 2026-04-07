@@ -708,18 +708,17 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 <!-- Onboarding -->
 <div id="onboardingOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:99999;overflow-y:auto;">
   <div style="max-width:480px;margin:0 auto;padding:40px 24px;min-height:100dvh;display:flex;flex-direction:column;justify-content:center;">
-    <!-- Step 1: Welcome + Email -->
+    <!-- Step 1: Welcome + Name -->
     <div id="obStep1" class="ob-step">
       <div style="text-align:center;margin-bottom:32px;font-size:48px;">🕊️</div>
       <h1 style="text-align:center;font-family:'Shippori Mincho',serif;font-size:28px;font-weight:600;margin-bottom:16px;color:var(--text);">AWAIへようこそ</h1>
       <p style="text-align:center;color:var(--sub);font-size:15px;line-height:1.8;margin-bottom:32px;">お気に入りと友だちの記録。</p>
       <div class="form-group" style="margin-bottom:24px;">
-        <input id="obEmail" type="email" placeholder="メールアドレス" style="padding:16px;font-size:16px;border-radius:14px;border:1px solid var(--border);width:100%;text-align:center;">
+        <input id="obFirstName" type="text" placeholder="お名前（ニックネームでもOK）" style="padding:16px;font-size:16px;border-radius:14px;border:1px solid var(--border);width:100%;text-align:center;">
       </div>
-      <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;" onclick="obCreateAccount()">はじめる</button>
+      <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;" onclick="obStartWithName()">はじめる</button>
       <p style="text-align:center;margin-top:16px;font-size:11px;color:var(--sub);">続けることで<a href="privacy.html" target="_blank" style="color:var(--accent);">プライバシーポリシー</a>に同意したものとみなします</p>
       <p style="text-align:center;margin-top:24px;"><a href="#" onclick="event.preventDefault();showLoginScreen()" style="color:var(--accent);font-size:13px;">すでにアカウントをお持ちの方はログイン</a></p>
-      <div id="obAccountMsg" style="text-align:center;margin-top:12px;font-size:13px;"></div>
     </div>
     <!-- Step Install: ホーム画面に追加 -->
     <div id="obStepinstall" class="ob-step" style="display:none;">
@@ -750,11 +749,11 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
       <p style="text-align:center;color:var(--sub);font-size:12px;margin-bottom:24px;">あとからでも設定画面から追加できます</p>
       <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;" onclick="obNext(2)">次へ</button>
     </div>
-    <!-- Step 2: Profile (名前・生年月日・性別・好きなもの) -->
+    <!-- Step 2: Profile (生年月日・性別・好きなもの) -->
     <div id="obStep2" class="ob-step" style="display:none;">
       <h2 style="text-align:center;font-family:'Shippori Mincho',serif;font-size:22px;margin-bottom:24px;">プロフィール登録</h2>
-      <div class="form-group"><label>名前</label><input id="obMyName" placeholder="あなたの名前" style="padding:14px 16px;font-size:16px;border-radius:12px;border:1px solid var(--border);width:100%;"></div>
-      <div class="form-group" style="margin-top:14px;"><label>生年月日</label>
+      <input type="hidden" id="obMyName" value="">
+      <div class="form-group"><label>生年月日</label>
         <div style="display:flex;gap:4px;margin-bottom:8px;">
           <div class="date-type-chip active" onclick="obSetDateType('my','full',this)" style="flex:1;text-align:center;font-size:13px;">生年月日</div>
           <div class="date-type-chip" onclick="obSetDateType('my','monthday',this)" style="flex:1;text-align:center;font-size:13px;">月日</div>
@@ -8914,38 +8913,13 @@ function obBuildComplete() {
   summary.innerHTML = summaryHtml;
 }
 
-async function obCreateAccount() {
-  const email = document.getElementById('obEmail')?.value.trim();
-  if (!email) { showToast('メールアドレスを入力してください'); return; }
-  const msgDiv = document.getElementById('obAccountMsg');
-  msgDiv.innerHTML = '<span style="color:var(--sub);">アカウントを作成中...</span>';
-  try {
-    // 自動生成パスワードでサインアップ（確認メールなし）
-    const autoPass = 'awai_' + email.split('@')[0] + '_' + Date.now();
-    const { data: authData, error } = await _sb.auth.signUp({
-      email,
-      password: autoPass,
-      options: { emailRedirectTo: window.location.origin }
-    });
-    if (error) {
-      if (error.message?.includes('already registered')) {
-        msgDiv.innerHTML = '<span style="color:var(--accent);">このメールアドレスは登録済みです</span>';
-        setTimeout(() => showLoginScreen(), 1500);
-        return;
-      }
-      throw error;
-    }
-    // サインアップ成功 → 自動的にログイン状態になる（confirm email OFF時）
-    if (authData?.user) {
-      _sbUser = authData.user;
-    }
-    msgDiv.innerHTML = '';
-    obNext('install');
-  } catch(e) {
-    // エラーでも先に進めるようにする
-    msgDiv.innerHTML = '';
-    obNext('install');
-  }
+function obStartWithName() {
+  const name = document.getElementById('obFirstName')?.value.trim();
+  if (!name) { showToast('お名前を入力してください'); return; }
+  // 名前を一時保存（Step 2のhidden fieldとウィンドウ変数に）
+  window._obMyName = name;
+  document.getElementById('obMyName').value = name;
+  obNext('install');
 }
 
 function obSaveStep2() {

@@ -3553,8 +3553,8 @@ async function runGroupAiSuggest(groupId) {
 
   const resultDiv = document.getElementById('aiGroupResult');
   const btn = document.getElementById('aiGroupBtn');
-  btn.disabled=true; btn.textContent='考え中...';
-  resultDiv.innerHTML = '' + conciergeWaitingHtml('あなたの代わりに探します・・・') + '';
+  btn.disabled=true; btn.textContent='探しています...';
+  resultDiv.innerHTML = '' + conciergeWaitingHtml() + '';
 
   const scene = document.getElementById('aiGroupScene')?.value.trim()||'';
   const budget = document.getElementById('aiGroupBudget')?.value.trim()||'';
@@ -5349,7 +5349,7 @@ function addFamilyRow() {
 let _saving = false;
 function conciergeWaitingHtml(msg) {
   return `<div style="text-align:center;color:var(--sub);padding:20px;">
-    <div style="font-size:14px;margin-bottom:12px;">${msg || 'あなたの代わりに探します・・・'}</div>
+    <div style="font-size:14px;margin-bottom:12px;">${msg || '世界中からお探しします・・・'}</div>
     <div style="display:inline-flex;gap:8px;margin-bottom:10px;">
       <span style="width:10px;height:10px;border-radius:50%;background:var(--accent);display:inline-block;animation:obDotBounce 1.4s ease-in-out infinite;"></span>
       <span style="width:10px;height:10px;border-radius:50%;background:var(--accent);display:inline-block;animation:obDotBounce 1.4s ease-in-out 0.2s infinite;"></span>
@@ -9851,7 +9851,7 @@ async function runAiSuggest(personId) {
   const resultDiv = document.getElementById('aiResult');
   const btn = document.getElementById('aiSuggestBtn');
   btn.disabled = true; btn.textContent = '探しています...';
-  resultDiv.innerHTML = '' + conciergeWaitingHtml('あなたの代わりに探します・・・') + '';
+  resultDiv.innerHTML = '' + conciergeWaitingHtml() + '';
 
   // 匿名化されたプロフィールを構築（名前・個人特定情報を除去）
   const profileLines = buildAnonymizedProfile(person);
@@ -10500,7 +10500,7 @@ async function runCardSearch() {
   const resultDiv = document.getElementById('aiCardResult');
   const btn = document.getElementById('aiCardSearchBtn');
   btn.disabled = true; btn.textContent = '検索中...';
-  resultDiv.innerHTML = '' + conciergeWaitingHtml('あなたの代わりに探します・・・') + '';
+  resultDiv.innerHTML = '' + conciergeWaitingHtml() + '';
 
   const prompt = `「${keyword}」に関連するおすすめの商品・ギフト・体験を3つ提案してください。
 ${budget ? '予算: 約'+budget+'円' : ''}

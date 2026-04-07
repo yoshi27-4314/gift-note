@@ -3373,7 +3373,10 @@ function render() {
       const person = data.people.find(x=>x.id===openPersonId);
       if (person) cardList.innerHTML += `<div id="personDetail">${renderPersonCard(person)}</div>`;
     }
-  } else if (['wish','received','gave','place'].includes(currentTab)) {
+  }
+  // アイテム系タブは常にここで描画（elseチェーンから独立）
+  if (['wish','received','gave','place'].includes(currentTab)) {
+    console.log('[AWAI DEBUG] wish/place direct render path for', currentTab, 'items:', items.length);
     // アイテム系タブ: 直接描画（⋮ボタン確実表示）
     const visibleItems = items.filter(i => !i.hidden);
     const hiddenItems = items.filter(i => i.hidden);
@@ -3424,8 +3427,6 @@ function render() {
       const item = items.find(x=>x.id===openItemId);
       if (item) cardList.innerHTML += `<div id="itemDetail">${renderItemCard(item, currentTab)}</div>`;
     }
-  } else {
-    renderItems(items, cardList);
   }
   // 全タブ共通: card-itemに⋮ボタンをDOM追加
   setTimeout(() => {

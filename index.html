@@ -3162,7 +3162,8 @@ function renderPersonListItem(p) {
 
   const isOpen = openPersonId === p.id;
 
-  return `<div class="list-item" data-lp-type="people" data-lp-id="${p.id}" onclick="togglePersonDetail('${p.id}')" style="${isOpen?'background:var(--accent-light);':''}">
+  return `<div class="list-item" data-lp-type="people" data-lp-id="${p.id}" onclick="${_selectMode&&_selectType==='people'?`toggleSelectItem('${p.id}')`:`togglePersonDetail('${p.id}')`}" style="${isOpen?'background:var(--accent-light);':''}${_selectMode&&_selectedIds.has(p.id)?'background:rgba(193,154,132,0.15);':''}">
+    ${_selectMode&&_selectType==='people'?`<input type="checkbox" id="sel_${p.id}" ${_selectedIds.has(p.id)?'checked':''} onclick="event.stopPropagation();toggleSelectItem('${p.id}')" style="width:20px;height:20px;flex-shrink:0;accent-color:var(--accent);">`:''}
     <div class="list-avatar" style="background:${p.avatar?'transparent':personIcon(p).bg}">${p.avatar?`<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;">`:(personIcon(p).emoji)}</div>
     <div class="list-body">
       <div class="list-name">${p.pinned?'📌 ':''}${esc(p.nickname||'名前なし')}</div>
@@ -4376,7 +4377,8 @@ function renderItemListItem(item, tab) {
   const personPreview = item.person ? '👤 '+item.person : '';
   const preview = item.purpose ? (purposeIcon + giftTo + (personPreview&&!giftTo?' '+personPreview:'')) : (personPreview || tagPreview || (item.memo?item.memo.substring(0,20):''));
 
-  return `<div class="list-item" data-lp-type="${tab}" data-lp-id="${item.id}" onclick="toggleItemDetail('${item.id}')" style="${isOpen?'background:var(--accent-light);':''}">
+  return `<div class="list-item" data-lp-type="${tab}" data-lp-id="${item.id}" onclick="${_selectMode&&_selectType===tab?`toggleSelectItem('${item.id}')`:`toggleItemDetail('${item.id}')`}" style="${isOpen?'background:var(--accent-light);':''}${_selectMode&&_selectedIds.has(item.id)?'background:rgba(193,154,132,0.15);':''}">
+    ${_selectMode&&_selectType===tab?`<input type="checkbox" id="sel_${item.id}" ${_selectedIds.has(item.id)?'checked':''} onclick="event.stopPropagation();toggleSelectItem('${item.id}')" style="width:20px;height:20px;flex-shrink:0;accent-color:var(--accent);">`:''}
     <div class="list-body">
       <div class="list-name">${item.visited?'✅ ':''}${item.pinned?'📌 ':''}${esc(item.title||'無題')}${stars?` <span style="color:#f0b040;font-size:12px;">${stars}</span>`:''}</div>
       <div class="list-preview">${esc(preview)}${tagPreview&&preview!==tagPreview?' '+tagPreview:''}</div>
@@ -5626,8 +5628,122 @@ function deleteCardFromMenu(type, id) {
   showToast('削除しました');
 }
 
+let _selectMode = false;
+let _selectType = '';
+let _selectedIds = new Set();
+
 function selectModeStart(type) {
-  showToast('まとめて選択は準備中です');
+  _selectMode = true;
+  _selectType = type;
+  _selectedIds.clear();
+  render();
+  showSelectBar();
+}
+
+function selectModeEnd() {
+  _selectMode = false;
+  _selectType = '';
+  _selectedIds.clear();
+  const bar = document.getElementById('selectBar');
+  if (bar) bar.remove();
+  render();
+}
+
+function toggleSelectItem(id) {
+  if (_selectedIds.has(id)) _selectedIds.delete(id);
+  else _selectedIds.add(id);
+  updateSelectBar();
+  // チェックボックスのUIを更新
+  const cb = document.getElementById('sel_' + id);
+  if (cb) cb.checked = _selectedIds.has(id);
+}
+
+function showSelectBar() {
+  let bar = document.getElementById('selectBar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'selectBar';
+    bar.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:200;background:var(--card);border-top:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;gap:8px;box-shadow:0 -4px 16px rgba(0,0,0,0.1);animation:slideUp 0.3s ease;';
+    document.body.appendChild(bar);
+  }
+  updateSelectBar();
+}
+
+function updateSelectBar() {
+  const bar = document.getElementById('selectBar');
+  if (!bar) return;
+  const count = _selectedIds.size;
+  const btnS = 'padding:8px 14px;border-radius:10px;border:none;font-size:12px;cursor:pointer;font-family:"Zen Maru Gothic",sans-serif;font-weight:500;';
+  bar.innerHTML = `
+    <div style="flex:1;font-size:14px;font-weight:600;color:var(--text);">${count}件選択</div>
+    <button style="${btnS}background:var(--bg);color:var(--text);" onclick="selectAll()">全選択</button>
+    <button style="${btnS}background:var(--accent);color:#fff;" onclick="selectActionPin()" ${count?'':'disabled'}>📌</button>
+    <button style="${btnS}background:#4a90d9;color:#fff;" onclick="selectActionShare()" ${count?'':'disabled'}>📤</button>
+    <button style="${btnS}background:#c97070;color:#fff;" onclick="selectActionDelete()" ${count?'':'disabled'}>🗑</button>
+    <button style="${btnS}background:var(--border);color:var(--text);" onclick="selectModeEnd()">✕</button>
+  `;
+}
+
+function selectAll() {
+  const isPeople = _selectType === 'people';
+  const isPlace = _selectType === 'place';
+  const items = isPeople ? data.people.filter(p=>!p.isMemory) : (isPlace ? data.place : data[_selectType] || []);
+  if (_selectedIds.size === items.length) {
+    _selectedIds.clear();
+  } else {
+    items.forEach(i => _selectedIds.add(i.id));
+  }
+  render();
+  showSelectBar();
+}
+
+function selectActionDelete() {
+  if (!_selectedIds.size) return;
+  if (!confirm(`${_selectedIds.size}件を削除しますか？`)) return;
+  const ids = [..._selectedIds];
+  const isPeople = _selectType === 'people';
+  const isPlace = _selectType === 'place';
+  if (isPeople) data.people = data.people.filter(p => !ids.includes(p.id));
+  else if (isPlace) data.place = data.place.filter(i => !ids.includes(i.id));
+  else data[_selectType] = data[_selectType].filter(i => !ids.includes(i.id));
+  saveData();
+  showToast(`${ids.length}件を削除しました`);
+  selectModeEnd();
+}
+
+function selectActionPin() {
+  if (!_selectedIds.size) return;
+  const ids = [..._selectedIds];
+  const isPeople = _selectType === 'people';
+  const isPlace = _selectType === 'place';
+  const items = isPeople ? data.people : (isPlace ? data.place : data[_selectType] || []);
+  const allPinned = ids.every(id => items.find(i=>i.id===id)?.pinned);
+  ids.forEach(id => {
+    const item = items.find(i => i.id === id);
+    if (item) item.pinned = !allPinned;
+  });
+  saveData();
+  showToast(allPinned ? 'ピン留めを解除しました' : 'ピン留めしました');
+  selectModeEnd();
+}
+
+function selectActionShare() {
+  if (!_selectedIds.size) return;
+  const ids = [..._selectedIds];
+  const isPeople = _selectType === 'people';
+  const isPlace = _selectType === 'place';
+  const items = isPeople ? data.people : (isPlace ? data.place : data[_selectType] || []);
+  const texts = ids.map(id => {
+    const item = items.find(i => i.id === id);
+    return item ? (item.nickname || item.title || '') : '';
+  }).filter(Boolean);
+  const text = texts.join('\n');
+  if (navigator.share) {
+    navigator.share({ title: 'AWAI', text }).catch(() => {});
+  } else {
+    navigator.clipboard.writeText(text).then(() => showToast('コピーしました'));
+  }
+  selectModeEnd();
 }
 
 function showToast(msg, duration, onclick) {

@@ -4384,15 +4384,15 @@ function renderItemListItem(item, tab) {
   return `<div class="list-item" data-lp-type="${tab}" data-lp-id="${item.id}" ontouchstart="lpStart(event,'${tab}','${item.id}')" ontouchend="lpEnd()" ontouchmove="lpMove(event)" onclick="${_selectMode&&_selectType===tab?`toggleSelectItem('${item.id}')`:`toggleItemDetail('${item.id}')`}" style="${isOpen?'background:var(--accent-light);':''}${_selectMode&&_selectedIds.has(item.id)?'background:rgba(193,154,132,0.15);':''}">
     ${_selectMode&&_selectType===tab?`<input type="checkbox" id="sel_${item.id}" ${_selectedIds.has(item.id)?'checked':''} onclick="event.stopPropagation();toggleSelectItem('${item.id}')" style="width:20px;height:20px;flex-shrink:0;accent-color:var(--accent);">`:''}
     <div class="list-body">
-      <div class="list-name">${item.visited?'✅ ':''}${item.pinned?'📌 ':''}${esc(item.title||'無題')}${stars?` <span style="color:#f0b040;font-size:12px;">${stars}</span>`:''}</div>
+      <div class="list-name" style="display:flex;align-items:center;justify-content:space-between;">
+        <span>${item.visited?'✅ ':''}${item.pinned?'📌 ':''}${esc(item.title||'無題')}${stars?` <span style="color:#f0b040;font-size:12px;">${stars}</span>`:''}</span>
+        <span style="font-size:18px;color:var(--sub);padding:2px 4px;cursor:pointer;flex-shrink:0;" onclick="event.stopPropagation();showLongPressMenu('${tab}','${item.id}')">⋮</span>
+      </div>
       <div class="list-preview">${esc(preview)}${tagPreview&&preview!==tagPreview?' '+tagPreview:''}</div>
     </div>
     <div class="list-meta">
       <div class="list-date">${item.date||''}</div>
       ${item.amount?`<div style="font-size:11px;color:var(--accent);font-weight:600;">¥${Number(item.amount).toLocaleString()}</div>`:''}
-    </div>
-    <div style="flex-shrink:0;padding:4px;" onclick="event.stopPropagation();showLongPressMenu('${tab}','${item.id}')">
-      <span style="font-size:18px;color:var(--sub);padding:4px 8px;">⋮</span>
     </div>
   </div>`;
 }
@@ -9391,11 +9391,26 @@ function obSaveSuggestions(resultDiv) {
   const suggestions = resultDiv._suggestions || [];
   const now = new Date().toISOString();
   suggestions.forEach(s => {
+    // Amazon/楽天リンクを構築
+    const amazonUrl = s.amazonUrl || (s.keyword ? `https://www.amazon.co.jp/s?k=${encodeURIComponent(s.keyword||s.name)}` : '');
+    const rakutenUrl = s.rakuten?.url || '';
+    const aiLinks = {};
+    if (amazonUrl) aiLinks.amazon = amazonUrl;
+    if (rakutenUrl) aiLinks.rakuten = rakutenUrl;
+    if (s.webLinks) {
+      if (s.webLinks.official) aiLinks.official = s.webLinks.official;
+      if (s.webLinks.instagram) aiLinks.instagram = s.webLinks.instagram;
+      if (s.webLinks.tabelog) aiLinks.tabelog = s.webLinks.tabelog;
+    }
     data.wish.push({
       id: genId(), title: s.name || '提案アイテム',
       itemCategory: s.category || '', tags: [],
-      price: s.budget ? String(s.budget) : '', memo: (s.shop||'') + ' ' + (s.reason||''),
-      person: '', occasion: '', url: '',
+      price: s.rakuten?.price ? String(s.rakuten.price) : (s.budget ? String(s.budget) : ''),
+      memo: (s.shop||'') + ' — ' + (s.reason||''),
+      person: '', occasion: '',
+      url: amazonUrl || rakutenUrl || '',
+      aiLinks: Object.keys(aiLinks).length ? aiLinks : null,
+      img: s.rakuten?.image || null,
       pinned: false, createdAt: now, updatedAt: now
     });
   });

@@ -4161,6 +4161,7 @@ function render() {
         }).join('')}</div>`;
       }
       cardList.innerHTML = giftHtml;
+      addMenuButtons(cardList);
       if (isOpenKey) {
         const openItem = allGifts.find(x=>(x._tab+':'+x.id)===isOpenKey);
         if (openItem) cardList.innerHTML += `<div id="allRecordDetail">${renderItemCard(openItem, openItem._tab)}</div>`;
@@ -4365,6 +4366,7 @@ function render() {
       peopleHtml += '</div>';
     }
     cardList.innerHTML = peopleHtml;
+    addMenuButtons(cardList);
     // If a person detail is open, show it
     if (openPersonId) {
       const person = data.people.find(x=>x.id===openPersonId);
@@ -4458,6 +4460,25 @@ function renderItems(items, cardList) {
       if (item) cardList.innerHTML += `<div id="itemDetail">${renderItemCard(item, currentTab)}</div>`;
     }
   }
+  // 全list-itemに⋮メニューを確実に追加（DOMフォールバック）
+  addMenuButtons(cardList);
+}
+
+function addMenuButtons(container) {
+  if (!container) return;
+  container.querySelectorAll('.list-item').forEach(el => {
+    // 既に⋮があればスキップ
+    if (el.querySelector('.awai-menu-btn')) return;
+    const type = el.dataset.lpType || currentTab;
+    const id = el.dataset.lpId;
+    if (!id) return;
+    const btn = document.createElement('span');
+    btn.className = 'awai-menu-btn';
+    btn.textContent = '⋮';
+    btn.style.cssText = 'font-size:24px;color:#3a302a;padding:8px 12px;cursor:pointer;flex-shrink:0;line-height:1;font-weight:bold;';
+    btn.onclick = (e) => { e.stopPropagation(); showLongPressMenu(type, id); };
+    el.appendChild(btn);
+  });
 }
 
 // ===== Tab =====

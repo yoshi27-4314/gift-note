@@ -5578,8 +5578,11 @@ function showLongPressMenu(type, id) {
   buttons += `<button style="${btnStyle}" onmousedown="this.style.background='var(--bg)'" onmouseup="this.style.background=''" onclick="closeLongPressMenu();duplicateCard('${type}','${id}')"><span style="font-size:18px;">📋</span>複製</button>`;
   buttons += `<button style="${btnStyle}" onmousedown="this.style.background='var(--bg)'" onmouseup="this.style.background=''" onclick="closeLongPressMenu();shareCard('${type}','${id}')"><span style="font-size:18px;">📤</span>共有</button>`;
   buttons += `<button style="${btnStyle}" onmousedown="this.style.background='var(--bg)'" onmouseup="this.style.background=''" onclick="closeLongPressMenu();togglePin('${isPeople?'people':type}','${id}');render()"><span style="font-size:18px;">📌</span>${item.pinned?'ピン留め解除':'ピン留め'}</button>`;
-  buttons += `<div style="height:1px;background:var(--border);margin:4px 0;"></div>`;
-  buttons += `<button style="${btnStyle}" onmousedown="this.style.background='var(--bg)'" onmouseup="this.style.background=''" onclick="closeLongPressMenu();selectModeStart('${type}')"><span style="font-size:18px;">☑️</span>まとめて選択</button>`;
+  // まとめて選択（お気に入り・行きたいのみ。友だち・ギフトは対象外）
+  if (['wish','place'].includes(type)) {
+    buttons += `<div style="height:1px;background:var(--border);margin:4px 0;"></div>`;
+    buttons += `<button style="${btnStyle}" onmousedown="this.style.background='var(--bg)'" onmouseup="this.style.background=''" onclick="closeLongPressMenu();selectModeStart('${type}')"><span style="font-size:18px;">☑️</span>まとめて選択</button>`;
+  }
   buttons += `<div style="height:1px;background:var(--border);margin:4px 0;"></div>`;
   buttons += `<button style="${btnStyle}color:#c97070;" onmousedown="this.style.background='#fff0f0'" onmouseup="this.style.background=''" onclick="closeLongPressMenu();deleteCardFromMenu('${type}','${id}')"><span style="font-size:18px;">🗑</span>削除</button>`;
 

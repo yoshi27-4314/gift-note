@@ -5772,17 +5772,24 @@ function initSwipeGestures() {
   const EDGE_WIDTH = 30;
   const tabs = ['people','wish','calendar','place','gift'];
 
+  let _swipeTarget = null;
   document.addEventListener('touchstart', e => {
     startX = e.touches[0].clientX;
     startY = e.touches[0].clientY;
     startTime = Date.now();
+    _swipeTarget = e.target;
   });
 
   document.addEventListener('touchend', e => {
     const dx = e.changedTouches[0].clientX - startX;
     const dy = e.changedTouches[0].clientY - startY;
     const dt = Date.now() - startTime;
-    if (dt > 500 || Math.abs(dy) > Math.abs(dx)) return; // 遅いor縦スワイプは無視
+    if (dt > 500 || Math.abs(dy) > Math.abs(dx)) return;
+
+    // 横スクロール可能な要素の中でのスワイプは無視
+    if (_swipeTarget && _swipeTarget.closest('[style*="overflow-x"], [style*="flex-wrap"], .date-type-chip, .tabs')) return;
+    // カテゴリチップエリアでのスワイプは無視
+    if (_swipeTarget && _swipeTarget.closest('.label-bar, .cat-chips, [style*="gap:6px"], [style*="gap:4px"]')) return;
 
     // モーダルが開いている場合は無視
     const modal = document.querySelector('.modal-overlay.open');

@@ -4372,6 +4372,57 @@ function render() {
       const person = data.people.find(x=>x.id===openPersonId);
       if (person) cardList.innerHTML += `<div id="personDetail">${renderPersonCard(person)}</div>`;
     }
+  } else if (['wish','received','gave','place'].includes(currentTab)) {
+    // アイテム系タブ: 直接描画（⋮ボタン確実表示）
+    const visibleItems = items.filter(i => !i.hidden);
+    const hiddenItems = items.filter(i => i.hidden);
+    if (!visibleItems.length && !hiddenItems.length) {
+      const msgs = { wish:'✨ お気に入りを追加してみましょう', received:'🎀 もらった贈り物を記録しましょう',
+        gave:'🎁 あげた贈り物を記録しましょう', place:'📍 行きたい場所を追加しましょう' };
+      cardList.innerHTML = `<div class="empty-msg">${msgs[currentTab]||''}<br>下の ＋ ボタンから追加できます</div>`;
+      return;
+    }
+    const sorted = [...visibleItems].sort((a,b) => {
+      if (a.pinned&&!b.pinned) return -1; if (!a.pinned&&b.pinned) return 1;
+      return (b.date||b.createdAt||'').localeCompare(a.date||a.createdAt||'');
+    });
+    const tab = currentTab;
+    let listHtml = sorted.map(item => {
+      const stars = item.rating ? '★'.repeat(item.rating) : '';
+      const tagPreview = item.tags?.slice(0,3).map(t=>'#'+t).join(' ')||'';
+      const personPreview = item.person ? '👤 '+item.person : '';
+      const preview = personPreview || tagPreview || (item.memo?item.memo.substring(0,20):'');
+      const isOpen = openItemId === item.id;
+      return `<div class="list-item" data-lp-type="${tab}" data-lp-id="${item.id}" onclick="toggleItemDetail('${item.id}')" style="${isOpen?'background:var(--accent-light);':''}">
+        <div class="list-body">
+          <div class="list-name">${item.visited?'✅ ':''}${item.pinned?'📌 ':''}${esc(item.title||'無題')}${stars?` <span style="color:#f0b040;font-size:12px;">${stars}</span>`:''}</div>
+          <div class="list-preview">${esc(preview)}</div>
+        </div>
+        <div class="list-meta">
+          <div class="list-date">${item.date||''}</div>
+          ${item.amount?`<div style="font-size:11px;color:var(--accent);font-weight:600;">¥${Number(item.amount).toLocaleString()}</div>`:''}
+        </div>
+        <span class="awai-menu-btn" style="font-size:24px;color:#3a302a;padding:8px 12px;cursor:pointer;flex-shrink:0;line-height:1;font-weight:bold;" onclick="event.stopPropagation();showLongPressMenu('${tab}','${item.id}')">⋮</span>
+      </div>`;
+    }).join('');
+    if (hiddenItems.length) {
+      const hid = 'hiddenItems_'+Math.random().toString(36).slice(2);
+      listHtml += `<div style="margin-top:12px;padding:8px 12px;cursor:pointer;color:var(--sub);font-size:13px;text-align:center;border:1px dashed var(--border);border-radius:12px;" onclick="const b=document.getElementById('${hid}');const t=this;if(b.style.display==='none'){b.style.display='';t.textContent='▲ 非表示を閉じる (${hiddenItems.length}件)';}else{b.style.display='none';t.textContent='▼ 非表示を表示 (${hiddenItems.length}件)';}">▼ 非表示を表示 (${hiddenItems.length}件)</div>`;
+      listHtml += `<div id="${hid}" style="display:none;opacity:0.5;">`;
+      listHtml += [...hiddenItems].sort((a,b) => (b.date||b.createdAt||'').localeCompare(a.date||a.createdAt||'')).map(item => {
+        const preview = item.person ? '👤 '+item.person : (item.memo?item.memo.substring(0,20):'');
+        return `<div class="list-item" data-lp-type="${tab}" data-lp-id="${item.id}" onclick="toggleItemDetail('${item.id}')">
+          <div class="list-body"><div class="list-name">${esc(item.title||'無題')}</div><div class="list-preview">${esc(preview)}</div></div>
+          <span class="awai-menu-btn" style="font-size:24px;color:#3a302a;padding:8px 12px;cursor:pointer;flex-shrink:0;line-height:1;font-weight:bold;" onclick="event.stopPropagation();showLongPressMenu('${tab}','${item.id}')">⋮</span>
+        </div>`;
+      }).join('');
+      listHtml += '</div>';
+    }
+    cardList.innerHTML = listHtml;
+    if (openItemId) {
+      const item = items.find(x=>x.id===openItemId);
+      if (item) cardList.innerHTML += `<div id="itemDetail">${renderItemCard(item, currentTab)}</div>`;
+    }
   } else {
     renderItems(items, cardList);
   }

@@ -4451,7 +4451,7 @@ function renderItemListItem(item, tab) {
       <div class="list-date">${item.date||''}</div>
       ${item.amount?`<div style="font-size:11px;color:var(--accent);font-weight:600;">¥${Number(item.amount).toLocaleString()}</div>`:''}
     </div>
-    <span style="font-size:24px;color:#3a302a;padding:8px 12px;cursor:pointer;flex-shrink:0;line-height:1;font-weight:bold;" onclick="event.stopPropagation();showLongPressMenu('${tab}','${item.id}')">⋮</span>
+    <button class="awai-menu-btn" style="font-size:16px;color:#fff;background:var(--accent);border:none;border-radius:8px;padding:4px 10px;cursor:pointer;flex-shrink:0;font-weight:bold;margin-left:4px;" onclick="event.stopPropagation();showLongPressMenu('${tab}','${item.id}')">⋮</button>
   </div>`;
 }
 
@@ -4513,7 +4513,7 @@ function renderItems(items, cardList) {
     }
   }
   // 全list-itemに⋮メニューを確実に追加（DOMフォールバック）
-  addMenuButtons(cardList);
+  setTimeout(() => addMenuButtons(cardList), 100);
 }
 
 function addMenuButtons(container) {

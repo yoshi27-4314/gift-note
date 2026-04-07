@@ -8990,12 +8990,15 @@ async function obRunAiSuggest1() {
   const nextBtn = document.getElementById('obAi1NextBtn');
   resultDiv.innerHTML = obWaitingDotsHtml();
 
-  const prompt = `以下の方へのおすすめを3つ提案してください。ギフト・体験・場所など幅広く。
+  const prompt = `以下の方へのおすすめを3つ提案してください。
 
 ## プロフィール
 好きなモノ: ${like || '未入力'}
 
-センスの良い提案をしてください。`;
+## 提案の方針
+- 一般的に人気のある定番商品を中心に提案してください
+- 有名ブランドやよく知られた商品でOKです
+- 幅広いジャンルから3つ選んでください`;
 
   try {
     const result = await callAI(prompt, like ? '好きなモノ: '+like : '', true);
@@ -9032,16 +9035,20 @@ async function obRunAiSuggest2() {
   if (scene) profileParts.push(`シーン: ${scene}`);
   if (dislike) profileParts.push(`苦手なもの: ${dislike}`);
 
-  const prompt = `以下の方へのおすすめを3つ提案してください。
+  const prompt = `あなたはギフトの達人です。以下の方に「これは私のことをわかってくれている」と感動させる提案を3つしてください。
 
 ## プロフィール
 ${profileParts.join('\n')}
 
-## 重要な条件
+## 提案の方針（最重要）
 - 苦手なものは絶対に避けてください
-- 予算とシーンに合わせてください
-- 以下は前回提案済みなので避けてください: ${avoidList || 'なし'}
-- 前回より格段にパーソナライズされた、この人ならではの提案をしてください`;
+- 予算とシーンにぴったり合わせてください
+- 大量生産品やAmazonで誰でも買えるものは避けてください
+- 知る人ぞ知る名店、職人の手仕事、ストーリーのある商品、五感に訴える体験を選んでください
+- 「好きなモノ」と「シーン」を掛け合わせた、この人だけの組み合わせを提案してください
+- なぜこの人にこれが合うのか、理由を具体的に書いてください（「〇〇がお好きなあなたに」のように）
+- 以下は前回提案済みなので絶対に避けてください: ${avoidList || 'なし'}
+- 前回の提案とはジャンルもテイストも完全に変えてください`;
 
   try {
     const result = await callAI(prompt, profileParts.join('\n'), true);

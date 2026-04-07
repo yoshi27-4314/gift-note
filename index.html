@@ -489,6 +489,7 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 }
 @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 @keyframes milestoneBounce { 0% { transform: scale(0.3); opacity: 0; } 50% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+@keyframes fabPulseGuide { 0%,100% { transform: scale(1); box-shadow: 0 6px 24px rgba(0,0,0,0.18); } 50% { transform: scale(1.15); box-shadow: 0 8px 32px rgba(193,154,132,0.5), 0 0 20px rgba(193,154,132,0.3); } }
 @keyframes obDotBounce { 0%,80%,100% { transform: translateY(0); } 40% { transform: translateY(-12px); } }
 @keyframes obFadeInOut { 0%,100% { opacity: 0.3; } 50% { opacity: 1; } }
 .modal h2 { font-size: 20px; margin-bottom: 20px; text-align: center; }
@@ -788,13 +789,13 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
     <div id="obStep4" class="ob-step" style="display:none;">
       <div style="text-align:center;margin-bottom:24px;font-size:48px;">🎁</div>
       <h2 style="text-align:center;font-family:'Shippori Mincho',serif;font-size:22px;margin-bottom:16px;">友だちへのギフトも<br>コンシェルジュが提案します</h2>
-      <p style="text-align:center;color:var(--sub);font-size:14px;line-height:1.8;margin-bottom:20px;">友だち登録でギフト選びが楽しい</p>
-      <!-- LINE スクショ登録アニメーション -->
+      <p style="text-align:center;font-size:18px;font-weight:700;color:var(--accent);line-height:1.6;margin-bottom:20px;">友だち登録がとても簡単</p>
+      <!-- スクショ登録アニメーション -->
       <div style="background:var(--card);border-radius:20px;padding:20px;margin-bottom:24px;box-shadow:0 2px 12px var(--shadow);overflow:hidden;">
         <div id="obLineDemo" style="position:relative;height:220px;">
-          <!-- Step A: LINEっぽい画面 -->
+          <!-- Step A: 電話帳っぽい画面 -->
           <div id="obLineMock" style="position:absolute;inset:0;display:flex;flex-direction:column;background:#f7f7f7;border-radius:12px;overflow:hidden;transition:all 1.5s cubic-bezier(0.4,0,0.2,1);">
-            <div style="background:#06C755;color:#fff;padding:8px 12px;font-size:12px;font-weight:600;">友だちリスト</div>
+            <div style="background:#6b8fad;color:#fff;padding:8px 12px;font-size:12px;font-weight:600;">📱 友だちリスト（スマホの電話帳など）</div>
             <div style="padding:8px 10px;display:flex;flex-direction:column;gap:6px;">
               <div style="display:flex;align-items:center;gap:8px;"><div style="width:28px;height:28px;border-radius:50%;background:#ddd;"></div><span style="font-size:12px;color:#333;">田中 花子</span></div>
               <div style="display:flex;align-items:center;gap:8px;"><div style="width:28px;height:28px;border-radius:50%;background:#ddd;"></div><span style="font-size:12px;color:#333;">鈴木 太郎</span></div>
@@ -812,7 +813,7 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
           </div>
         </div>
       </div>
-      <div style="text-align:center;font-size:12px;color:var(--sub);margin-bottom:24px;line-height:1.6;">友だちリストをスクリーンショットするだけ<br>名前を自動で読み取ります</div>
+      <div style="text-align:center;font-size:12px;color:var(--sub);margin-bottom:24px;line-height:1.6;">スマホの電話帳やSNSの友だちリストを<br>スクリーンショットするだけで登録できます</div>
       <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;" onclick="obFinishWithFriend()">本編へ</button>
     </div>
     <script>
@@ -9011,11 +9012,40 @@ function obFinishWithFriend() {
   localStorage.setItem(OB_KEY, '1');
   document.getElementById('onboardingOverlay').style.display = 'none';
   loadData();
-  // 友だちタブに切り替えて＋ボタンメニューを開く
   currentTab = 'people';
   render();
   checkReminders();
-  setTimeout(() => openPeopleFabMenu(), 500);
+  // FABボタンをパルスアニメーションで誘導
+  setTimeout(() => {
+    const fab = document.getElementById('fabBtn');
+    if (fab) {
+      fab.style.animation = 'fabPulseGuide 1s ease-in-out infinite';
+      // ガイドメッセージ
+      const guide = document.createElement('div');
+      guide.id = 'fabGuide';
+      guide.style.cssText = 'position:fixed;bottom:150px;right:20px;background:var(--card);border-radius:14px;padding:12px 16px;box-shadow:0 4px 16px rgba(0,0,0,0.15);font-size:13px;font-weight:600;color:var(--text);z-index:161;animation:obFadeInOut 2s ease-in-out infinite;max-width:200px;text-align:center;';
+      guide.textContent = 'まず友だちを登録しましょう';
+      document.body.appendChild(guide);
+      // FABクリックでガイド解除
+      const origClick = fab.onclick;
+      fab.addEventListener('click', function guideOff() {
+        fab.style.animation = '';
+        const g = document.getElementById('fabGuide');
+        if (g) g.remove();
+        fab.removeEventListener('click', guideOff);
+        // メニュー内の「まとめて登録」もパルスさせる
+        setTimeout(() => {
+          const btns = document.querySelectorAll('#aiModal button');
+          btns.forEach(b => {
+            if (b.textContent.includes('まとめて登録')) {
+              b.style.animation = 'fabPulseGuide 1.2s ease-in-out infinite';
+              b.addEventListener('click', () => { b.style.animation = ''; }, { once: true });
+            }
+          });
+        }, 300);
+      }, { once: true });
+    }
+  }, 800);
 }
 
 function createSampleData() {
@@ -10255,20 +10285,25 @@ function startOcr(mode) {
   const modal = document.getElementById('aiModal');
   const title = mode === 'line_friends' ? '📷 友だちをまとめて登録' : '🪪 名刺スキャン';
   const hint = mode === 'line_friends'
-    ? `今お使いのスマホの連絡先を登録できます。
-
-<div style="background:var(--bg);border-radius:10px;padding:10px;margin-top:8px;font-size:12px;line-height:1.8;">
-📌 <strong>やり方はかんたん3ステップ</strong><br>
-① スマホの連絡先やLINEの友だち画面を開く<br>
-② その画面をスクリーンショット📸<br>
-③ ここにアップするだけ！<br><br>
-AWAIが名前を自動で読み取ります。複数枚まとめてOK！
-</div>`
+    ? `今お使いのスマホの連絡先を登録できます。`
     : '名刺の写真を撮影または選択してください。';
 
   modal.innerHTML = `<h2>${title}</h2>
-    <div style="font-size:13px;color:var(--sub);margin-bottom:12px;">${hint}</div>
-    ${mode==='line_friends' ? `<div style="margin-bottom:12px;">
+    <div style="font-size:13px;color:var(--sub);margin-bottom:16px;">${hint}</div>
+    ${mode==='line_friends' ? `
+    <div style="background:var(--bg);border-radius:14px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:13px;font-weight:600;margin-bottom:12px;">📌 かんたん3ステップ</div>
+      <div style="font-size:13px;line-height:2.2;color:var(--text);">
+        <div>① まずスマホの連絡先アプリを開く</div>
+        <div style="display:flex;gap:8px;margin:8px 0 12px;">
+          <a href="content://com.android.contacts/contacts" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--card);text-decoration:none;font-size:12px;color:var(--text);font-family:'Zen Maru Gothic',sans-serif;">📱 電話帳を開く</a>
+        </div>
+        <div>② その画面をスクリーンショット 📸</div>
+        <div>③ 下のボタンからアップ！</div>
+      </div>
+      <div style="font-size:11px;color:var(--sub);margin-top:4px;">複数枚まとめてOK！</div>
+    </div>
+    <div style="margin-bottom:12px;">
       <button onclick="document.getElementById('ocrFile').click()" style="width:100%;padding:14px;border-radius:12px;border:1px solid var(--accent);background:var(--card);cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;font-size:14px;font-weight:500;color:var(--accent);">📁 スクショを選ぶ（複数枚OK）</button>
     </div>
     <input type="file" id="ocrFile" accept="image/*" multiple style="display:none;" onchange="processOcrImage(this,'${mode}')">` : `<div style="display:flex;gap:8px;margin-bottom:12px;">

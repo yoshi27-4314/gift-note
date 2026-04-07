@@ -3162,7 +3162,7 @@ function renderPersonListItem(p) {
 
   const isOpen = openPersonId === p.id;
 
-  return `<div class="list-item" data-lp-type="people" data-lp-id="${p.id}" onclick="${_selectMode&&_selectType==='people'?`toggleSelectItem('${p.id}')`:`togglePersonDetail('${p.id}')`}" style="${isOpen?'background:var(--accent-light);':''}${_selectMode&&_selectedIds.has(p.id)?'background:rgba(193,154,132,0.15);':''}">
+  return `<div class="list-item" data-lp-type="people" data-lp-id="${p.id}" ontouchstart="lpStart(event,'people','${p.id}')" ontouchend="lpEnd()" ontouchmove="lpMove(event)" onclick="${_selectMode&&_selectType==='people'?`toggleSelectItem('${p.id}')`:`togglePersonDetail('${p.id}')`}" style="${isOpen?'background:var(--accent-light);':''}${_selectMode&&_selectedIds.has(p.id)?'background:rgba(193,154,132,0.15);':''}">
     ${_selectMode&&_selectType==='people'?`<input type="checkbox" id="sel_${p.id}" ${_selectedIds.has(p.id)?'checked':''} onclick="event.stopPropagation();toggleSelectItem('${p.id}')" style="width:20px;height:20px;flex-shrink:0;accent-color:var(--accent);">`:''}
     <div class="list-avatar" style="background:${p.avatar?'transparent':personIcon(p).bg}">${p.avatar?`<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;">`:(personIcon(p).emoji)}</div>
     <div class="list-body">
@@ -4133,7 +4133,7 @@ function render() {
         const key = item._tab + ':' + item.id;
         const preview = item._icon + ' ' + (item.person?item.person+' ':'') + (item.occasion||'');
         const active = isOpenKey === key;
-        return `<div class="list-item" data-lp-type="${item._tab}" data-lp-id="${item.id}" onclick="toggleAllRecordDetail('${item._tab}','${item.id}')" style="${active?'background:var(--accent-light);':''}">
+        return `<div class="list-item" data-lp-type="${item._tab}" data-lp-id="${item.id}" ontouchstart="lpStart(event,'${item._tab}','${item.id}')" ontouchend="lpEnd()" ontouchmove="lpMove(event)" onclick="toggleAllRecordDetail('${item._tab}','${item.id}')" style="${active?'background:var(--accent-light);':''}">
           <div style="width:6px;height:40px;border-radius:3px;background:${item._tab==='gave'?'#d48a7a':'#7a9ad4'};flex-shrink:0;"></div>
           <div class="list-body">
             <div class="list-name">${item.pinned?'📌 ':''}${esc(item.title||'無題')}</div>
@@ -4147,7 +4147,7 @@ function render() {
         giftHtml += `<div style="margin-top:12px;padding:8px 12px;cursor:pointer;color:var(--sub);font-size:13px;text-align:center;border:1px dashed var(--border);border-radius:12px;" onclick="const b=document.getElementById('${hid}');const t=this;if(b.style.display==='none'){b.style.display='';t.textContent='▲ 非表示を閉じる (${hiddenGifts.length}件)';}else{b.style.display='none';t.textContent='▼ 非表示を表示 (${hiddenGifts.length}件)';}">▼ 非表示を表示 (${hiddenGifts.length}件)</div>`;
         giftHtml += `<div id="${hid}" style="display:none;opacity:0.5;">${hiddenGifts.map(item => {
           const preview = (item._tab==='gave'?'🎁':'🎀') + ' ' + (item.person||'');
-          return `<div class="list-item" data-lp-type="${item._tab}" data-lp-id="${item.id}" onclick="toggleAllRecordDetail('${item._tab}','${item.id}')"><div style="width:6px;height:40px;border-radius:3px;background:${item._tab==='gave'?'#d48a7a':'#7a9ad4'};flex-shrink:0;"></div><div class="list-body"><div class="list-name">${esc(item.title||'無題')}</div><div class="list-preview">${esc(preview)}</div></div></div>`;
+          return `<div class="list-item" data-lp-type="${item._tab}" data-lp-id="${item.id}" ontouchstart="lpStart(event,'${item._tab}','${item.id}')" ontouchend="lpEnd()" ontouchmove="lpMove(event)" onclick="toggleAllRecordDetail('${item._tab}','${item.id}')"><div style="width:6px;height:40px;border-radius:3px;background:${item._tab==='gave'?'#d48a7a':'#7a9ad4'};flex-shrink:0;"></div><div class="list-body"><div class="list-name">${esc(item.title||'無題')}</div><div class="list-preview">${esc(preview)}</div></div></div>`;
         }).join('')}</div>`;
       }
       cardList.innerHTML = giftHtml;
@@ -4180,7 +4180,7 @@ function render() {
         const key = item._tab + ':' + item.id;
         const preview = item._icon + ' ' + (item.person?item.person+' ':'') + (item.occasion||'');
         const active = isOpenKey === key;
-        return `<div class="list-item" data-lp-type="${item._tab}" data-lp-id="${item.id}" onclick="toggleAllRecordDetail('${item._tab}','${item.id}')" style="${active?'background:var(--accent-light);':''}">
+        return `<div class="list-item" data-lp-type="${item._tab}" data-lp-id="${item.id}" ontouchstart="lpStart(event,'${item._tab}','${item.id}')" ontouchend="lpEnd()" ontouchmove="lpMove(event)" onclick="toggleAllRecordDetail('${item._tab}','${item.id}')" style="${active?'background:var(--accent-light);':''}">
           <div style="width:6px;height:40px;border-radius:3px;background:${item._tab==='gave'?'#d48a7a':item._tab==='received'?'#7a9ad4':'var(--accent)'};flex-shrink:0;"></div>
           <div class="list-body">
             <div class="list-name">${item.pinned?'📌 ':''}${esc(item.title||'無題')}</div>
@@ -4222,7 +4222,7 @@ function render() {
       const key = item._tab + ':' + item.id;
       const preview = item._icon + ' ' + (item.person?item.person+' ':'') + (item.occasion||'');
       const active = isOpenKey === key;
-      return `<div class="list-item" data-lp-type="${item._tab}" data-lp-id="${item.id}" onclick="toggleAllRecordDetail('${item._tab}','${item.id}')" style="${active?'background:var(--accent-light);':''}">
+      return `<div class="list-item" data-lp-type="${item._tab}" data-lp-id="${item.id}" ontouchstart="lpStart(event,'${item._tab}','${item.id}')" ontouchend="lpEnd()" ontouchmove="lpMove(event)" onclick="toggleAllRecordDetail('${item._tab}','${item.id}')" style="${active?'background:var(--accent-light);':''}">
         <div style="width:6px;height:40px;border-radius:3px;background:${item._tab==='gave'?'#d48a7a':item._tab==='received'?'#7a9ad4':'var(--accent)'};flex-shrink:0;"></div>
         <div class="list-body">
           <div class="list-name">${item.pinned?'📌 ':''}${esc(item.title||'無題')}</div>
@@ -4377,7 +4377,7 @@ function renderItemListItem(item, tab) {
   const personPreview = item.person ? '👤 '+item.person : '';
   const preview = item.purpose ? (purposeIcon + giftTo + (personPreview&&!giftTo?' '+personPreview:'')) : (personPreview || tagPreview || (item.memo?item.memo.substring(0,20):''));
 
-  return `<div class="list-item" data-lp-type="${tab}" data-lp-id="${item.id}" onclick="${_selectMode&&_selectType===tab?`toggleSelectItem('${item.id}')`:`toggleItemDetail('${item.id}')`}" style="${isOpen?'background:var(--accent-light);':''}${_selectMode&&_selectedIds.has(item.id)?'background:rgba(193,154,132,0.15);':''}">
+  return `<div class="list-item" data-lp-type="${tab}" data-lp-id="${item.id}" ontouchstart="lpStart(event,'${tab}','${item.id}')" ontouchend="lpEnd()" ontouchmove="lpMove(event)" onclick="${_selectMode&&_selectType===tab?`toggleSelectItem('${item.id}')`:`toggleItemDetail('${item.id}')`}" style="${isOpen?'background:var(--accent-light);':''}${_selectMode&&_selectedIds.has(item.id)?'background:rgba(193,154,132,0.15);':''}">
     ${_selectMode&&_selectType===tab?`<input type="checkbox" id="sel_${item.id}" ${_selectedIds.has(item.id)?'checked':''} onclick="event.stopPropagation();toggleSelectItem('${item.id}')" style="width:20px;height:20px;flex-shrink:0;accent-color:var(--accent);">`:''}
     <div class="list-body">
       <div class="list-name">${item.visited?'✅ ':''}${item.pinned?'📌 ':''}${esc(item.title||'無題')}${stars?` <span style="color:#f0b040;font-size:12px;">${stars}</span>`:''}</div>
@@ -5513,6 +5513,23 @@ function conciergeWaitingHtml(msg, prefix) {
 // ===== Long Press Context Menu =====
 let _longPressTimer = null;
 let _longPressTarget = null;
+let _lpSX = 0, _lpSY = 0;
+
+function lpStart(e, type, id) {
+  _lpSX = e.touches[0].clientX;
+  _lpSY = e.touches[0].clientY;
+  clearTimeout(_longPressTimer);
+  _longPressTimer = setTimeout(() => {
+    if (navigator.vibrate) navigator.vibrate(30);
+    showLongPressMenu(type, id);
+  }, 500);
+}
+function lpEnd() { clearTimeout(_longPressTimer); }
+function lpMove(e) {
+  if (Math.abs(e.touches[0].clientX - _lpSX) > 10 || Math.abs(e.touches[0].clientY - _lpSY) > 10) {
+    clearTimeout(_longPressTimer);
+  }
+}
 
 function initLongPress() {
   let _lpStartX = 0, _lpStartY = 0;

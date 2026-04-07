@@ -3548,7 +3548,7 @@ async function runGroupAiSuggest(groupId) {
   const resultDiv = document.getElementById('aiGroupResult');
   const btn = document.getElementById('aiGroupBtn');
   btn.disabled=true; btn.textContent='考え中...';
-  resultDiv.innerHTML = '<div style="text-align:center;color:var(--sub);padding:20px;">💭 AIが考えています...</div>';
+  resultDiv.innerHTML = '' + conciergeWaitingHtml('あなたの代わりに探します・・・') + '';
 
   const scene = document.getElementById('aiGroupScene')?.value.trim()||'';
   const budget = document.getElementById('aiGroupBudget')?.value.trim()||'';
@@ -5341,6 +5341,17 @@ function addFamilyRow() {
 }
 
 let _saving = false;
+function conciergeWaitingHtml(msg) {
+  return `<div style="text-align:center;color:var(--sub);padding:20px;">
+    <div style="font-size:14px;margin-bottom:12px;">${msg || 'あなたの代わりに探します・・・'}</div>
+    <div style="display:inline-flex;gap:8px;margin-bottom:10px;">
+      <span style="width:10px;height:10px;border-radius:50%;background:var(--accent);display:inline-block;animation:obDotBounce 1.4s ease-in-out infinite;"></span>
+      <span style="width:10px;height:10px;border-radius:50%;background:var(--accent);display:inline-block;animation:obDotBounce 1.4s ease-in-out 0.2s infinite;"></span>
+      <span style="width:10px;height:10px;border-radius:50%;background:var(--accent);display:inline-block;animation:obDotBounce 1.4s ease-in-out 0.4s infinite;"></span>
+    </div>
+    <div style="font-size:12px;color:var(--sub);animation:obFadeInOut 2s ease-in-out infinite;">少々お待ちください</div>
+  </div>`;
+}
 function showToast(msg, duration, onclick) {
   let el = document.getElementById('toast');
   if (!el) { el = document.createElement('div'); el.id='toast'; el.className='toast'; document.body.appendChild(el); }
@@ -9833,8 +9844,8 @@ async function runAiSuggest(personId) {
 
   const resultDiv = document.getElementById('aiResult');
   const btn = document.getElementById('aiSuggestBtn');
-  btn.disabled = true; btn.textContent = '考え中...';
-  resultDiv.innerHTML = '<div style="text-align:center;color:var(--sub);padding:20px;">💭 AIが考えています...</div>';
+  btn.disabled = true; btn.textContent = '探しています...';
+  resultDiv.innerHTML = '' + conciergeWaitingHtml('あなたの代わりに探します・・・') + '';
 
   // 匿名化されたプロフィールを構築（名前・個人特定情報を除去）
   const profileLines = buildAnonymizedProfile(person);
@@ -10078,7 +10089,7 @@ async function processItemOcrImage(input, ocrMode, tabType) {
   reader.onload = async (e) => {
     const base64 = e.target.result;
     previewDiv.innerHTML = `<img src="${base64}" style="max-width:200px;max-height:200px;border-radius:12px;margin:4px;box-shadow:0 2px 8px rgba(0,0,0,0.1);">`;
-    resultDiv.innerHTML = '<div style="text-align:center;color:var(--sub);padding:20px;">💭 AIが読み取り中...</div>';
+    resultDiv.innerHTML = '' + conciergeWaitingHtml('読み取っています・・・') + '';
 
     try {
       if (!_sbUser) throw new Error('ログインが必要です');
@@ -10277,7 +10288,7 @@ async function processOcrImage(input, mode) {
     reader.onload = async (e) => {
       const base64 = e.target.result;
       previewDiv.innerHTML += `<img src="${base64}" style="max-width:150px;max-height:150px;border-radius:8px;margin:4px;">`;
-      resultDiv.innerHTML = '<div style="text-align:center;color:var(--sub);padding:20px;">💭 AIが読み取り中...</div>';
+      resultDiv.innerHTML = '' + conciergeWaitingHtml('読み取っています・・・') + '';
 
       try {
         if (!_sbUser) throw new Error('ログインが必要です');
@@ -10483,7 +10494,7 @@ async function runCardSearch() {
   const resultDiv = document.getElementById('aiCardResult');
   const btn = document.getElementById('aiCardSearchBtn');
   btn.disabled = true; btn.textContent = '検索中...';
-  resultDiv.innerHTML = '<div style="text-align:center;color:var(--sub);padding:20px;">💭 AIが探しています...</div>';
+  resultDiv.innerHTML = '' + conciergeWaitingHtml('あなたの代わりに探します・・・') + '';
 
   const prompt = `「${keyword}」に関連するおすすめの商品・ギフト・体験を3つ提案してください。
 ${budget ? '予算: 約'+budget+'円' : ''}

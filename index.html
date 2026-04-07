@@ -2135,7 +2135,7 @@ function openPlaceModal(id) {
   const labels = getLabels('place');
 
   let html = `<h2>行きたい を${isEdit?'編集':'追加'}</h2>`;
-  html += `<div class="form-group"><label>店名・場所名 *</label><input id="fTitle" placeholder="例：鳥貴族 名駅店、伏見稲荷大社" value="${esc(item?.title||'')}"></div>`;
+  html += `<div class="form-group"><label>店名・場所名 <span style="color:#c97070;font-size:11px;">* 必須</span></label><input id="fTitle" placeholder="例：鳥貴族 名駅店、伏見稲荷大社" value="${esc(item?.title||'')}"></div>`;
 
   // Labels
   if (labels.length) {
@@ -3194,9 +3194,6 @@ function renderPersonListItem(p) {
     </div>
     <div class="list-meta">
       ${countdownHtml}
-    </div>
-    <div style="flex-shrink:0;padding:4px;" onclick="event.stopPropagation();showLongPressMenu('people','${p.id}')">
-      <span style="font-size:18px;color:var(--sub);padding:4px 8px;">⋮</span>
     </div>
   </div>`;
 }
@@ -4266,40 +4263,21 @@ function render() {
   }
 
   let items = (data[currentTab]||[]).filter(i => matchesSearch(i, currentTab));
-  // Place tab: hide closed places from default view
+  // フィルター処理（全てitemsに代入し、描画は後の共通パスで行う）
   if (currentTab === 'place' && currentLabel === null) items = items.filter(i => !i.isClosed);
-  // Place tab: closed or category filter
-  if (currentTab === 'place' && currentLabel==='closed') {
+  if (currentTab === 'place' && currentLabel === 'closed') {
     items = items.filter(i => i.isClosed);
-  } else if (currentTab === 'place' && currentLabel !== null && currentLabel !== '' && typeof currentLabel === 'string' && currentLabel !== 'closed') {
-    // Place category filter
-    const filtered = items.filter(i => !i.isClosed && i.placeCategory === currentLabel);
-    if (!filtered.length) {
-      cardList.innerHTML = `<div class="empty-msg">「${esc(currentLabel)}」の場所はまだありません</div>`;
-      return;
-    }
-    items = filtered;
-  } else if (['wish','received','gave'].includes(currentTab) && currentLabel !== null && currentLabel !== '' && typeof currentLabel === 'string') {
-    // Item tab: filter by category（空文字は「すべて」と同じ扱い）
-    const filtered = items.filter(i => i.itemCategory === currentLabel);
-    if (!filtered.length) {
-      cardList.innerHTML = `<div class="empty-msg">「${esc(currentLabel)}」のお気に入りはまだありません</div>`;
-      return;
-    }
-    // フィルター結果もitemsとして直接描画パスに渡す
-    items = filtered;
+  } else if (currentTab === 'place' && currentLabel && typeof currentLabel === 'string' && currentLabel !== 'closed') {
+    items = items.filter(i => !i.isClosed && i.placeCategory === currentLabel);
+  } else if (['wish','received','gave'].includes(currentTab) && currentLabel && typeof currentLabel === 'string') {
+    items = items.filter(i => i.itemCategory === currentLabel);
   } else if (currentTab !== 'people' && currentLabel !== null && typeof currentLabel === 'number') {
     const ln = (getLabels(currentTab)[currentLabel]?.name||'').toLowerCase();
-    const filtered = items.filter(i => {
+    items = items.filter(i => {
       if (i.labelIdx === currentLabel) return true;
       const text = [i.title, i.memo, ...(i.tags||[])].filter(Boolean).join(' ').toLowerCase();
       return ln && text.includes(ln);
     });
-    if (!filtered.length) {
-      cardList.innerHTML = `<div class="empty-msg">「${esc(currentLabel)}」のお気に入りはまだありません</div>`;
-      return;
-    }
-    items = filtered;
   } else if (currentTab === 'groups') {
     const groups = (data.groups||[]).filter(g => matchesSearch(g, 'groups'));
     if (!groups.length) {

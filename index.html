@@ -2303,7 +2303,7 @@ function openPlaceMemoryModal(id) {
   const labels = getLabels('place');
 
   let html = `<h2>🤍 記憶の場所を${isEdit?'編集':'追加'}</h2>`;
-  html += `<div class="form-group"><label>場所の名前 *</label><input id="fTitle" placeholder="例：炭火焼肉 牛角 岐阜店、じいちゃんの畑" value="${esc(item?.title||'')}"></div>`;
+  html += `<div class="form-group"><label>場所の名前 <span style="color:#c97070;font-size:11px;">* 必須</span></label><input id="fTitle" placeholder="例：炭火焼肉 牛角 岐阜店、じいちゃんの畑" value="${esc(item?.title||'')}"></div>`;
 
   // Labels
   if (labels.length) {
@@ -4668,7 +4668,7 @@ function openItemModal(id) {
 
   // Title
   const titlePlaceholders = {wish:'例：ワイヤレスイヤホン、日本酒 獺祭',received:'例：バースデーケーキ、ネクタイ',gave:'例：ハンドクリーム、お菓子詰め合わせ'};
-  html += `<div class="form-group"><label>名前 *</label><input id="fTitle" placeholder="${titlePlaceholders[currentTab]||'例：商品名'}" value="${esc(item?.title||'')}"></div>`;
+  html += `<div class="form-group"><label>名前 <span style="color:#c97070;font-size:11px;">* 必須</span></label><input id="fTitle" placeholder="${titlePlaceholders[currentTab]||'例：商品名'}" value="${esc(item?.title||'')}"></div>`;
 
   // Person (received/gave)
   if (showPerson) {
@@ -5000,7 +5000,7 @@ function openPeopleModal(id) {
       ${p?.avatar ? `<div style="font-size:12px;color:#c97070;cursor:pointer;padding:4px 12px;border:1px solid #c97070;border-radius:10px;" onclick="removeAvatar(event)">✕ 削除</div>` : ''}
     </div>
   </div>`;
-  html += `<div class="form-group"><label>呼び名 * ${helpBtn('nickname')}</label><input id="pNickname" placeholder="例：さとうさん、みーちゃん、部長" value="${esc(p?.nickname||'')}"></div>`;
+  html += `<div class="form-group"><label>呼び名 <span style="color:#c97070;font-size:11px;">* 必須</span> ${helpBtn('nickname')}</label><input id="pNickname" placeholder="例：さとうさん、みーちゃん、部長" value="${esc(p?.nickname||'')}"></div>`;
   html += `<div class="form-group"><label>本名（任意）${helpBtn('fullName')}</label><input id="pFullName" placeholder="" value="${esc(p?.fullName||'')}"></div>`;
   // Gender
   html += `<div class="form-group"><label>性別</label>
@@ -5025,7 +5025,7 @@ function openPeopleModal(id) {
 
   // Corporate fields
   html += `<div id="corporateFields" style="display:${isCorp?'':'none'}">`;
-  html += `<div class="form-group"><label>呼び名 *</label><input id="pCorpNickname" placeholder="例：ABC商事、〇〇さんの会社" value="${esc(isCorp?(p?.corpNickname||p?.nickname||''):'')}"><div class="form-hint">自分がどう呼んでいるか</div></div>`;
+  html += `<div class="form-group"><label>呼び名 <span style="color:#c97070;font-size:11px;">* 必須</span></label><input id="pCorpNickname" placeholder="例：ABC商事、〇〇さんの会社" value="${esc(isCorp?(p?.corpNickname||p?.nickname||''):'')}"><div class="form-hint">自分がどう呼んでいるか</div></div>`;
   html += `<div class="form-group"><label>正式名称</label><input id="pCorpName" placeholder="例：ABC商事 株式会社" value="${esc(isCorp?(p?.corpFullName||p?.nickname||''):'')}"></div>`;
   // Corporate photo (business card etc.)
   html += `<div class="form-group"><label>📷 写真（名刺など）</label>
@@ -8301,7 +8301,7 @@ function openMemoryModal(id) {
   </div>`;
 
   // Name
-  html += `<div class="form-group"><label>呼び名 *</label><input id="mNickname" placeholder="例：さとうさん、みーちゃん" value="${esc(p?.nickname||'')}"></div>`;
+  html += `<div class="form-group"><label>呼び名 <span style="color:#c97070;font-size:11px;">* 必須</span></label><input id="mNickname" placeholder="例：さとうさん、みーちゃん" value="${esc(p?.nickname||'')}"></div>`;
   html += `<div class="form-group"><label>本名（任意）</label><input id="mFullName" placeholder="" value="${esc(p?.fullName||'')}"></div>`;
 
   // Memory date - same format as anniversaries (年月日/月日/月)
@@ -10913,10 +10913,8 @@ function proceedGiftFab(method) {
   if (!_giftFabType) { showToast('「もらった」か「あげた」を選んでください'); return; }
   document.getElementById('aiModalOverlay').classList.remove('open');
   if (method === 'manual') {
-    const origTab = currentTab;
     currentTab = _giftFabType;
     openItemModal();
-    currentTab = origTab;
   } else {
     startItemOcr('item_ocr', _giftFabType, method);
   }

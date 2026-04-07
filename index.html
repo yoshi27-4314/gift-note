@@ -837,21 +837,21 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
       <!-- スクショ登録アニメーション -->
       <div style="background:var(--card);border-radius:20px;padding:20px;margin-bottom:24px;box-shadow:0 2px 12px var(--shadow);overflow:hidden;">
         <div id="obLineDemo" style="position:relative;height:220px;">
-          <!-- Step A: 電話帳っぽい画面 -->
-          <div id="obLineMock" style="position:absolute;inset:0;display:flex;flex-direction:column;background:#f7f7f7;border-radius:12px;overflow:hidden;transition:all 1.5s cubic-bezier(0.4,0,0.2,1);">
-            <div style="background:#6b8fad;color:#fff;padding:8px 12px;font-size:12px;font-weight:600;">📱 友だちリスト（スマホの電話帳など）</div>
-            <div style="padding:8px 10px;display:flex;flex-direction:column;gap:6px;">
-              <div style="display:flex;align-items:center;gap:8px;"><div style="width:28px;height:28px;border-radius:50%;background:#ddd;"></div><span style="font-size:12px;color:#333;">田中 花子</span></div>
-              <div style="display:flex;align-items:center;gap:8px;"><div style="width:28px;height:28px;border-radius:50%;background:#ddd;"></div><span style="font-size:12px;color:#333;">鈴木 太郎</span></div>
-              <div style="display:flex;align-items:center;gap:8px;"><div style="width:28px;height:28px;border-radius:50%;background:#ddd;"></div><span style="font-size:12px;color:#333;">佐藤 美咲</span></div>
-              <div style="display:flex;align-items:center;gap:8px;"><div style="width:28px;height:28px;border-radius:50%;background:#ddd;"></div><span style="font-size:12px;color:#333;">山田 健一</span></div>
+          <!-- Step A: LINE風の友だちリスト -->
+          <div id="obLineMock" style="position:absolute;inset:0;display:flex;flex-direction:column;background:#fff;border-radius:12px;overflow:hidden;transition:all 1.5s cubic-bezier(0.4,0,0.2,1);border:1px solid #e5e5e5;">
+            <div style="background:#06C755;color:#fff;padding:8px 12px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;">📱 友だち</div>
+            <div style="padding:4px 0;">
+              <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid #f0f0f0;"><div style="width:36px;height:36px;border-radius:50%;background:#E8F5E9;display:flex;align-items:center;justify-content:center;font-size:16px;">🙂</div><span style="font-size:13px;color:#333;">田中 花子</span></div>
+              <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid #f0f0f0;"><div style="width:36px;height:36px;border-radius:50%;background:#E3F2FD;display:flex;align-items:center;justify-content:center;font-size:16px;">😊</div><span style="font-size:13px;color:#333;">鈴木 太郎</span></div>
+              <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid #f0f0f0;"><div style="width:36px;height:36px;border-radius:50%;background:#FFF3E0;display:flex;align-items:center;justify-content:center;font-size:16px;">😄</div><span style="font-size:13px;color:#333;">佐藤 美咲</span></div>
+              <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;"><div style="width:36px;height:36px;border-radius:50%;background:#F3E5F5;display:flex;align-items:center;justify-content:center;font-size:16px;">😃</div><span style="font-size:13px;color:#333;">山田 健一</span></div>
             </div>
           </div>
           <!-- Step B: スクショ撮影フラッシュ -->
           <div id="obFlash" style="position:absolute;inset:0;background:#fff;border-radius:12px;opacity:0;transition:opacity 0.4s ease;z-index:2;pointer-events:none;"></div>
           <!-- Step C: AWAIに取り込み -->
           <div id="obAwaiImport" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;transition:all 1.2s cubic-bezier(0.4,0,0.2,1);z-index:3;">
-            <div style="font-size:28px;margin-bottom:8px;">📷 → 👤</div>
+            <div style="font-size:28px;margin-bottom:8px;">📱 → ✨</div>
             <div style="font-size:13px;font-weight:600;color:var(--text);">スクショで友だち一括登録！</div>
             <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;" id="obImportedNames"></div>
           </div>
@@ -863,7 +863,7 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
     <!-- Step 8: マイプロフィール詳細 -->
     <div id="obStep8" class="ob-step" style="display:none;">
       <h2 style="text-align:center;font-family:'Shippori Mincho',serif;font-size:22px;margin-bottom:8px;">マイプロフィール</h2>
-      <p style="text-align:center;color:var(--sub);font-size:13px;margin-bottom:24px;">あなたのことをもう少し教えてください</p>
+      <p style="text-align:center;color:var(--sub);font-size:13px;margin-bottom:24px;">あなたのことをもっと教えてください</p>
       <div class="form-group"><label>好きな食べ物</label>
         <input id="obMyFoodLike" placeholder="例：寿司、カレー、チョコレート" style="padding:14px 16px;font-size:16px;border-radius:12px;border:1px solid var(--border);width:100%;">
       </div>
@@ -9238,21 +9238,49 @@ function obShowThankYouAndTransition() {
     document.getElementById('obThankYou').style.opacity = '1';
   });
 
-  // 2秒後：友だち登録の誘導メッセージにフェード
+  // 2秒後：季節アニメーション＋友だち登録メッセージにフェード
   setTimeout(() => {
     const ty = document.getElementById('obThankYou');
     ty.style.opacity = '0';
 
     setTimeout(() => {
-      ty.innerHTML = `<div style="font-size:48px;margin-bottom:16px;">👤</div>
-        <h2 style="font-family:'Shippori Mincho',serif;font-size:22px;margin-bottom:12px;">お友達を登録してみましょう</h2>`;
+      // 季節に合わせたアニメーション
+      const month = new Date().getMonth() + 1;
+      let seasonEmoji, seasonChars;
+      if (month >= 3 && month <= 5) { seasonEmoji = '🌸'; seasonChars = ['🌸','🌺','💮','✨','🌿']; }
+      else if (month >= 6 && month <= 8) { seasonEmoji = '⭐'; seasonChars = ['⭐','✨','💫','🌟','🎆']; }
+      else if (month >= 9 && month <= 11) { seasonEmoji = '🍁'; seasonChars = ['🍁','🍂','✨','🌾','🍃']; }
+      else { seasonEmoji = '❄️'; seasonChars = ['❄️','✨','⛄','🌟','💎']; }
+      // バレンタイン特別
+      if (month === 2 && new Date().getDate() <= 14) { seasonEmoji = '🎀'; seasonChars = ['🎀','💝','✨','💖','🌹']; }
+
+      // 季節パーティクルを降らせる
+      const pContainer = document.createElement('div');
+      pContainer.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:99998;overflow:hidden;';
+      document.body.appendChild(pContainer);
+      for (let i = 0; i < 25; i++) {
+        setTimeout(() => {
+          const el = document.createElement('div');
+          el.textContent = seasonChars[Math.floor(Math.random()*seasonChars.length)];
+          el.style.cssText = `position:absolute;top:-20px;left:${Math.random()*100}%;font-size:${16+Math.random()*14}px;`;
+          pContainer.appendChild(el);
+          el.animate([
+            { transform:'translateY(0) rotate(0deg)', opacity:0.9 },
+            { transform:`translateY(${window.innerHeight+40}px) rotate(${Math.random()*360}deg)`, opacity:0 }
+          ], { duration:3000+Math.random()*2000, easing:'ease-in' }).onfinish = () => el.remove();
+        }, i * 120);
+      }
+      setTimeout(() => pContainer.remove(), 7000);
+
+      ty.innerHTML = `<div style="font-size:56px;margin-bottom:16px;">${seasonEmoji}</div>
+        <h2 style="font-family:'Shippori Mincho',serif;font-size:20px;margin-bottom:12px;line-height:1.6;">お友達を登録するところから<br>始めてみませんか</h2>`;
       ty.style.opacity = '1';
     }, 800);
   }, 2500);
 
-  // 5秒後：ふわっと消えて本編へ
+  // 7秒後：ふわっと消えて本編へ
   setTimeout(() => {
-    overlay.style.transition = 'opacity 1s ease';
+    overlay.style.transition = 'opacity 1.2s ease';
     overlay.style.opacity = '0';
 
     setTimeout(() => {
@@ -9264,8 +9292,8 @@ function obShowThankYouAndTransition() {
       currentTab = 'people';
       render();
       checkReminders();
-    }, 1000);
-  }, 5000);
+    }, 1200);
+  }, 7000);
 }
 
 function obFinish() {

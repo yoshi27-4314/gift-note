@@ -2701,7 +2701,7 @@ function getNearestAnnDays(person) {
 
 function renderItemCard(item, tab, rank) {
   let html = '<div class="card" style="position:relative;">';
-  html += `<div style="position:absolute;top:10px;right:12px;display:flex;gap:8px;z-index:1;">
+  html += `<div style="position:absolute;top:42px;right:12px;display:flex;gap:8px;z-index:1;">
     <label style="font-size:11px;color:var(--sub);display:flex;align-items:center;gap:2px;cursor:pointer;" onclick="event.stopPropagation();">
       <input type="checkbox" ${item.pinned?'checked':''} onchange="event.stopPropagation();togglePin('${tab}','${item.id}')"><span>📌</span>
     </label>
@@ -2787,7 +2787,7 @@ function renderItemCard(item, tab, rank) {
 function renderPersonCard(p) {
   let html = '<div class="person-card" style="position:relative;">';
   const isCorp = p.type==='corporate';
-  html += `<div style="position:absolute;top:10px;right:12px;display:flex;gap:8px;z-index:1;">
+  html += `<div style="position:absolute;top:42px;right:12px;display:flex;gap:8px;z-index:1;">
     <label style="font-size:11px;color:var(--sub);display:flex;align-items:center;gap:2px;cursor:pointer;" onclick="event.stopPropagation();">
       <input type="checkbox" ${p.pinned?'checked':''} onchange="event.stopPropagation();togglePin('people','${p.id}')"><span>📌</span>
     </label>
@@ -3429,7 +3429,7 @@ function renderGroupListItem(g) {
 function renderGroupCard(g) {
   const members = (g.memberIds||[]).map(id => data.people.find(p=>p.id===id)).filter(Boolean);
   let html = '<div class="card" style="border-left:3px solid var(--accent);position:relative;">';
-  html += `<div style="position:absolute;top:10px;right:12px;display:flex;gap:8px;z-index:1;">
+  html += `<div style="position:absolute;top:42px;right:12px;display:flex;gap:8px;z-index:1;">
     <label style="font-size:11px;color:var(--sub);display:flex;align-items:center;gap:2px;cursor:pointer;" onclick="event.stopPropagation();">
       <input type="checkbox" ${g.pinned?'checked':''} onchange="event.stopPropagation();togglePin('groups','${g.id}')"><span>📌</span>
     </label>

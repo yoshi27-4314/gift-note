@@ -713,12 +713,29 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
       <div style="text-align:center;margin-bottom:32px;font-size:48px;">🕊️</div>
       <h1 style="text-align:center;font-family:'Shippori Mincho',serif;font-size:28px;font-weight:600;margin-bottom:16px;color:var(--text);">AWAIへようこそ</h1>
       <p style="text-align:center;color:var(--sub);font-size:15px;line-height:1.8;margin-bottom:32px;">お気に入りと友だちの記録。</p>
-      <div class="form-group" style="margin-bottom:24px;">
+      <div class="form-group" style="margin-bottom:20px;">
         <input id="obFirstName" type="text" placeholder="お名前（ニックネームでもOK）" style="padding:16px;font-size:16px;border-radius:14px;border:1px solid var(--border);width:100%;text-align:center;">
       </div>
       <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;" onclick="obStartWithName()">はじめる</button>
-      <p style="text-align:center;margin-top:16px;font-size:11px;color:var(--sub);">続けることで<a href="privacy.html" target="_blank" style="color:var(--accent);">プライバシーポリシー</a>に同意したものとみなします</p>
-      <p style="text-align:center;margin-top:24px;"><a href="#" onclick="event.preventDefault();showLoginScreen()" style="color:var(--accent);font-size:13px;">すでにアカウントをお持ちの方はログイン</a></p>
+      <div style="display:flex;align-items:center;gap:12px;margin:24px 0 16px;">
+        <div style="flex:1;height:1px;background:var(--border);"></div>
+        <span style="font-size:12px;color:var(--sub);white-space:nowrap;">または</span>
+        <div style="flex:1;height:1px;background:var(--border);"></div>
+      </div>
+      <div style="background:linear-gradient(135deg,var(--card),#faf6f3);border:1px solid var(--border);border-radius:16px;padding:18px 20px;text-align:center;">
+        <div style="font-size:13px;color:var(--text);line-height:1.8;margin-bottom:12px;">メールで登録すると<br><span style="font-weight:600;color:var(--accent);">クラウド保存・全機能</span>が使えます</div>
+        <button class="btn btn-secondary" style="padding:12px 24px;font-size:14px;border-radius:12px;" onclick="obShowEmailRegister()">✉ メールで登録</button>
+      </div>
+      <p style="text-align:center;margin-top:20px;font-size:11px;color:var(--sub);">続けることで<a href="privacy.html" target="_blank" style="color:var(--accent);">プライバシーポリシー</a>に同意したものとみなします</p>
+      <p style="text-align:center;margin-top:12px;"><a href="#" onclick="event.preventDefault();showLoginScreen()" style="color:var(--accent);font-size:13px;">すでにアカウントをお持ちの方はログイン</a></p>
+      <!-- メール登録フォーム（初期非表示） -->
+      <div id="obEmailForm" style="display:none;margin-top:16px;">
+        <div class="form-group" style="margin-bottom:12px;">
+          <input id="obEmail" type="email" placeholder="メールアドレス" style="padding:14px 16px;font-size:16px;border-radius:12px;border:1px solid var(--border);width:100%;text-align:center;">
+        </div>
+        <button class="btn btn-primary" style="width:100%;padding:14px;font-size:16px;border-radius:12px;" onclick="obCreateAccountWithEmail()">登録してはじめる</button>
+        <div id="obEmailMsg" style="text-align:center;margin-top:8px;font-size:13px;"></div>
+      </div>
     </div>
     <!-- Step Install: ホーム画面に追加 -->
     <div id="obStepinstall" class="ob-step" style="display:none;">
@@ -8916,10 +8933,54 @@ function obBuildComplete() {
 function obStartWithName() {
   const name = document.getElementById('obFirstName')?.value.trim();
   if (!name) { showToast('お名前を入力してください'); return; }
-  // 名前を一時保存（Step 2のhidden fieldとウィンドウ変数に）
   window._obMyName = name;
   document.getElementById('obMyName').value = name;
   obNext('install');
+}
+
+function obShowEmailRegister() {
+  const form = document.getElementById('obEmailForm');
+  if (form.style.display === 'none') {
+    form.style.display = '';
+    form.style.opacity = '0';
+    requestAnimationFrame(() => { form.style.transition = 'opacity 0.4s ease'; form.style.opacity = '1'; });
+  } else {
+    form.style.display = 'none';
+  }
+}
+
+async function obCreateAccountWithEmail() {
+  const email = document.getElementById('obEmail')?.value.trim();
+  const name = document.getElementById('obFirstName')?.value.trim();
+  if (!email) { showToast('メールアドレスを入力してください'); return; }
+  if (!name) { showToast('お名前も入力してください'); return; }
+  const msgDiv = document.getElementById('obEmailMsg');
+  msgDiv.innerHTML = '<span style="color:var(--sub);">登録中...</span>';
+  try {
+    const autoPass = 'awai_' + email.split('@')[0] + '_' + Date.now();
+    const { data: authData, error } = await _sb.auth.signUp({
+      email, password: autoPass,
+      options: { emailRedirectTo: window.location.origin }
+    });
+    if (error) {
+      if (error.message?.includes('already registered')) {
+        msgDiv.innerHTML = '<span style="color:var(--accent);">このメールアドレスは登録済みです</span>';
+        setTimeout(() => showLoginScreen(), 1500);
+        return;
+      }
+      throw error;
+    }
+    if (authData?.user) _sbUser = authData.user;
+    msgDiv.innerHTML = '';
+    window._obMyName = name;
+    document.getElementById('obMyName').value = name;
+    obNext('install');
+  } catch(e) {
+    msgDiv.innerHTML = '';
+    window._obMyName = name;
+    document.getElementById('obMyName').value = name;
+    obNext('install');
+  }
 }
 
 function obSaveStep2() {

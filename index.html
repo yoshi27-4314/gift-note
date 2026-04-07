@@ -1036,16 +1036,22 @@ async function sbInit() {
       _sbUser = session.user;
       if (hasOAuthToken && _sbUser.email) {
         window.history.replaceState({}, '', window.location.pathname);
+        // OAuthリダイレクト後：オンボーディングを閉じてログイン状態にする
+        document.getElementById('onboardingOverlay').style.display = 'none';
+        localStorage.setItem(OB_KEY, '1');
+        const loginOv = document.getElementById('loginOverlay');
+        if (loginOv) loginOv.remove();
         setTimeout(() => showToast('✅ ' + _sbUser.email + ' でログインしました'), 500);
       }
       // ログイン済み（メールあり）の場合のみクラウド同期
       if (_sbUser.email) {
         await sbLoad();
-        await sbSave(); // ローカルデータがクラウドにない場合の初回保存
+        await sbSave();
         checkShareRequests();
         ensureShareCode();
         syncReferralPoints();
         showLoginWarningHide();
+        render();
       }
     } else {
       _sbUser = null;
@@ -1167,7 +1173,7 @@ function showLoginScreen() {
         <input type="email" id="loginEmail" placeholder="メールアドレス" style="width:100%;padding:14px 16px;font-size:16px;border:1px solid var(--border);border-radius:12px;margin-bottom:12px;">
         <input type="password" id="loginPassword" placeholder="パスワード" style="width:100%;padding:14px 16px;font-size:16px;border:1px solid var(--border);border-radius:12px;">
       </div>
-      <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;margin-top:16px;" onclick="doLogin()">ログイン</button>
+      <button class="btn btn-primary" style="width:100%;padding:12px;font-size:15px;border-radius:12px;margin-top:16px;" onclick="doLogin()">ログイン</button>
       <p style="text-align:center;margin-top:16px;"><a href="#" onclick="event.preventDefault();showResetPassword()" style="color:var(--accent);font-size:13px;">パスワードを忘れた方</a></p>
       <div style="display:flex;align-items:center;gap:12px;margin:24px 0;">
         <div style="flex:1;height:1px;background:var(--border);"></div>

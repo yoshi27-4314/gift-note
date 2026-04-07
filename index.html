@@ -619,11 +619,18 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 .pin-error { color: #c97070; font-size: 13px; margin-top: 12px; min-height: 20px; }
 
 /* LINE-style list */
-.list-item {
+.list-item, .card-item {
   display: flex; align-items: center; gap: 14px;
   padding: 14px 20px; border-bottom: 1px solid var(--border);
   cursor: pointer; transition: background 0.15s ease;
   -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: pan-y;
+  position: relative;
+}
+.card-item::after, .list-item[data-lp-type]::after {
+  content: '⋮';
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  font-size: 22px; font-weight: bold; color: #3a302a;
+  padding: 8px; cursor: pointer; z-index: 5;
 }
 .list-item:active { background: var(--accent-light); }
 .list-avatar {
@@ -4427,8 +4434,25 @@ function render() {
   } else {
     renderItems(items, cardList);
   }
-  // 全タブ共通: ⋮メニューボタンを確実に追加
-  setTimeout(() => addMenuButtons(document.getElementById('cardList')), 150);
+  // 全タブ共通: card-itemのクリックで右端なら⋮メニュー表示
+  setTimeout(() => {
+    const cl = document.getElementById('cardList');
+    if (!cl) return;
+    cl.querySelectorAll('.card-item').forEach(el => {
+      if (el._menuBound) return;
+      el._menuBound = true;
+      el.addEventListener('click', (e) => {
+        const rect = el.getBoundingClientRect();
+        if (e.clientX > rect.right - 50) {
+          e.stopPropagation();
+          e.preventDefault();
+          const type = el.dataset.tab || currentTab;
+          const id = el.dataset.id;
+          if (id) showLongPressMenu(type, id);
+        }
+      });
+    });
+  }, 200);
 }
 
 let openItemId = null;

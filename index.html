@@ -860,13 +860,19 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
       <div class="form-group" style="margin-top:12px;"><label>趣味・興味</label>
         <input id="obMyInterests" placeholder="例：ゴルフ、料理、旅行、読書" style="padding:14px 16px;font-size:16px;border-radius:12px;border:1px solid var(--border);width:100%;">
       </div>
-      <div class="form-group" style="margin-top:12px;"><label>行きたい場所</label>
-        <input id="obMyPlaces" placeholder="例：京都、イタリア、隠れ家カフェ" style="padding:14px 16px;font-size:16px;border-radius:12px;border:1px solid var(--border);width:100%;">
+      <div class="form-group" style="margin-top:12px;"><label>記念日</label>
+        <div style="display:flex;gap:8px;margin-bottom:6px;">
+          <input id="obMyAnnivName" placeholder="例：結婚記念日、入社日" style="flex:2;padding:14px 12px;font-size:16px;border-radius:12px;border:1px solid var(--border);">
+        </div>
+        <div style="display:flex;gap:8px;">
+          <input id="obMyAnnivMonth" type="number" min="1" max="12" placeholder="月" style="flex:1;padding:14px 12px;font-size:16px;border-radius:12px;border:1px solid var(--border);">
+          <input id="obMyAnnivDay" type="number" min="1" max="31" placeholder="日" style="flex:1;padding:14px 12px;font-size:16px;border-radius:12px;border:1px solid var(--border);">
+        </div>
       </div>
       <div class="form-group" style="margin-top:12px;"><label>ひとことメモ</label>
         <input id="obMyMemo" placeholder="例：最近引っ越した、来月誕生日" style="padding:14px 16px;font-size:16px;border-radius:12px;border:1px solid var(--border);width:100%;">
       </div>
-      <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;margin-top:24px;" onclick="obSaveMyProfile()">保存して本編へ</button>
+      <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;margin-top:24px;" onclick="obSaveMyProfile()">保存</button>
     </div>
     <script>
     // LINEスクショ→AWAI取り込みアニメーション
@@ -9131,7 +9137,6 @@ function obSaveMyProfile() {
   const foodDislike = document.getElementById('obMyFoodDislike')?.value.trim();
   const brands = document.getElementById('obMyBrands')?.value.trim();
   const interests = document.getElementById('obMyInterests')?.value.trim();
-  const places = document.getElementById('obMyPlaces')?.value.trim();
   const memo = document.getElementById('obMyMemo')?.value.trim();
 
   if (foodLike) profile.foodLike = foodLike.split(/[,、\s]+/).filter(Boolean);
@@ -9140,33 +9145,66 @@ function obSaveMyProfile() {
   if (interests) profile.interests = interests.split(/[,、\s]+/).filter(Boolean);
   if (memo) profile.memo = memo;
 
-  localStorage.setItem(MY_PROFILE_KEY, JSON.stringify(profile));
-
-  // 行きたい場所をデータに登録
-  if (places) {
-    const now = new Date().toISOString();
-    places.split(/[,、\s]+/).filter(Boolean).forEach(p => {
-      data.place.push({
-        id: genId(), title: p, placeCategory: '', tags: [],
-        address: '', memo: '', withPeople: [],
-        pinned: false, createdAt: now, updatedAt: now
-      });
-    });
-    saveData();
+  // 記念日追加
+  const annivName = document.getElementById('obMyAnnivName')?.value.trim();
+  const annivMonth = document.getElementById('obMyAnnivMonth')?.value;
+  const annivDay = document.getElementById('obMyAnnivDay')?.value;
+  if (annivName && annivMonth) {
+    if (!profile.anniversaries) profile.anniversaries = [];
+    const date = String(annivMonth).padStart(2,'0') + '-' + String(annivDay||1).padStart(2,'0');
+    profile.anniversaries.push({ name: annivName, date: date, dateType: 'monthday', repeat: 'yearly', reminders: [30] });
   }
 
+  localStorage.setItem(MY_PROFILE_KEY, JSON.stringify(profile));
   sbSave();
-  // 友だちタブに遷移して本編開始
-  obFinishToFriends();
+
+  // お礼メッセージ → フラッシュアニメーション → 友だちタブ
+  obShowThankYouAndTransition();
 }
 
-function obFinishToFriends() {
-  localStorage.setItem(OB_KEY, '1');
-  document.getElementById('onboardingOverlay').style.display = 'none';
-  loadData();
-  currentTab = 'people';
-  render();
-  checkReminders();
+function obShowThankYouAndTransition() {
+  const overlay = document.getElementById('onboardingOverlay');
+  const inner = overlay.querySelector(':scope > div');
+
+  // お礼メッセージ
+  inner.innerHTML = `<div style="text-align:center;opacity:0;transition:opacity 0.8s ease;" id="obThankYou">
+    <div style="font-size:48px;margin-bottom:16px;">🕊️</div>
+    <h2 style="font-family:'Shippori Mincho',serif;font-size:22px;margin-bottom:12px;">ご登録ありがとうございました</h2>
+    <p style="color:var(--sub);font-size:14px;line-height:1.8;">あなた専用のコンシェルジュが<br>お待ちしています</p>
+  </div>`;
+
+  requestAnimationFrame(() => {
+    document.getElementById('obThankYou').style.opacity = '1';
+  });
+
+  // 2秒後：友だち登録の誘導メッセージにフェード
+  setTimeout(() => {
+    const ty = document.getElementById('obThankYou');
+    ty.style.opacity = '0';
+
+    setTimeout(() => {
+      ty.innerHTML = `<div style="font-size:48px;margin-bottom:16px;">👤</div>
+        <h2 style="font-family:'Shippori Mincho',serif;font-size:22px;margin-bottom:12px;">お友達を登録してみましょう</h2>`;
+      ty.style.opacity = '1';
+    }, 800);
+  }, 2500);
+
+  // 5秒後：ふわっと消えて本編へ
+  setTimeout(() => {
+    overlay.style.transition = 'opacity 1s ease';
+    overlay.style.opacity = '0';
+
+    setTimeout(() => {
+      localStorage.setItem(OB_KEY, '1');
+      overlay.style.display = 'none';
+      overlay.style.opacity = '1';
+      overlay.style.transition = '';
+      loadData();
+      currentTab = 'people';
+      render();
+      checkReminders();
+    }, 1000);
+  }, 5000);
 }
 
 function obFinish() {

@@ -7353,7 +7353,7 @@ async function syncReferralPoints() {
       if (localCount > cloudCount) {
         await _sb.from('referral_points').update({
           referral_count: localCount,
-          points: localCount * 10
+          points: localCount * 5
         }).eq('user_id', _sbUser.id);
       } else if (cloudCount > localCount) {
         localStorage.setItem(REFERRAL_COUNT_KEY, cloudCount.toString());
@@ -7362,7 +7362,7 @@ async function syncReferralPoints() {
       await _sb.from('referral_points').insert({
         user_id: _sbUser.id,
         referral_count: localCount,
-        points: localCount * 10
+        points: localCount * 5
       });
     } else {
       await _sb.from('referral_points').insert({
@@ -7781,13 +7781,13 @@ async function creditReferrer(refId) {
     if (rp) {
       await _sb.from('referral_points').update({
         referral_count: (rp.referral_count || 0) + 1,
-        points: ((rp.referral_count || 0) + 1) * 10
+        points: ((rp.referral_count || 0) + 1) * 5
       }).eq('user_id', referrerUserId);
     } else {
       await _sb.from('referral_points').insert({
         user_id: referrerUserId,
         referral_count: 1,
-        points: 10
+        points: 5
       });
     }
   } catch(e) { console.error('creditReferrer error:', e); }

@@ -792,7 +792,7 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
       <div style="background:var(--card);border-radius:20px;padding:20px;margin-bottom:24px;box-shadow:0 2px 12px var(--shadow);overflow:hidden;">
         <div id="obLineDemo" style="position:relative;height:220px;">
           <!-- Step A: LINEっぽい画面 -->
-          <div id="obLineMock" style="position:absolute;inset:0;display:flex;flex-direction:column;background:#f7f7f7;border-radius:12px;overflow:hidden;transition:all 0.8s ease;">
+          <div id="obLineMock" style="position:absolute;inset:0;display:flex;flex-direction:column;background:#f7f7f7;border-radius:12px;overflow:hidden;transition:all 1.5s cubic-bezier(0.4,0,0.2,1);">
             <div style="background:#06C755;color:#fff;padding:8px 12px;font-size:12px;font-weight:600;">友だちリスト</div>
             <div style="padding:8px 10px;display:flex;flex-direction:column;gap:6px;">
               <div style="display:flex;align-items:center;gap:8px;"><div style="width:28px;height:28px;border-radius:50%;background:#ddd;"></div><span style="font-size:12px;color:#333;">田中 花子</span></div>
@@ -802,9 +802,9 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
             </div>
           </div>
           <!-- Step B: スクショ撮影フラッシュ -->
-          <div id="obFlash" style="position:absolute;inset:0;background:#fff;border-radius:12px;opacity:0;transition:opacity 0.15s ease;z-index:2;pointer-events:none;"></div>
+          <div id="obFlash" style="position:absolute;inset:0;background:#fff;border-radius:12px;opacity:0;transition:opacity 0.4s ease;z-index:2;pointer-events:none;"></div>
           <!-- Step C: AWAIに取り込み -->
-          <div id="obAwaiImport" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;transition:all 0.6s ease;z-index:3;">
+          <div id="obAwaiImport" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;transition:all 1.2s cubic-bezier(0.4,0,0.2,1);z-index:3;">
             <div style="font-size:28px;margin-bottom:8px;">📷 → 👤</div>
             <div style="font-size:13px;font-weight:600;color:var(--text);">スクショで友だち一括登録！</div>
             <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;" id="obImportedNames"></div>
@@ -824,40 +824,46 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
       if (!mock || !flash || !imp || !names) return;
 
       // リセット
-      mock.style.opacity = '1'; mock.style.transform = 'scale(1)';
+      mock.style.opacity = '1'; mock.style.transform = 'scale(1)'; mock.style.filter = 'blur(0)';
       flash.style.opacity = '0';
-      imp.style.opacity = '0';
+      imp.style.opacity = '0'; imp.style.transform = 'translateY(10px)';
       names.innerHTML = '';
 
-      // 1.5秒後: フラッシュ（スクショ撮影）
+      // 2.5秒後: フラッシュ（スクショ撮影）ゆっくり光る
       setTimeout(() => {
-        flash.style.opacity = '1';
-        setTimeout(() => { flash.style.opacity = '0'; }, 200);
-      }, 1500);
+        flash.style.opacity = '0.7';
+        setTimeout(() => { flash.style.opacity = '0'; }, 600);
+      }, 2500);
 
-      // 2秒後: LINEが縮小
+      // 3.5秒後: LINEがゆっくりぼかしながらフェードアウト
       setTimeout(() => {
-        mock.style.transform = 'scale(0.8)';
-        mock.style.opacity = '0.3';
-      }, 2000);
+        mock.style.transform = 'scale(0.95)';
+        mock.style.opacity = '0.15';
+        mock.style.filter = 'blur(4px)';
+      }, 3500);
 
-      // 2.5秒後: AWAI取り込み表示
+      // 4.5秒後: AWAI取り込みがふわっと浮かび上がる
       setTimeout(() => {
         imp.style.opacity = '1';
+        imp.style.transform = 'translateY(0)';
         const friendNames = ['田中 花子','鈴木 太郎','佐藤 美咲','山田 健一'];
         friendNames.forEach((n, i) => {
           setTimeout(() => {
             const tag = document.createElement('div');
-            tag.style.cssText = 'background:var(--accent);color:#fff;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:500;opacity:0;transform:scale(0.5);transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);';
+            tag.style.cssText = 'background:var(--accent);color:#fff;padding:5px 14px;border-radius:20px;font-size:11px;font-weight:500;opacity:0;transform:translateY(8px);transition:all 0.6s cubic-bezier(0.4,0,0.2,1);';
             tag.textContent = '👤 ' + n;
             names.appendChild(tag);
-            requestAnimationFrame(() => { tag.style.opacity = '1'; tag.style.transform = 'scale(1)'; });
-          }, i * 300);
+            requestAnimationFrame(() => { tag.style.opacity = '1'; tag.style.transform = 'translateY(0)'; });
+          }, i * 500);
         });
-      }, 2500);
+      }, 4500);
 
-      // 5.5秒後: ループ
-      setTimeout(() => obPlayLineDemo(), 6000);
+      // 9秒後: ゆっくりフェードアウトしてループ
+      setTimeout(() => {
+        imp.style.opacity = '0';
+        imp.style.transform = 'translateY(-10px)';
+        setTimeout(() => obPlayLineDemo(), 1500);
+      }, 9000);
     }
     </script>
   </div>

@@ -5423,6 +5423,78 @@ function addFamilyRow() {
 }
 
 let _saving = false;
+// ===== お祝い演出判定 =====
+const CELEBRATION_KEYWORDS = {
+  '🎂': ['誕生日','バースデー','birthday'],
+  '💒': ['結婚記念','ウェディング','婚約','プロポーズ'],
+  '🎓': ['卒業','入学','入園'],
+  '🏢': ['入社','就職','転職','昇進','昇格'],
+  '👶': ['出産','安産','マタニティ'],
+  '🎍': ['お正月','新年','元旦'],
+  '🎎': ['ひな祭り','雛祭り'],
+  '🎏': ['こどもの日','子供の日','端午'],
+  '👘': ['七五三','成人','成人式'],
+  '🎄': ['クリスマス'],
+  '💝': ['バレンタイン'],
+  '🍫': ['ホワイトデー'],
+  '👔': ['父の日'],
+  '💐': ['母の日'],
+  '🎉': ['記念日','アニバーサリー','anniversary','祝','お祝い'],
+  '🏆': ['優勝','受賞','合格','達成'],
+  '🏠': ['引越','新居','新築','マイホーム'],
+  '💎': ['還暦','古希','喜寿','傘寿','米寿','白寿','金婚','銀婚'],
+};
+const NEGATIVE_KEYWORDS = ['命日','法事','回忌','忌日','お見舞い','通夜','葬','供養','仏壇','墓参'];
+
+function isCelebrationText(text) {
+  if (!text) return null;
+  const t = text.toLowerCase();
+  // ネガティブ判定が先
+  for (const neg of NEGATIVE_KEYWORDS) {
+    if (t.includes(neg)) return null;
+  }
+  // お祝いキーワード判定
+  for (const [emoji, keywords] of Object.entries(CELEBRATION_KEYWORDS)) {
+    for (const kw of keywords) {
+      if (t.includes(kw.toLowerCase())) return emoji;
+    }
+  }
+  return null;
+}
+
+function showCelebrationParticle(emoji) {
+  if (!emoji) return;
+  const chars = [emoji, '✨', '💫', '🌟', '⭐'];
+  const container = document.createElement('div');
+  container.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:9998;overflow:hidden;';
+  document.body.appendChild(container);
+  for (let i = 0; i < 20; i++) {
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.textContent = chars[Math.floor(Math.random()*chars.length)];
+      el.style.cssText = `position:absolute;top:-20px;left:${Math.random()*100}%;font-size:${16+Math.random()*14}px;`;
+      container.appendChild(el);
+      el.animate([
+        { transform:'translateY(0) rotate(0deg)', opacity:0.9 },
+        { transform:`translateY(${window.innerHeight+40}px) rotate(${Math.random()*360}deg)`, opacity:0 }
+      ], { duration:2500+Math.random()*2000, easing:'ease-in' }).onfinish = () => el.remove();
+    }, i * 100);
+  }
+  setTimeout(() => container.remove(), 6000);
+}
+
+// 記念日登録時にお祝い演出を呼び出す
+function checkCelebrationOnSave(anniversaries) {
+  if (!anniversaries?.length) return;
+  for (const a of anniversaries) {
+    const emoji = isCelebrationText(a.name);
+    if (emoji) {
+      setTimeout(() => showCelebrationParticle(emoji), 500);
+      return; // 1回の保存で1演出まで
+    }
+  }
+}
+
 function conciergeWaitingHtml(msg, prefix) {
   const prefixHtml = prefix ? `<div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px;">${prefix}</div>` : '';
   return `<div style="text-align:center;color:var(--sub);padding:20px;">
@@ -5569,6 +5641,7 @@ function savePerson() {
   }
   saveData(); closeModal(); render();
   showToast(editingId ? '更新しました' : '登録しました ✓');
+  checkCelebrationOnSave(person.anniversaries);
   _saving = false;
 }
 
@@ -7421,6 +7494,7 @@ function registerFromQR() {
   currentLabel = null;
   render();
   showToast(nickname + 'さんを登録しました ✓');
+  checkCelebrationOnSave(person.anniversaries);
 }
 
 // ===== Help Popups =====

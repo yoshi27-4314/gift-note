@@ -9064,7 +9064,21 @@ async function obRunAiSuggest2() {
 
   const resultDiv = document.getElementById('obAiResult2');
   const nextBtn = document.getElementById('obAi2NextBtn');
-  resultDiv.innerHTML = obWaitingDotsHtml('少しの情報を加えただけで・・・');
+
+  // 入力内容に合わせた待機メッセージを動的に生成
+  let waitMsg = '';
+  if (scene && like) {
+    waitMsg = `${scene}に合う${like}関連のものをお選びしています・・・`;
+  } else if (scene) {
+    waitMsg = `${scene}にぴったりなものをお選びしています・・・`;
+  } else if (like && dislike) {
+    waitMsg = `${like}がお好きで${dislike}が苦手なあなたに合うものをお選びしています・・・`;
+  } else if (like) {
+    waitMsg = `${like}がお好きなあなたに合うものをお選びしています・・・`;
+  } else {
+    waitMsg = 'あなたに合うものをお選びしています・・・';
+  }
+  resultDiv.innerHTML = obWaitingDotsHtml(waitMsg);
 
   // 1回目の提案を避けるリスト
   const avoidList = (window._obFirstSuggestions || []).map(s => s.name).join('、');

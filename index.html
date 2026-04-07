@@ -5754,6 +5754,73 @@ function selectActionShare() {
   selectModeEnd();
 }
 
+// ===== Double Tap to Pin =====
+let _lastTapTime = 0;
+let _lastTapId = '';
+document.addEventListener('click', e => {
+  const item = e.target.closest('[data-lp-type]');
+  if (!item || _selectMode) return;
+  const now = Date.now();
+  if (_lastTapId === item.dataset.lpId && now - _lastTapTime < 400) {
+    // ダブルタップ → ピン留めトグル
+    e.preventDefault();
+    e.stopPropagation();
+    togglePin(item.dataset.lpType === 'people' ? 'people' : item.dataset.lpType, item.dataset.lpId);
+    render();
+    showToast('📌 ピン留めを切り替えました');
+    _lastTapId = '';
+    return;
+  }
+  _lastTapId = item.dataset.lpId;
+  _lastTapTime = now;
+});
+
+// ===== Swipe Gestures =====
+function initSwipeGestures() {
+  let startX = 0, startY = 0, startTime = 0;
+  const SWIPE_THRESHOLD = 80;
+  const EDGE_WIDTH = 30;
+  const tabs = ['people','wish','calendar','place','gift'];
+
+  document.addEventListener('touchstart', e => {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    startTime = Date.now();
+  });
+
+  document.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - startX;
+    const dy = e.changedTouches[0].clientY - startY;
+    const dt = Date.now() - startTime;
+    if (dt > 500 || Math.abs(dy) > Math.abs(dx)) return; // 遅いor縦スワイプは無視
+
+    // モーダルが開いている場合は無視
+    const modal = document.querySelector('.modal-overlay.open');
+    if (modal) return;
+    if (document.getElementById('onboardingOverlay')?.style.display !== 'none' &&
+        document.getElementById('onboardingOverlay')?.style.display !== '') return;
+
+    // 左端からの右スワイプ → 戻る
+    if (dx > SWIPE_THRESHOLD && startX < EDGE_WIDTH) {
+      goBack();
+      return;
+    }
+
+    // 左右スワイプでタブ切替
+    if (Math.abs(dx) > SWIPE_THRESHOLD) {
+      const idx = tabs.indexOf(currentTab);
+      if (idx < 0) return;
+      if (dx < -SWIPE_THRESHOLD && idx < tabs.length - 1) {
+        // 左スワイプ → 次のタブ
+        switchTab(tabs[idx + 1]);
+      } else if (dx > SWIPE_THRESHOLD && startX > EDGE_WIDTH && idx > 0) {
+        // 右スワイプ → 前のタブ（左端スワイプバック以外）
+        switchTab(tabs[idx - 1]);
+      }
+    }
+  });
+}
+
 function showToast(msg, duration, onclick) {
   let el = document.getElementById('toast');
   if (!el) { el = document.createElement('div'); el.id='toast'; el.className='toast'; document.body.appendChild(el); }
@@ -11601,6 +11668,7 @@ if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().t
   setTimeout(checkSpecialEvent, 1500);
   setTimeout(checkStartupCelebrations, 2500);
   initLongPress();
+  initSwipeGestures();
 
   // Supabase初期化（クラウド同期開始）
   sbInit();

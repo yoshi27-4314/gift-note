@@ -3610,10 +3610,13 @@ function renderItemsTab(cardList) {
     if (a.pinned&&!b.pinned) return -1; if (!a.pinned&&b.pinned) return 1;
     return (b.date||b.createdAt||'').localeCompare(a.date||a.createdAt||'');
   });
+  const inSelect = _selectMode && _selectType === 'items';
   let html = sorted.map(item => {
     const preview = item.memo ? item.memo.substring(0,30) : (item.tags?.slice(0,3).map(t=>'#'+t).join(' ')||'');
     const isOpen = openItemId === item.id;
-    return `<div class="list-item" style="display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid var(--border);cursor:pointer;${isOpen?'background:var(--accent-light);':''}" onclick="toggleItemDetail('${item.id}')">
+    const selected = inSelect && _selectedIds.has(item.id);
+    return `<div class="list-item" style="display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid var(--border);cursor:pointer;${isOpen?'background:var(--accent-light);':''}${selected?'background:rgba(193,154,132,0.15);':''}" onclick="${inSelect?`toggleSelectItem('${item.id}')`:`toggleItemDetail('${item.id}')`}">
+      ${inSelect?`<input type="checkbox" ${selected?'checked':''} onclick="event.stopPropagation();toggleSelectItem('${item.id}')" style="width:22px;height:22px;flex-shrink:0;accent-color:var(--accent);">`:''}
       <div style="flex:1;min-width:0;">
         <div style="font-size:16px;font-weight:600;">${item.pinned?'📌 ':''}${esc(item.title||'無題')}</div>
         <div style="font-size:13px;color:var(--sub);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(preview)}</div>
@@ -3622,7 +3625,7 @@ function renderItemsTab(cardList) {
         ${item.date?`<div style="font-size:12px;color:var(--sub);">${item.date}</div>`:''}
         ${item.amount?`<div style="font-size:11px;color:var(--accent);font-weight:600;">¥${Number(item.amount).toLocaleString()}</div>`:''}
       </div>
-      <button class="awai-menu-btn" style="font-size:22px;font-weight:bold;color:#3a302a;background:none;border:none;padding:8px;cursor:pointer;flex-shrink:0;" onclick="event.stopPropagation();showLongPressMenu('items','${item.id}')">⋮</button>
+      ${inSelect?'':`<button class="awai-menu-btn" style="font-size:22px;font-weight:bold;color:#3a302a;background:none;border:none;padding:8px;cursor:pointer;flex-shrink:0;" onclick="event.stopPropagation();showLongPressMenu('items','${item.id}')">⋮</button>`}
     </div>`;
   }).join('');
   cardList.innerHTML = html;
@@ -4778,7 +4781,7 @@ function showLongPressMenu(type, id) {
   buttons += `<button style="${btnStyle}" onmousedown="this.style.background='var(--bg)'" onmouseup="this.style.background=''" onclick="closeLongPressMenu();shareCard('${type}','${id}')"><span style="font-size:18px;">📤</span>共有</button>`;
   buttons += `<button style="${btnStyle}" onmousedown="this.style.background='var(--bg)'" onmouseup="this.style.background=''" onclick="closeLongPressMenu();togglePin('${isPeople?'people':type}','${id}');render()"><span style="font-size:18px;">📌</span>${item.pinned?'ピン留め解除':'ピン留め'}</button>`;
   // まとめて選択（お気に入り・行きたいのみ。友だち・ギフトは対象外）
-  if (['wish','place'].includes(type)) {
+  if (['wish','place','items'].includes(type)) {
     buttons += `<div style="height:1px;background:var(--border);margin:4px 0;"></div>`;
     buttons += `<button style="${btnStyle}" onmousedown="this.style.background='var(--bg)'" onmouseup="this.style.background=''" onclick="closeLongPressMenu();selectModeStart('${type}')"><span style="font-size:18px;">☑️</span>まとめて選択</button>`;
   }
@@ -4868,9 +4871,28 @@ function toggleSelectItem(id) {
   if (_selectedIds.has(id)) _selectedIds.delete(id);
   else _selectedIds.add(id);
   updateSelectBar();
-  // チェックボックスのUIを更新
-  const cb = document.getElementById('sel_' + id);
-  if (cb) cb.checked = _selectedIds.has(id);
+  // チェックボックスのUI更新（全チェックボックスを走査）
+  document.querySelectorAll('#cardList input[type="checkbox"]').forEach(cb => {
+    const row = cb.closest('.list-item');
+    if (!row) return;
+    const rowId = row.dataset.lpId || row.dataset.id;
+    if (!rowId) {
+      const oc = row.getAttribute('onclick') || '';
+      const m = oc.match(/'([a-z0-9_]+)'/);
+      if (m && m[1] === id) cb.checked = _selectedIds.has(id);
+    } else if (rowId === id) {
+      cb.checked = _selectedIds.has(id);
+    }
+  });
+  // 選択行のハイライト更新
+  document.querySelectorAll('#cardList .list-item').forEach(row => {
+    const rowId = row.dataset.lpId || row.dataset.id;
+    if (rowId && _selectedIds.has(rowId)) {
+      row.style.background = 'rgba(193,154,132,0.15)';
+    } else if (rowId) {
+      row.style.background = '';
+    }
+  });
 }
 
 function showSelectBar() {

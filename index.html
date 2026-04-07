@@ -5542,6 +5542,19 @@ function initLongPress() {
     e.preventDefault();
     showLongPressMenu(item.dataset.lpType, item.dataset.lpId);
   });
+
+  // PC: マウス長押し
+  let _mouseTimer = null;
+  document.addEventListener('mousedown', e => {
+    if (e.button !== 0) return; // 左クリックのみ
+    const item = e.target.closest('[data-lp-type]');
+    if (!item) return;
+    _mouseTimer = setTimeout(() => {
+      showLongPressMenu(item.dataset.lpType, item.dataset.lpId);
+    }, 500);
+  });
+  document.addEventListener('mouseup', () => { clearTimeout(_mouseTimer); });
+  document.addEventListener('mousemove', () => { clearTimeout(_mouseTimer); });
 }
 
 function showLongPressMenu(type, id) {

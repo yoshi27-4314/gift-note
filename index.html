@@ -4427,6 +4427,8 @@ function render() {
   } else {
     renderItems(items, cardList);
   }
+  // 全タブ共通: ⋮メニューボタンを確実に追加
+  setTimeout(() => addMenuButtons(document.getElementById('cardList')), 150);
 }
 
 let openItemId = null;
@@ -4518,16 +4520,22 @@ function renderItems(items, cardList) {
 
 function addMenuButtons(container) {
   if (!container) return;
-  container.querySelectorAll('.list-item').forEach(el => {
-    // 既に⋮があればスキップ
+  // .list-itemだけでなく、cardListの直接の子要素全てを対象にする
+  container.querySelectorAll('.list-item, [onclick*="toggleItemDetail"], [onclick*="toggleAllRecordDetail"]').forEach(el => {
     if (el.querySelector('.awai-menu-btn')) return;
     const type = el.dataset.lpType || currentTab;
-    const id = el.dataset.lpId;
+    let id = el.dataset.lpId;
+    // data属性がない場合、onclickから抽出
+    if (!id) {
+      const onclick = el.getAttribute('onclick') || '';
+      const m = onclick.match(/Detail\('([^']+)'\)/);
+      if (m) id = m[1];
+    }
     if (!id) return;
-    const btn = document.createElement('span');
+    const btn = document.createElement('button');
     btn.className = 'awai-menu-btn';
     btn.textContent = '⋮';
-    btn.style.cssText = 'font-size:24px;color:#3a302a;padding:8px 12px;cursor:pointer;flex-shrink:0;line-height:1;font-weight:bold;';
+    btn.style.cssText = 'font-size:16px;color:#fff;background:var(--accent);border:none;border-radius:8px;padding:4px 10px;cursor:pointer;flex-shrink:0;font-weight:bold;margin-left:4px;';
     btn.onclick = (e) => { e.stopPropagation(); showLongPressMenu(type, id); };
     el.appendChild(btn);
   });

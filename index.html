@@ -4424,10 +4424,17 @@ function render() {
   setTimeout(() => {
     const cl = document.getElementById('cardList');
     if (!cl) return;
-    cl.querySelectorAll('.card-item, .list-item').forEach(el => {
+    Array.from(cl.children).forEach(el => {
       if (el.querySelector('.awai-menu-btn')) return;
+      if (el.classList.contains('empty-msg') || el.tagName === 'STYLE') return;
+      if (el.id && ['itemDetail','personDetail','groupDetail','allRecordDetail'].includes(el.id)) return;
       const type = el.dataset.lpType || el.dataset.tab || currentTab;
-      const id = el.dataset.lpId || el.dataset.id;
+      let id = el.dataset.lpId || el.dataset.id;
+      if (!id) {
+        const oc = el.getAttribute('onclick') || '';
+        const m = oc.match(/'([a-z0-9_]+)'/);
+        if (m) id = m[1];
+      }
       if (!id) return;
       el.style.position = 'relative';
       const btn = document.createElement('button');
@@ -9562,12 +9569,12 @@ function obSaveSuggestions(resultDiv) {
 }
 
 function obSaveFirstSuggestions() {
-  obSaveSuggestions(document.getElementById('obAiResult1'));
+  // 提案は見せるだけ。お気に入りへの自動登録はしない
   obNext(5); // 追加情報へ
 }
 
 function obSaveSecondSuggestions() {
-  obSaveSuggestions(document.getElementById('obAiResult2'));
+  // 提案は見せるだけ。お気に入りへの自動登録はしない
   obNext(7); // 友だちギフト予告へ
 }
 

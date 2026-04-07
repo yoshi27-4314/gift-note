@@ -774,12 +774,13 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
       <div class="form-group" style="margin-top:10px;"><label>興味</label>
         <input id="obMyInterests" placeholder="例：ゴルフ、料理、アウトドア、話題のお菓子" style="padding:14px 16px;font-size:16px;border-radius:12px;border:1px solid var(--border);width:100%;">
       </div>
-      <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;margin-top:24px;" onclick="obSaveProfileAndInterests()">次へ</button>
+      <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;margin-top:24px;" onclick="obSaveProfileAndInterests()">AWAIの使い方をお見せします</button>
     </div>
     <!-- Step 3: コンシェルジュ提案 -->
     <div id="obStep3" class="ob-step" style="display:none;">
       <div style="text-align:center;margin-bottom:16px;font-size:40px;">✨</div>
-      <h2 style="text-align:center;font-family:'Shippori Mincho',serif;font-size:20px;margin-bottom:16px;">コンシェルジュからのご提案</h2>
+      <h2 style="text-align:center;font-family:'Shippori Mincho',serif;font-size:20px;margin-bottom:8px;">あなたのコンシェルジュからご提案</h2>
+      <p style="text-align:center;color:var(--sub);font-size:13px;line-height:1.6;margin-bottom:16px;">登録情報をもとに<br>ぴったりなギフトをお探しします</p>
       <div id="obAiResult" style="margin-bottom:20px;"></div>
       <button class="btn btn-primary" id="obAiNextBtn" style="width:100%;padding:16px;font-size:17px;border-radius:14px;display:none;" onclick="obSaveAllSuggestions()">すべて登録して次へ</button>
     </div>
@@ -3554,7 +3555,7 @@ async function runGroupAiSuggest(groupId) {
   const resultDiv = document.getElementById('aiGroupResult');
   const btn = document.getElementById('aiGroupBtn');
   btn.disabled=true; btn.textContent='探しています...';
-  resultDiv.innerHTML = '' + conciergeWaitingHtml() + '';
+  resultDiv.innerHTML = '' + conciergeWaitingHtml('メンバーの情報をもとにお探しします・・・', 'あなたのコンシェルジュが') + '';
 
   const scene = document.getElementById('aiGroupScene')?.value.trim()||'';
   const budget = document.getElementById('aiGroupBudget')?.value.trim()||'';
@@ -5347,8 +5348,10 @@ function addFamilyRow() {
 }
 
 let _saving = false;
-function conciergeWaitingHtml(msg) {
+function conciergeWaitingHtml(msg, prefix) {
+  const prefixHtml = prefix ? `<div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px;">${prefix}</div>` : '';
   return `<div style="text-align:center;color:var(--sub);padding:20px;">
+    ${prefixHtml}
     <div style="font-size:14px;margin-bottom:12px;">${msg || '世界中からお探しします・・・'}</div>
     <div style="display:inline-flex;gap:8px;margin-bottom:10px;">
       <span style="width:10px;height:10px;border-radius:50%;background:var(--accent);display:inline-block;animation:obDotBounce 1.4s ease-in-out infinite;"></span>
@@ -9851,7 +9854,7 @@ async function runAiSuggest(personId) {
   const resultDiv = document.getElementById('aiResult');
   const btn = document.getElementById('aiSuggestBtn');
   btn.disabled = true; btn.textContent = '探しています...';
-  resultDiv.innerHTML = '' + conciergeWaitingHtml() + '';
+  resultDiv.innerHTML = '' + conciergeWaitingHtml('登録情報をもとにお探しします・・・', 'あなたのコンシェルジュが') + '';
 
   // 匿名化されたプロフィールを構築（名前・個人特定情報を除去）
   const profileLines = buildAnonymizedProfile(person);
@@ -10500,7 +10503,7 @@ async function runCardSearch() {
   const resultDiv = document.getElementById('aiCardResult');
   const btn = document.getElementById('aiCardSearchBtn');
   btn.disabled = true; btn.textContent = '検索中...';
-  resultDiv.innerHTML = '' + conciergeWaitingHtml() + '';
+  resultDiv.innerHTML = '' + conciergeWaitingHtml('世界中からお探しします・・・', 'あなたのコンシェルジュが') + '';
 
   const prompt = `「${keyword}」に関連するおすすめの商品・ギフト・体験を3つ提案してください。
 ${budget ? '予算: 約'+budget+'円' : ''}

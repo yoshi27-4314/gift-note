@@ -1245,7 +1245,7 @@ async function logoutAccount() {
 }
 
 // ===== Constants =====
-const APP_VERSION = '2.0';
+const APP_VERSION = '2.1';
 const STORAGE_KEY = 'awai_data';
 const SEASON_KEY = 'awai_season';
 const ANN_POPUP_KEY = 'awai_ann_popup_date';
@@ -1270,6 +1270,20 @@ let openPersonId = null;
 
 // ===== Data =====
 function loadData() {
+  // v2.1リセット: 古いデータをクリアして再スタート（1回だけ実行）
+  if (!localStorage.getItem('awai_v21_reset')) {
+    localStorage.setItem('awai_v21_reset', '1');
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem('awai_onboarding_done');
+    localStorage.removeItem('awai_auto_backup');
+    try { sessionStorage.removeItem('awai_auto_backup'); } catch(e) {}
+    // マイルストーン等のフラグもクリア
+    Object.keys(localStorage).forEach(k => {
+      if (k.startsWith('awai_ms_') || k.startsWith('awai_milestone_') || k.startsWith('awai_action_') || k.startsWith('awai_streak_')) {
+        localStorage.removeItem(k);
+      }
+    });
+  }
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {

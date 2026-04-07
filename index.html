@@ -809,11 +809,10 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
     <div id="obStep6" class="ob-step" style="display:none;">
       <div id="obStep6Sparkle" style="position:relative;">
         <div style="text-align:center;margin-bottom:16px;font-size:40px;">💎</div>
-        <h2 style="text-align:center;font-family:'Shippori Mincho',serif;font-size:20px;margin-bottom:8px;"><span id="obUserNameDisplay2"></span> さま専用</h2>
-        <p style="text-align:center;font-size:13px;color:var(--sub);margin-bottom:16px;">少しの情報でこんなに変わります</p>
+        <h2 style="text-align:center;font-family:'Shippori Mincho',serif;font-size:20px;margin-bottom:16px;"><span id="obUserNameDisplay2"></span> さま専用コンシェルジュ</h2>
       </div>
       <div id="obAiResult2" style="margin-bottom:20px;"></div>
-      <button class="btn btn-primary" id="obAi2NextBtn" style="width:100%;padding:16px;font-size:17px;border-radius:14px;display:none;" onclick="obSaveSecondSuggestions()">すべて登録して次へ</button>
+      <button class="btn btn-primary" id="obAi2NextBtn" style="width:100%;padding:16px;font-size:17px;border-radius:14px;display:none;" onclick="obSaveSecondSuggestions()">次の使い方を見る</button>
     </div>
     <!-- Step 7: 友だちギフト予告 -->
     <div id="obStep7" class="ob-step" style="display:none;">
@@ -844,7 +843,31 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
         </div>
       </div>
       <div style="text-align:center;font-size:12px;color:var(--sub);margin-bottom:24px;line-height:1.6;">スマホの電話帳やSNSの友だちリストを<br>スクリーンショットするだけで登録できます</div>
-      <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;" onclick="obFinishWithFriend()">本編へ</button>
+      <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;" onclick="obNext(8)">次へ</button>
+    </div>
+    <!-- Step 8: マイプロフィール詳細 -->
+    <div id="obStep8" class="ob-step" style="display:none;">
+      <h2 style="text-align:center;font-family:'Shippori Mincho',serif;font-size:22px;margin-bottom:8px;">マイプロフィール</h2>
+      <p style="text-align:center;color:var(--sub);font-size:13px;margin-bottom:24px;">あなたのことをもう少し教えてください</p>
+      <div class="form-group"><label>好きな食べ物</label>
+        <input id="obMyFoodLike" placeholder="例：寿司、カレー、チョコレート" style="padding:14px 16px;font-size:16px;border-radius:12px;border:1px solid var(--border);width:100%;">
+      </div>
+      <div class="form-group" style="margin-top:12px;"><label>苦手な食べ物</label>
+        <input id="obMyFoodDislike" placeholder="例：パクチー、辛いもの" style="padding:14px 16px;font-size:16px;border-radius:12px;border:1px solid var(--border);width:100%;">
+      </div>
+      <div class="form-group" style="margin-top:12px;"><label>好きなブランド・お店</label>
+        <input id="obMyBrands" placeholder="例：無印良品、スターバックス" style="padding:14px 16px;font-size:16px;border-radius:12px;border:1px solid var(--border);width:100%;">
+      </div>
+      <div class="form-group" style="margin-top:12px;"><label>趣味・興味</label>
+        <input id="obMyInterests" placeholder="例：ゴルフ、料理、旅行、読書" style="padding:14px 16px;font-size:16px;border-radius:12px;border:1px solid var(--border);width:100%;">
+      </div>
+      <div class="form-group" style="margin-top:12px;"><label>行きたい場所</label>
+        <input id="obMyPlaces" placeholder="例：京都、イタリア、隠れ家カフェ" style="padding:14px 16px;font-size:16px;border-radius:12px;border:1px solid var(--border);width:100%;">
+      </div>
+      <div class="form-group" style="margin-top:12px;"><label>ひとことメモ</label>
+        <input id="obMyMemo" placeholder="例：最近引っ越した、来月誕生日" style="padding:14px 16px;font-size:16px;border-radius:12px;border:1px solid var(--border);width:100%;">
+      </div>
+      <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;margin-top:24px;" onclick="obSaveMyProfile()">保存して本編へ</button>
     </div>
     <script>
     // LINEスクショ→AWAI取り込みアニメーション
@@ -9101,6 +9124,50 @@ function obSavePersonNew() {
   data.people.push(person);
   saveData();
   obFinish();
+}
+
+function obSaveMyProfile() {
+  const profile = getMyProfile();
+  const foodLike = document.getElementById('obMyFoodLike')?.value.trim();
+  const foodDislike = document.getElementById('obMyFoodDislike')?.value.trim();
+  const brands = document.getElementById('obMyBrands')?.value.trim();
+  const interests = document.getElementById('obMyInterests')?.value.trim();
+  const places = document.getElementById('obMyPlaces')?.value.trim();
+  const memo = document.getElementById('obMyMemo')?.value.trim();
+
+  if (foodLike) profile.foodLike = foodLike.split(/[,、\s]+/).filter(Boolean);
+  if (foodDislike) profile.foodDislike = foodDislike.split(/[,、\s]+/).filter(Boolean);
+  if (brands) profile.brands = brands.split(/[,、\s]+/).filter(Boolean);
+  if (interests) profile.interests = interests.split(/[,、\s]+/).filter(Boolean);
+  if (memo) profile.memo = memo;
+
+  localStorage.setItem(MY_PROFILE_KEY, JSON.stringify(profile));
+
+  // 行きたい場所をデータに登録
+  if (places) {
+    const now = new Date().toISOString();
+    places.split(/[,、\s]+/).filter(Boolean).forEach(p => {
+      data.place.push({
+        id: genId(), title: p, placeCategory: '', tags: [],
+        address: '', memo: '', withPeople: [],
+        pinned: false, createdAt: now, updatedAt: now
+      });
+    });
+    saveData();
+  }
+
+  sbSave();
+  // 友だちタブに遷移して本編開始
+  obFinishToFriends();
+}
+
+function obFinishToFriends() {
+  localStorage.setItem(OB_KEY, '1');
+  document.getElementById('onboardingOverlay').style.display = 'none';
+  loadData();
+  currentTab = 'people';
+  render();
+  checkReminders();
 }
 
 function obFinish() {

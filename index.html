@@ -626,12 +626,6 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
   -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: pan-y;
   position: relative;
 }
-.card-item::after, .list-item[data-lp-type]::after {
-  content: '⋮';
-  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
-  font-size: 22px; font-weight: bold; color: #3a302a;
-  padding: 8px; cursor: pointer; z-index: 5;
-}
 .list-item:active { background: var(--accent-light); }
 .list-avatar {
   width: 52px; height: 52px; border-radius: 50%;
@@ -4434,23 +4428,26 @@ function render() {
   } else {
     renderItems(items, cardList);
   }
-  // 全タブ共通: card-itemのクリックで右端なら⋮メニュー表示
+  // 全タブ共通: card-itemに⋮ボタンをDOM追加
   setTimeout(() => {
     const cl = document.getElementById('cardList');
     if (!cl) return;
-    cl.querySelectorAll('.card-item').forEach(el => {
-      if (el._menuBound) return;
-      el._menuBound = true;
-      el.addEventListener('click', (e) => {
-        const rect = el.getBoundingClientRect();
-        if (e.clientX > rect.right - 50) {
-          e.stopPropagation();
-          e.preventDefault();
-          const type = el.dataset.tab || currentTab;
-          const id = el.dataset.id;
-          if (id) showLongPressMenu(type, id);
-        }
+    cl.querySelectorAll('.card-item, .list-item').forEach(el => {
+      if (el.querySelector('.awai-menu-btn')) return;
+      const type = el.dataset.lpType || el.dataset.tab || currentTab;
+      const id = el.dataset.lpId || el.dataset.id;
+      if (!id) return;
+      el.style.position = 'relative';
+      const btn = document.createElement('button');
+      btn.className = 'awai-menu-btn';
+      btn.textContent = '⋮';
+      btn.style.cssText = 'position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:22px;font-weight:bold;color:#3a302a;background:none;border:none;padding:12px;cursor:pointer;z-index:5;';
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        showLongPressMenu(type, id);
       });
+      el.appendChild(btn);
     });
   }, 200);
 }

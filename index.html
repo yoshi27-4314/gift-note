@@ -782,8 +782,8 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
     <!-- Step 3: 1回目コンシェルジュ提案 -->
     <div id="obStep3" class="ob-step" style="display:none;">
       <div style="text-align:center;margin-bottom:16px;font-size:40px;">✨</div>
-      <h2 style="text-align:center;font-family:'Shippori Mincho',serif;font-size:20px;margin-bottom:8px;"><span id="obUserNameDisplay"></span> さま<br>コンシェルジュからご提案</h2>
-      <p style="text-align:center;font-size:15px;font-weight:600;color:var(--text);line-height:1.8;margin-bottom:16px;">登録情報をもとに<br>お選びしました</p>
+      <h2 id="obStep3Title" style="text-align:center;font-family:'Shippori Mincho',serif;font-size:20px;margin-bottom:8px;"><span id="obUserNameDisplay"></span> さま<br>コンシェルジュからご提案</h2>
+      <p id="obStep3Sub" style="text-align:center;font-size:15px;font-weight:600;color:var(--text);line-height:1.8;margin-bottom:16px;">登録情報をもとに<br>お選びしました</p>
       <div id="obAiResult1" style="margin-bottom:20px;"></div>
       <button class="btn btn-primary" id="obAi1NextBtn" style="width:100%;padding:16px;font-size:17px;border-radius:14px;display:none;" onclick="obSaveFirstSuggestions()">すべて登録して次へ</button>
     </div>
@@ -8613,6 +8613,13 @@ function obNext(step) {
   if (step === 3 || step === '3') {
     const nameEl = document.getElementById('obUserNameDisplay');
     if (nameEl) nameEl.textContent = window._obMyName || '';
+    // 誕生日が入力されていたらメッセージに反映
+    const bMonth = document.getElementById('obMyBirthMonth')?.value;
+    const bDay = document.getElementById('obMyBirthDay')?.value;
+    const subEl = document.getElementById('obStep3Sub');
+    if (subEl && bMonth) {
+      subEl.innerHTML = `${bMonth}月${bDay ? bDay + '日' : ''}のお誕生日に<br>ぴったりなものをお選びします`;
+    }
     obRunAiSuggest1();
   }
   // Step 6: 2回目コンシェルジュ提案を自動実行（演出付き）
@@ -9014,6 +9021,9 @@ function obRenderSuggestions(suggestions) {
 // 1回目：基本情報だけで提案
 async function obRunAiSuggest1() {
   const like = window._obLike || '';
+  const bMonth = document.getElementById('obMyBirthMonth')?.value;
+  const bDay = document.getElementById('obMyBirthDay')?.value;
+  const birthday = bMonth ? `${bMonth}月${bDay ? bDay + '日' : ''}` : '';
   const resultDiv = document.getElementById('obAiResult1');
   const nextBtn = document.getElementById('obAi1NextBtn');
   resultDiv.innerHTML = obWaitingDotsHtml();
@@ -9022,10 +9032,12 @@ async function obRunAiSuggest1() {
 
 ## プロフィール
 好きなモノ: ${like || '未入力'}
+${birthday ? 'お誕生日: ' + birthday : ''}
 
 ## 提案の方針
 - 一般的に人気のある定番商品を中心に提案してください
 - 有名ブランドやよく知られた商品でOKです
+${birthday ? '- お誕生日のお祝いにふさわしいものを含めてください' : ''}
 - 幅広いジャンルから3つ選んでください`;
 
   try {

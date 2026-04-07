@@ -4521,7 +4521,7 @@ function renderItems(items, cardList) {
 function addMenuButtons(container) {
   if (!container) return;
   // .list-itemだけでなく、cardListの直接の子要素全てを対象にする
-  container.querySelectorAll('.list-item, [onclick*="toggleItemDetail"], [onclick*="toggleAllRecordDetail"]').forEach(el => {
+  container.querySelectorAll('.list-item, .card-item, [onclick*="toggleItemDetail"], [onclick*="toggleAllRecordDetail"]').forEach(el => {
     if (el.querySelector('.awai-menu-btn')) return;
     const type = el.dataset.lpType || currentTab;
     let id = el.dataset.lpId;

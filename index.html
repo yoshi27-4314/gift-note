@@ -285,7 +285,7 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 .label-chip.add { border: 1.5px dashed var(--border); color: var(--sub); box-shadow: none; background: transparent; }
 
 /* Cards */
-.card-list { padding: 0 20px; display: flex; flex-direction: column; gap: 16px; }
+.card-list { padding: 0 20px 80px; display: flex; flex-direction: column; gap: 16px; }
 .card {
   background: var(--card); border-radius: 20px; padding: 20px;
   margin-bottom: 0; box-shadow: 0 2px 16px var(--shadow);
@@ -483,8 +483,8 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 .modal {
   background: var(--card); border-radius: 28px 28px 0 0;
   width: 100%; max-width: 480px; max-height: 85vh;
-  overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 28px 24px 36px;
-  padding-bottom: env(safe-area-inset-bottom, 36px);
+  overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 28px 24px 60px;
+  padding-bottom: calc(env(safe-area-inset-bottom, 60px) + 24px);
   animation: slideUp 0.35s cubic-bezier(0.32, 0.72, 0, 1);
 }
 @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
@@ -708,7 +708,7 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
 
 <!-- Onboarding -->
 <div id="onboardingOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:99999;overflow-y:auto;">
-  <div style="max-width:480px;margin:0 auto;padding:40px 24px;min-height:100dvh;display:flex;flex-direction:column;justify-content:center;">
+  <div style="max-width:480px;margin:0 auto;padding:40px 24px 80px;min-height:100dvh;display:flex;flex-direction:column;justify-content:center;">
     <!-- Step 1: Welcome + Name -->
     <div id="obStep1" class="ob-step">
       <div style="text-align:center;margin-bottom:32px;font-size:48px;">🕊️</div>

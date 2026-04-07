@@ -7061,7 +7061,8 @@ async function ensureShareCode() {
       _sb.from('user_profiles').upsert({
         user_id: _sbUser.id,
         display_name: myName,
-        share_code: code
+        share_code: code,
+        referral_id: getMyReferralId()
       }, { onConflict: 'user_id' }).catch(() => {});
     }
     return code;
@@ -7749,8 +7750,53 @@ function showQRRegistration(d, useModal) {
   }
 }
 
+function checkRefParam() {
+  const params = new URLSearchParams(window.location.search);
+  const ref = params.get('ref');
+  if (!ref) return;
+  // 自分の紹介IDなら無視
+  if (ref === localStorage.getItem(REFERRAL_ID_KEY)) return;
+  // 既に紹介済みなら無視
+  if (localStorage.getItem('awai_referred_by')) return;
+  // 紹介元を記録
+  localStorage.setItem('awai_referred_by', ref);
+  window.history.replaceState({}, '', window.location.pathname);
+  // 紹介元にポイントを加算（Supabaseで）
+  creditReferrer(ref);
+}
+
+async function creditReferrer(refId) {
+  try {
+    // referral_idからuser_profilesでuser_idを探す
+    const { data: rows, error } = await _sb.from('user_profiles').select('user_id').eq('referral_id', refId).limit(1);
+    if (error || !rows || !rows.length) {
+      // user_profilesにreferral_idがない場合、referral_pointsテーブルで直接refIdを検索
+      // 初回は見つからない可能性がある。紹介元がログインした時にsyncで拾う
+      return;
+    }
+    const referrerUserId = rows[0].user_id;
+    // referral_pointsをインクリメント
+    const { data: rp, error: rpErr } = await _sb.from('referral_points').select('referral_count, points').eq('user_id', referrerUserId).single();
+    if (rpErr && rpErr.code !== 'PGRST116') return;
+    if (rp) {
+      await _sb.from('referral_points').update({
+        referral_count: (rp.referral_count || 0) + 1,
+        points: ((rp.referral_count || 0) + 1) * 10
+      }).eq('user_id', referrerUserId);
+    } else {
+      await _sb.from('referral_points').insert({
+        user_id: referrerUserId,
+        referral_count: 1,
+        points: 10
+      });
+    }
+  } catch(e) { console.error('creditReferrer error:', e); }
+}
+
 function checkProfileParam() {
   const params = new URLSearchParams(window.location.search);
+  const ref = params.get('ref');
+  if (ref) checkRefParam(); // refパラメータがあれば紹介処理
   const p = params.get('p');
   if (!p) return;
   try {

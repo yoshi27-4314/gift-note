@@ -4523,12 +4523,12 @@ function addMenuButtons(container) {
   // .list-itemだけでなく、cardListの直接の子要素全てを対象にする
   container.querySelectorAll('.list-item, .card-item, [onclick*="toggleItemDetail"], [onclick*="toggleAllRecordDetail"]').forEach(el => {
     if (el.querySelector('.awai-menu-btn')) return;
-    const type = el.dataset.lpType || currentTab;
-    let id = el.dataset.lpId;
+    const type = el.dataset.lpType || el.dataset.tab || currentTab;
+    let id = el.dataset.lpId || el.dataset.id;
     // data属性がない場合、onclickから抽出
     if (!id) {
       const onclick = el.getAttribute('onclick') || '';
-      const m = onclick.match(/Detail\('([^']+)'\)/);
+      const m = onclick.match(/Detail\('([^']+)'\)/) || onclick.match(/'([a-z0-9]+)'/);
       if (m) id = m[1];
     }
     if (!id) return;

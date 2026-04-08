@@ -105,9 +105,13 @@ async function sbLoad() {
         return;
       }
 
-      // プロフィールは常に復元（dataの有無に関係なく）
-      if (row.profile) {
-        localStorage.setItem('awai_my_profile', JSON.stringify(row.profile));
+      // プロフィール復元（クラウドに中身がある場合のみ。ローカルを空で上書きしない）
+      if (row.profile && Object.keys(row.profile).length > 0) {
+        const localProfile = JSON.parse(localStorage.getItem('awai_my_profile') || '{}');
+        // ローカルが空、またはクラウドの方が新しい場合のみ上書き
+        if (!localProfile.updatedAt || (row.profile.updatedAt && row.profile.updatedAt >= localProfile.updatedAt)) {
+          localStorage.setItem('awai_my_profile', JSON.stringify(row.profile));
+        }
       }
 
       if (row.data) {
@@ -304,6 +308,13 @@ function loadData() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const p = JSON.parse(raw);
+      // dataの中にプロフィールが含まれていたら復元
+      if (p._myProfile && Object.keys(p._myProfile).length > 0) {
+        const currentProfile = localStorage.getItem('awai_my_profile');
+        if (!currentProfile || currentProfile === '{}' || currentProfile === 'null') {
+          localStorage.setItem('awai_my_profile', JSON.stringify(p._myProfile));
+        }
+      }
       TABS.forEach(t => { if (Array.isArray(p[t])) data[t] = p[t]; });
       if (p.labels) {
         data.labels = {...data.labels, ...p.labels};
@@ -360,6 +371,11 @@ function loadData() {
 }
 function saveData() {
   try {
+    // プロフィールもdataに含めて一緒に保存（二重保存で確実に残す）
+    const profileStr = localStorage.getItem('awai_my_profile');
+    if (profileStr) {
+      try { data._myProfile = JSON.parse(profileStr); } catch(e) {}
+    }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     localStorage.setItem('awai_data_updated', new Date().toISOString());
     try { sessionStorage.setItem('awai_auto_backup', JSON.stringify(data)); } catch(e2) {}

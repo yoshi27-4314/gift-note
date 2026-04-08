@@ -11446,15 +11446,17 @@ function renderSettingContent(id) {
         <div id="backupListArea" style="font-size:12px;color:var(--sub);text-align:center;">読み込み中...</div>
         <script>setTimeout(loadBackupList,100)</script>`;
 
-    case 'theme':
+    case 'theme': {
+      const cs = document.body.dataset.season || localStorage.getItem('awai_season') || 'spring';
       return `
         <div style="font-weight:600;margin-bottom:8px;">季節テーマ</div>
         <div style="display:flex;flex-wrap:wrap;gap:8px;">
-          <div class="date-type-chip" onclick="setSeason('spring')">🌸 春</div>
-          <div class="date-type-chip" onclick="setSeason('summer')">🌊 夏</div>
-          <div class="date-type-chip" onclick="setSeason('autumn')">🍁 秋</div>
-          <div class="date-type-chip" onclick="setSeason('winter')">❄️ 冬</div>
+          <div class="date-type-chip ${cs==='spring'?'active':''}" onclick="setSeason('spring');_openSettingId='theme';render();">🌸 春</div>
+          <div class="date-type-chip ${cs==='summer'?'active':''}" onclick="setSeason('summer');_openSettingId='theme';render();">🌊 夏</div>
+          <div class="date-type-chip ${cs==='autumn'?'active':''}" onclick="setSeason('autumn');_openSettingId='theme';render();">🍁 秋</div>
+          <div class="date-type-chip ${cs==='winter'?'active':''}" onclick="setSeason('winter');_openSettingId='theme';render();">❄️ 冬</div>
         </div>`;
+    }
 
     case 'notify':
       return `<div style="font-size:13px;color:var(--sub);">リマインド通知の設定は各カードの記念日から行えます</div>`;

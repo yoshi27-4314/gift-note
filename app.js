@@ -3748,7 +3748,7 @@ function renderItemsTab(cardList) {
     const preview = item.memo ? item.memo.substring(0,30) : (item.tags?.slice(0,3).map(t=>'#'+t).join(' ')||'');
     const isOpen = openItemId === item.id;
     const selected = inSelect && _selectedIds.has(item.id);
-    return `<div class="list-item" style="display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid var(--border);cursor:pointer;${isOpen?'background:var(--accent-light);':''}${selected?'background:rgba(193,154,132,0.15);':''}" onclick="${inSelect?`toggleSelectItem('${item.id}')`:`toggleItemDetail('${item.id}')`}">
+    return `<div class="list-item" data-lp-type="items" data-lp-id="${item.id}" ontouchstart="lpStart(event,'items','${item.id}')" ontouchend="lpEnd()" ontouchmove="lpMove(event)" style="display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid var(--border);cursor:pointer;${isOpen?'background:var(--accent-light);':''}${selected?'background:rgba(193,154,132,0.15);':''}" onclick="${inSelect?`toggleSelectItem('${item.id}')`:`toggleItemDetail('${item.id}')`}">
       ${inSelect?`<input type="checkbox" ${selected?'checked':''} onclick="event.stopPropagation();toggleSelectItem('${item.id}')" style="width:22px;height:22px;flex-shrink:0;accent-color:var(--accent);">`:''}
       <div style="flex:1;min-width:0;">
         <div style="font-size:16px;font-weight:600;">${item.pinned?'📌 ':''}${esc(item.title||'無題')}</div>

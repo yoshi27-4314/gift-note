@@ -10947,6 +10947,19 @@ if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().t
   initLongPress();
   initSwipeGestures();
 
+  // カード外クリックで個別カードを閉じる
+  document.getElementById('cardList').addEventListener('click', (e) => {
+    // 開いている詳細カードがなければ何もしない
+    if (!openPersonId && !openItemId && !openGroupId && !openAllRecordId) return;
+    // 詳細カードやlist-item内のクリックは無視
+    if (e.target.closest('#personDetail, #itemDetail, #groupDetail, #allRecordDetail, .list-item, .card-item, .awai-menu-btn, button, a, input')) return;
+    // カード外クリック → 閉じる
+    if (openPersonId) { openPersonId = null; render(); }
+    else if (openItemId) { openItemId = null; render(); }
+    else if (openGroupId) { openGroupId = null; render(); }
+    else if (openAllRecordId) { openAllRecordId = null; render(); }
+  });
+
   // Supabase初期化（クラウド同期開始）
   sbInit();
   setTimeout(checkNotifications, 2000);

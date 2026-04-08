@@ -98,33 +98,96 @@ async function sbLoad() {
     if (error && error.code !== 'PGRST116') return;
     if (!row || row.user_id !== _sbUser.id) return;
 
-    // --- プロフィール ---
-    // クラウドに中身がある＋ローカルが空の場合のみ復元（ローカルを消す方向には絶対動かない）
-    const localProfile = JSON.parse(localStorage.getItem('awai_my_profile') || '{}');
-    const localProfileEmpty = !localProfile || Object.keys(localProfile).length === 0 || !localProfile.name;
-    if (row.profile && row.profile.name && localProfileEmpty) {
-      localStorage.setItem('awai_my_profile', JSON.stringify(row.profile));
-    }
-
-    // --- メインデータ ---
-    if (!row.data) { await sbSave(); return; }
     const localRaw = localStorage.getItem('awai_data');
     const localData = localRaw ? JSON.parse(localRaw) : null;
     const localCount = localData ? Object.values(localData).reduce((s,v) => s + (Array.isArray(v)?v.length:0), 0) : 0;
-    const cloudCount = Object.values(row.data).reduce((s,v) => s + (Array.isArray(v)?v.length:0), 0);
+    const cloudCount = row.data ? Object.values(row.data).reduce((s,v) => s + (Array.isArray(v)?v.length:0), 0) : 0;
 
-    // 絶対ルール：ローカルのデータ件数が減る上書きはしない
-    if (cloudCount > localCount) {
-      TABS.forEach(t => { if (Array.isArray(row.data[t])) data[t] = row.data[t]; });
-      if (row.data.labels) data.labels = {...data.labels, ...row.data.labels};
-      localStorage.setItem('awai_data', JSON.stringify(data));
-      localStorage.setItem('awai_data_updated', row.updated_at || '');
-      render();
-    } else {
-      // ローカルの方が多いか同じ → ローカルをクラウドに保存
-      await sbSave();
+    const localProfile = JSON.parse(localStorage.getItem('awai_my_profile') || '{}');
+    const localProfileName = localProfile.name || '';
+    const cloudProfileName = row.profile?.name || '';
+
+    // どちらかが空→空じゃない方を自動採用
+    if (localCount === 0 && cloudCount === 0) {
+      return; // 両方空→何もしない
     }
+    if (localCount === 0 && cloudCount > 0) {
+      // ローカル空→クラウドを採用
+      applyCloudData(row);
+      return;
+    }
+    if (cloudCount === 0 && localCount > 0) {
+      // クラウド空→ローカルを保存
+      await sbSave();
+      return;
+    }
+
+    // 両方にデータがある＋中身が同じなら何もしない
+    if (localCount === cloudCount && localProfileName === cloudProfileName) {
+      return;
+    }
+
+    // 両方にデータがあって中身が違う→ユーザーに選んでもらう
+    showDataChoiceDialog(localCount, localProfileName, cloudCount, cloudProfileName, row);
+
   } catch(e) { console.error('sbLoad error:', e); }
+}
+
+function showDataChoiceDialog(localCount, localProfileName, cloudCount, cloudProfileName, cloudRow) {
+  const overlay = document.createElement('div');
+  overlay.id = 'dataChoiceOverlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;';
+
+  overlay.innerHTML = `<div style="background:#fff;border-radius:20px;padding:24px;max-width:360px;width:100%;font-family:'Zen Maru Gothic',sans-serif;">
+    <div style="font-size:16px;font-weight:700;text-align:center;margin-bottom:6px;">📱 データが2つあります</div>
+    <div style="font-size:12px;color:#888;text-align:center;margin-bottom:16px;">どちらのデータを使いますか？</div>
+
+    <div onclick="chooseLocalData()" style="padding:16px;border-radius:14px;border:2px solid #e0d6cf;background:#fdf8f3;margin-bottom:10px;cursor:pointer;transition:transform 0.1s;" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform='scale(1)'">
+      <div style="font-size:14px;font-weight:600;">📱 このスマホのデータ</div>
+      <div style="font-size:12px;color:#888;margin-top:4px;">登録数: ${localCount}件</div>
+      ${localProfileName ? `<div style="font-size:12px;color:#888;">プロフィール: ${localProfileName}</div>` : '<div style="font-size:12px;color:#ccc;">プロフィール未設定</div>'}
+    </div>
+
+    <div onclick="chooseCloudData()" id="_cloudChoice" style="padding:16px;border-radius:14px;border:2px solid #d0dce8;background:#f0f6ff;margin-bottom:10px;cursor:pointer;transition:transform 0.1s;" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform='scale(1)'">
+      <div style="font-size:14px;font-weight:600;">☁️ クラウドのデータ</div>
+      <div style="font-size:12px;color:#888;margin-top:4px;">登録数: ${cloudCount}件</div>
+      ${cloudProfileName ? `<div style="font-size:12px;color:#888;">プロフィール: ${cloudProfileName}</div>` : '<div style="font-size:12px;color:#ccc;">プロフィール未設定</div>'}
+    </div>
+  </div>`;
+
+  document.body.appendChild(overlay);
+  // クラウドデータを一時保持
+  window._pendingCloudRow = cloudRow;
+}
+
+function chooseLocalData() {
+  document.getElementById('dataChoiceOverlay')?.remove();
+  window._pendingCloudRow = null;
+  sbSave(); // ローカルをクラウドに上書き保存
+  showToast('📱 このスマホのデータを使います');
+}
+
+function chooseCloudData() {
+  const row = window._pendingCloudRow;
+  document.getElementById('dataChoiceOverlay')?.remove();
+  window._pendingCloudRow = null;
+  if (row) {
+    applyCloudData(row);
+    showToast('☁️ クラウドのデータを使います');
+  }
+}
+
+function applyCloudData(row) {
+  if (row.data) {
+    TABS.forEach(t => { if (Array.isArray(row.data[t])) data[t] = row.data[t]; });
+    if (row.data.labels) data.labels = {...data.labels, ...row.data.labels};
+    localStorage.setItem('awai_data', JSON.stringify(data));
+    localStorage.setItem('awai_data_updated', row.updated_at || '');
+  }
+  if (row.profile && row.profile.name) {
+    localStorage.setItem('awai_my_profile', JSON.stringify(row.profile));
+  }
+  render();
 }
 
 async function sbSave() {

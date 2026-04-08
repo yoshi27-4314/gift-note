@@ -3704,11 +3704,11 @@ function openItemsFabMenu() {
       </button>
       <button onclick="document.getElementById('aiModalOverlay').classList.remove('open');startItemOcr('item_ocr','items','camera')" class="fab-menu-btn">
         <span style="font-size:24px;">📷</span>
-        <div><div style="font-size:14px;font-weight:500;">カメラで撮影</div><div style="font-size:11px;color:var(--sub);">商品を撮影してAIが自動判定</div></div>
+        <div><div style="font-size:14px;font-weight:500;">撮影する</div><div style="font-size:11px;color:var(--sub);">商品もバーコードもOK</div></div>
       </button>
       <button onclick="document.getElementById('aiModalOverlay').classList.remove('open');startItemOcr('item_ocr','items','file')" class="fab-menu-btn">
         <span style="font-size:24px;">📁</span>
-        <div><div style="font-size:14px;font-weight:500;">ファイルから選択</div><div style="font-size:11px;color:var(--sub);">スクリーンショットもOK！</div></div>
+        <div><div style="font-size:14px;font-weight:500;">画像を選ぶ</div><div style="font-size:11px;color:var(--sub);">スクショもバーコード画像もOK</div></div>
       </button>
     </div>
     <div class="form-btns" style="margin-top:12px;">
@@ -10511,11 +10511,11 @@ function openWishFabMenu() {
       </button>
       <button onclick="document.getElementById('aiModalOverlay').classList.remove('open');startItemOcr('item_ocr','wish','camera')" class="fab-menu-btn">
         <span style="font-size:24px;">📷</span>
-        <div><div style="font-size:14px;font-weight:500;">カメラで撮影</div><div style="font-size:11px;color:var(--sub);">商品を撮影してAIが自動判定</div></div>
+        <div><div style="font-size:14px;font-weight:500;">撮影する</div><div style="font-size:11px;color:var(--sub);">商品もバーコードもOK</div></div>
       </button>
       <button onclick="document.getElementById('aiModalOverlay').classList.remove('open');startItemOcr('item_ocr','wish','file')" class="fab-menu-btn">
         <span style="font-size:24px;">📁</span>
-        <div><div style="font-size:14px;font-weight:500;">ファイルから選択</div><div style="font-size:11px;color:var(--sub);">スクリーンショットもOK！</div></div>
+        <div><div style="font-size:14px;font-weight:500;">画像を選ぶ</div><div style="font-size:11px;color:var(--sub);">スクショもバーコード画像もOK</div></div>
       </button>
     </div>
     <div class="form-btns" style="margin-top:12px;">
@@ -10535,11 +10535,11 @@ function openPlaceFabMenu() {
       </button>
       <button onclick="document.getElementById('aiModalOverlay').classList.remove('open');startItemOcr('place_ocr','place','camera')" class="fab-menu-btn">
         <span style="font-size:24px;">📷</span>
-        <div><div style="font-size:14px;font-weight:500;">カメラで撮影</div><div style="font-size:11px;color:var(--sub);">お店や場所を撮影してAIが自動判定</div></div>
+        <div><div style="font-size:14px;font-weight:500;">撮影する</div><div style="font-size:11px;color:var(--sub);">お店や看板を撮影してAIが判定</div></div>
       </button>
       <button onclick="document.getElementById('aiModalOverlay').classList.remove('open');startItemOcr('place_ocr','place','file')" class="fab-menu-btn">
         <span style="font-size:24px;">📁</span>
-        <div><div style="font-size:14px;font-weight:500;">ファイルから選択</div><div style="font-size:11px;color:var(--sub);">スクリーンショットもOK！</div></div>
+        <div><div style="font-size:14px;font-weight:500;">画像を選ぶ</div><div style="font-size:11px;color:var(--sub);">スクショやチラシの画像もOK</div></div>
       </button>
     </div>
     <div class="form-btns" style="margin-top:12px;">
@@ -10569,11 +10569,11 @@ function openGiftFabMenu() {
       </button>
       <button onclick="proceedGiftFab('camera')" class="fab-menu-btn">
         <span style="font-size:24px;">📷</span>
-        <div><div style="font-size:14px;font-weight:500;">カメラで撮影</div><div style="font-size:11px;color:var(--sub);">商品を撮影してAIが自動判定</div></div>
+        <div><div style="font-size:14px;font-weight:500;">撮影する</div><div style="font-size:11px;color:var(--sub);">商品もバーコードもOK</div></div>
       </button>
       <button onclick="proceedGiftFab('file')" class="fab-menu-btn">
         <span style="font-size:24px;">📁</span>
-        <div><div style="font-size:14px;font-weight:500;">ファイルから選択</div><div style="font-size:11px;color:var(--sub);">スクリーンショットもOK！</div></div>
+        <div><div style="font-size:14px;font-weight:500;">画像を選ぶ</div><div style="font-size:11px;color:var(--sub);">スクショもバーコード画像もOK</div></div>
       </button>
     </div>
     <div class="form-btns" style="margin-top:12px;">
@@ -10684,11 +10684,11 @@ async function processItemOcrImage(input, ocrMode, tabType) {
   reader.readAsDataURL(file);
 }
 
-function generateProductLinks(title, brand) {
+function generateProductLinks(title, brand, barcode) {
   const links = [];
-  const q = [brand, title].filter(Boolean).join(' ');
+  const q = barcode || [brand, title].filter(Boolean).join(' ');
   if (!q) return links;
-  // Amazon検索
+  // Amazon検索（バーコードがあればバーコードで検索）
   links.push({ label: '🛒 Amazon', url: 'https://www.amazon.co.jp/s?k=' + encodeURIComponent(q) });
   // 楽天検索
   links.push({ label: '🏪 楽天', url: 'https://search.rakuten.co.jp/search/mall/' + encodeURIComponent(q) });
@@ -10708,6 +10708,7 @@ function renderItemOcrResult(result, tabType) {
 
   let html = '<div style="font-weight:600;margin-bottom:10px;">読み取り結果</div>';
   html += '<div style="background:var(--bg);border-radius:14px;padding:14px;font-size:13px;line-height:2;">';
+  if (result.barcode) html += `<div>📊 バーコード: ${esc(result.barcode)}</div>`;
   if (result.title) html += `<div>📌 <strong>${esc(result.title)}</strong></div>`;
   if (result.brand) html += `<div>🏷 ${esc(result.brand)}</div>`;
   if (result.category) html += `<div>📂 ${catIdx >= 0 ? catEmoji[catIdx]+' ' : ''}${esc(result.category)}</div>`;
@@ -10719,7 +10720,7 @@ function renderItemOcrResult(result, tabType) {
 
   // 商品リンク自動生成（場所以外）
   if (!isPlace && (result.title || result.brand)) {
-    const links = generateProductLinks(result.title, result.brand);
+    const links = generateProductLinks(result.title, result.brand, result.barcode);
     if (links.length) {
       html += '<div style="margin-top:10px;font-weight:600;font-size:12px;margin-bottom:6px;">🔗 購入リンク（自動検索）</div>';
       html += '<div style="display:flex;flex-direction:column;gap:4px;">';

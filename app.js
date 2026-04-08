@@ -92,8 +92,7 @@ function showLoginWarning() {
 }
 
 async function sbLoad() {
-  // ログイン済み（メールあり）のユーザーのみクラウドから読み込む
-  if (!_sbUser || !_sbUser.email) return;
+  if (!_sbUser) return;
   try {
     const { data: row, error } = await _sb.from('user_data').select('data,profile,user_id,updated_at').eq('user_id', _sbUser.id).single();
     if (error && error.code !== 'PGRST116') { console.error('Load error:', error); return; }
@@ -137,8 +136,7 @@ async function sbLoad() {
 }
 
 async function sbSave() {
-  // ログイン済み（メールあり）のユーザーのみクラウドに保存
-  if (!_sbUser || !_sbUser.email || _sbSyncing) return;
+  if (!_sbUser || _sbSyncing) return;
   _sbSyncing = true;
   try {
     const dataObj = JSON.parse(localStorage.getItem('awai_data') || '{}');

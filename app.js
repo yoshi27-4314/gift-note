@@ -1046,7 +1046,7 @@ function renderLabelBar() {
     return;
   }
   // Item tabs: category-based filter
-  if (['wish','received','gave'].includes(currentTab)) {
+  if (['wish','received','gave','items'].includes(currentTab)) {
     let html = `<div class="label-chip ${currentLabel===null?'active':''}" style="color:var(--accent);${currentLabel===null?'border-color:var(--accent);':''}" onclick="filterLabel(null)"><span class="ldot" style="background:var(--accent);"></span> すべて</div>`;
     _itemCatData.forEach((cat, ci) => {
       const active = currentLabel === cat;

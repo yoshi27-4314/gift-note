@@ -1052,6 +1052,12 @@ function renderLabelBar() {
       const active = currentLabel === cat;
       html += `<div class="label-chip ${active?'active':''}" style="color:var(--text);${active?'border-color:var(--accent);background:var(--accent-light);':''}" onclick="filterItemCat(${ci})">${_itemCatEmoji[ci]} ${cat}</div>`;
     });
+    // ラベル
+    const labels = getLabels(currentTab);
+    labels.forEach((l,i) => {
+      html += `<div class="label-chip ${currentLabel===i?'active':''}" style="color:${l.color};${currentLabel===i?'border-color:'+l.color+';':''}" onclick="filterLabel(${i})"><span class="ldot" style="background:${l.color};"></span> ${esc(l.name)}</div>`;
+    });
+    html += `<div class="label-chip add" onclick="openLabelModal()">＋</div>`;
     bar.innerHTML = html;
     return;
   }
@@ -3125,7 +3131,7 @@ function render() {
   const rankToggle = document.getElementById('rankingToggle');
   rankToggle.style.display = currentTab !== 'calendar' ? '' : 'none';
   // ランキングボタンはアイテム系タブのみ
-  document.getElementById('rankOnBtn').style.display = ['wish','received','gave','place','gift'].includes(currentTab) ? '' : 'none';
+  document.getElementById('rankOnBtn').style.display = ['wish','received','gave','place','gift','items'].includes(currentTab) ? '' : 'none';
   // 記念日ソートボタンは全タブ表示
   const annSortBtn = document.getElementById('annSortBtn');
   if (annSortBtn) annSortBtn.style.display = '';

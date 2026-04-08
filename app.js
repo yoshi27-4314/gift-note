@@ -94,52 +94,35 @@ function showLoginWarning() {
 async function sbLoad() {
   if (!_sbUser) return;
   try {
-    console.log('[sbLoad] user:', _sbUser.id, 'email:', _sbUser.email);
     const { data: row, error } = await _sb.from('user_data').select('data,profile,user_id,updated_at').eq('user_id', _sbUser.id).single();
-    if (error && error.code !== 'PGRST116') { console.error('[sbLoad] ERROR:', error.message, error.code); return; }
-    console.log('[sbLoad] row:', row ? 'found' : 'null', 'profile:', row?.profile ? Object.keys(row.profile) : 'none');
-    if (row) {
-      // 二重チェック：取得したデータのuser_idが自分のものか確認
-      if (row.user_id !== _sbUser.id) {
-        console.error('SECURITY: user_id mismatch. Expected:', _sbUser.id, 'Got:', row.user_id);
-        return;
-      }
+    if (error && error.code !== 'PGRST116') return;
+    if (!row || row.user_id !== _sbUser.id) return;
 
-      // プロフィール復元（クラウドに中身がある場合のみ。ローカルを空で上書きしない）
-      if (row.profile && Object.keys(row.profile).length > 0) {
-        const localProfile = JSON.parse(localStorage.getItem('awai_my_profile') || '{}');
-        // ローカルが空、またはクラウドの方が新しい場合のみ上書き
-        if (!localProfile.updatedAt || (row.profile.updatedAt && row.profile.updatedAt >= localProfile.updatedAt)) {
-          localStorage.setItem('awai_my_profile', JSON.stringify(row.profile));
-        }
-      }
+    // --- プロフィール ---
+    // クラウドに中身がある＋ローカルが空の場合のみ復元（ローカルを消す方向には絶対動かない）
+    const localProfile = JSON.parse(localStorage.getItem('awai_my_profile') || '{}');
+    const localProfileEmpty = !localProfile || Object.keys(localProfile).length === 0 || !localProfile.name;
+    if (row.profile && row.profile.name && localProfileEmpty) {
+      localStorage.setItem('awai_my_profile', JSON.stringify(row.profile));
+    }
 
-      if (row.data) {
-        // クラウドとローカルを比較
-        const localRaw = localStorage.getItem('awai_data');
-        const localData = localRaw ? JSON.parse(localRaw) : null;
-        const localCount = localData ? Object.values(localData).reduce((s,v) => s + (Array.isArray(v)?v.length:0), 0) : 0;
-        const cloudCount = Object.values(row.data).reduce((s,v) => s + (Array.isArray(v)?v.length:0), 0);
+    // --- メインデータ ---
+    if (!row.data) { await sbSave(); return; }
+    const localRaw = localStorage.getItem('awai_data');
+    const localData = localRaw ? JSON.parse(localRaw) : null;
+    const localCount = localData ? Object.values(localData).reduce((s,v) => s + (Array.isArray(v)?v.length:0), 0) : 0;
+    const cloudCount = Object.values(row.data).reduce((s,v) => s + (Array.isArray(v)?v.length:0), 0);
 
-        // ローカルにデータがあってクラウドが空の場合 → ローカルを優先してクラウドに保存
-        if (localCount > 0 && cloudCount === 0) {
-          await sbSave();
-        } else {
-          // クラウドにデータがある場合 → 更新日時で判断
-          const localUpdated = localStorage.getItem('awai_data_updated') || '';
-          const cloudUpdated = row.updated_at || '';
-
-          if (cloudCount > 0 && cloudUpdated && cloudUpdated > localUpdated) {
-            TABS.forEach(t => { if (Array.isArray(row.data[t])) data[t] = row.data[t]; });
-            if (row.data.labels) data.labels = {...data.labels, ...row.data.labels};
-            localStorage.setItem('awai_data', JSON.stringify(data));
-            localStorage.setItem('awai_data_updated', cloudUpdated);
-            render();
-          } else if (localCount > 0) {
-            await sbSave();
-          }
-        }
-      }
+    // 絶対ルール：ローカルのデータ件数が減る上書きはしない
+    if (cloudCount > localCount) {
+      TABS.forEach(t => { if (Array.isArray(row.data[t])) data[t] = row.data[t]; });
+      if (row.data.labels) data.labels = {...data.labels, ...row.data.labels};
+      localStorage.setItem('awai_data', JSON.stringify(data));
+      localStorage.setItem('awai_data_updated', row.updated_at || '');
+      render();
+    } else {
+      // ローカルの方が多いか同じ → ローカルをクラウドに保存
+      await sbSave();
     }
   } catch(e) { console.error('sbLoad error:', e); }
 }

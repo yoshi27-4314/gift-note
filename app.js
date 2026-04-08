@@ -11553,10 +11553,11 @@ function renderSettingContent(id) {
 
     case 'about':
       return `
-        <div style="font-size:13px;line-height:2;">
+        <div style="font-size:13px;line-height:2;margin-bottom:16px;">
           <div>バージョン: AWAI v${APP_VERSION}</div>
           <div><a href="privacy.html" target="_blank" style="color:var(--accent);">プライバシーポリシー</a></div>
-        </div>`;
+        </div>
+        <button class="btn btn-primary" style="width:100%;padding:14px;font-size:15px;border-radius:14px;" onclick="openAboutPage()">✨ AWAIでできること</button>`;
 
     case 'account':
       if (_sbUser && _sbUser.email) {
@@ -11571,6 +11572,57 @@ function renderSettingContent(id) {
 
     default: return '';
   }
+}
+
+function openAboutPage() {
+  const overlay = document.createElement('div');
+  overlay.id = 'aboutPageOverlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:10000;background:var(--bg);overflow-y:auto;animation:slideUp 0.3s ease;';
+
+  const topics = [
+    { icon:'✨', title:'基本機能', content:'お気に入り・友だち・行きたい場所・ギフト・カレンダーの5つのタブで、大切なものと人を記録できます。写真やURL、カスタム項目も自由に追加。' },
+    { icon:'💡', title:'コンシェルジュ', content:'登録情報をもとに、ぴったりなギフトや体験をご提案します。情報を増やすほど提案の精度が上がります。友だちの好みを登録すれば、その人専用の提案も。' },
+    { icon:'🎩', title:'コンシェルジュからバトラーへ', content:'最初は案内人（コンシェルジュ）として一般的なご提案をします。使い続けるうちに、あなたのことを深く理解した専属執事（バトラー）に成長。先回りした提案や、あなただけのアドバイスができるようになります。' },
+    { icon:'🌸', title:'育てる楽しみ', content:'使うほどポイントが貯まり、AWAIの風景が育っていきます。春の桜、夏の星空、秋の紅葉、冬の雪景色...季節のテーマを完成させましょう。1つクリアしたら次のテーマに挑戦。' },
+    { icon:'⭐', title:'ポイント', content:'アプリの使用や友だち紹介でポイントが貯まります。ポイントでバトラーに名前をつけたり、テーマカラーを解放したり、さまざまな特典と交換できます。' },
+    { icon:'📷', title:'かんたん登録', content:'スマホの電話帳やSNSの画面をスクリーンショットするだけで友だちを一括登録。名刺スキャンやカメラ撮影でアイテムの自動登録も。' },
+    { icon:'🔔', title:'リマインド', content:'記念日が近づくとお知らせします。もうお祝いを忘れることはありません。通知タイミングは自由に設定できます。' },
+    { icon:'🔐', title:'セキュリティ', content:'個人情報は端末とクラウドに安全に保存。外部AIへの送信時は名前を匿名化。パスコードや生体認証でロックもできます。非表示機能で見られたくない情報を保護。' },
+    { icon:'📤', title:'共有・紹介', content:'QRコードやURLで友だちにAWAIを紹介できます。紹介ポイントでバトラーの特典が解放されます。プロフィールカードの共有も。' },
+    { icon:'🎨', title:'操作方法', content:'カードをタップで詳細表示。⋮ボタンで編集・複製・共有・削除。長押しでもメニューが開きます。左右スワイプでタブ切替。ピンチで拡大・縮小。' },
+  ];
+
+  let topicsHtml = topics.map((t, i) => `
+    <div style="border-bottom:1px solid var(--border);">
+      <div style="display:flex;align-items:center;gap:12px;padding:16px 0;cursor:pointer;" onclick="const b=document.getElementById('aboutTopic${i}');if(b.style.display==='none'){b.style.display='';this.querySelector('.about-arrow').textContent='▲';}else{b.style.display='none';this.querySelector('.about-arrow').textContent='▼';}">
+        <span style="font-size:22px;flex-shrink:0;">${t.icon}</span>
+        <div style="flex:1;font-size:15px;font-weight:600;">${t.title}</div>
+        <span class="about-arrow" style="font-size:12px;color:var(--sub);">▼</span>
+      </div>
+      <div id="aboutTopic${i}" style="display:none;padding:0 0 16px 34px;">
+        <div style="font-size:13px;color:var(--text);line-height:1.8;">${t.content}</div>
+      </div>
+    </div>
+  `).join('');
+
+  overlay.innerHTML = `
+    <div style="max-width:480px;margin:0 auto;padding:24px 20px 80px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+        <h1 style="font-family:'Shippori Mincho',serif;font-size:22px;font-weight:600;">AWAIでできること</h1>
+        <button onclick="document.getElementById('aboutPageOverlay').remove();" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--sub);padding:8px;">✕</button>
+      </div>
+      <div style="text-align:center;margin-bottom:24px;">
+        <div style="font-size:36px;margin-bottom:8px;">🕊️</div>
+        <p style="font-size:14px;color:var(--sub);line-height:1.6;">お気に入りと友だちの記録。<br>あなたの暮らしに寄り添うアプリです。</p>
+      </div>
+      ${topicsHtml}
+      <div style="text-align:center;color:var(--sub);font-size:12px;margin-top:24px;">
+        <div style="font-family:'Shippori Mincho',serif;font-size:16px;margin-bottom:4px;">AWAI</div>
+        <div>v${APP_VERSION}</div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
 }
 
 function addCustomField() {

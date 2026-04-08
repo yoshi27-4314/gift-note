@@ -11102,15 +11102,9 @@ if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().t
     else openWishFabMenu();
   });
 
-  // 背景タップでモーダルを閉じる（入力フォームがない場合のみ）
+  // 背景タップでモーダルを閉じる
   document.getElementById('modalOverlay').addEventListener('click', e => {
-    if (e.target !== e.currentTarget) return;
-    const modal = e.target.querySelector('.modal');
-    if (!modal) return;
-    // 入力フォームがあるモーダルは閉じない（誤タップ防止）
-    const hasInputs = modal.querySelector('input:not([type="hidden"]):not([type="checkbox"]):not([type="file"]),textarea,select');
-    if (hasInputs) return;
-    closeModal();
+    if (e.target === e.currentTarget) closeModal();
   });
   document.getElementById('settingsModalOverlay').addEventListener('click', e => {
     if (e.target === e.currentTarget) {
@@ -11129,6 +11123,10 @@ if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().t
     if (e.target===e.currentTarget) e.currentTarget.classList.remove('open');
   });
   document.getElementById('settingsModalOverlay').addEventListener('click', e => {
+    if (e.target===e.currentTarget) e.currentTarget.classList.remove('open');
+  });
+  const labelOv = document.getElementById('labelModalOverlay');
+  if (labelOv) labelOv.addEventListener('click', e => {
     if (e.target===e.currentTarget) e.currentTarget.classList.remove('open');
   });
 

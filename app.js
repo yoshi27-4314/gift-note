@@ -5110,7 +5110,7 @@ function initSwipeGestures() {
   let startX = 0, startY = 0, startTime = 0;
   const SWIPE_THRESHOLD = 80;
   const EDGE_WIDTH = 30;
-  const tabs = ['people','wish','items','calendar','place','gift'];
+  const tabs = ['people','items','calendar','place','gift'];
 
   let _swipeTarget = null;
   document.addEventListener('touchstart', e => {
@@ -11102,7 +11102,7 @@ if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().t
     else if (currentTab==='gift') openGiftFabMenu();
     else if (currentTab==='items') openItemsFabMenu();
     else if (currentTab==='calendar') { const t=new Date(); calDayTap(t.getFullYear(),t.getMonth(),t.getDate()); }
-    else openWishFabMenu();
+    else openItemsFabMenu();
   });
 
   // 背景タップでモーダルを閉じる

@@ -39,8 +39,13 @@ async function sbInit() {
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const hasOAuthToken = hashParams.has('access_token') || window.location.search.includes('code=');
 
-    // セッション復元（匿名ログインは行わない）
-    const { data: { session } } = await _sb.auth.getSession();
+    // セッション復元
+    let { data: { session } } = await _sb.auth.getSession();
+    // セッションが取れない場合、リフレッシュを試みる
+    if (!session) {
+      const { data: refreshData } = await _sb.auth.refreshSession();
+      if (refreshData?.session) session = refreshData.session;
+    }
     if (session && session.user) {
       _sbUser = session.user;
       if (hasOAuthToken && _sbUser.email) {

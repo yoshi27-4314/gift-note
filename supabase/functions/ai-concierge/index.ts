@@ -98,13 +98,62 @@ Deno.serve(async (req) => {
     const RAKUTEN_AFFILIATE_ID = Deno.env.get("RAKUTEN_AFFILIATE_ID") || "";
     const PERPLEXITY_API_KEY = Deno.env.get("PERPLEXITY_API_KEY") || "";
 
-    const { message, context, structured, tone } = await req.json();
+    const { message, context, structured, tone, onboarding } = await req.json();
 
     if (!message || typeof message !== "string") {
       return new Response(
         JSON.stringify({ error: "message is required" }),
         { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
       );
+    }
+
+    // オンボーディングモード: Perplexityのみで提案
+    if (onboarding && PERPLEXITY_API_KEY) {
+      try {
+        const pplxRes = await fetch("https://api.perplexity.ai/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${PERPLEXITY_API_KEY}`,
+          },
+          body: JSON.stringify({
+            model: "sonar",
+            messages: [
+              {
+                role: "system",
+                content: `あなたはギフトのプロです。必ず以下のJSON配列形式のみで回答してください。JSON以外のテキストは含めないでください。
+[{"name":"商品名","shop":"店名","reason":"おすすめの理由（1-2文）","budget":5000,"keyword":"検索キーワード","isPlace":false,"category":"カテゴリ名"}]
+3つ提案してください。`,
+              },
+              { role: "user", content: message },
+            ],
+            max_tokens: 1024,
+            temperature: 0.7,
+          }),
+        });
+        if (pplxRes.ok) {
+          const pplxData = await pplxRes.json();
+          const aiText = pplxData.choices?.[0]?.message?.content || "";
+          let suggestions;
+          try {
+            const jsonMatch = aiText.match(/\[[\s\S]*\]/);
+            suggestions = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
+          } catch {
+            suggestions = [];
+          }
+          // Amazon URL付与
+          for (const s of suggestions) {
+            s.amazonUrl = `https://www.amazon.co.jp/s?k=${encodeURIComponent(s.keyword || s.name)}`;
+          }
+          return new Response(
+            JSON.stringify({ suggestions }),
+            { headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+          );
+        }
+      } catch (e) {
+        console.error("Perplexity onboarding error:", e);
+      }
+      // Perplexity失敗時はClaude APIにフォールバック
     }
 
     const systemPrompt = structured

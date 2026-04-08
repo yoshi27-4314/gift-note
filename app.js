@@ -10757,7 +10757,15 @@ async function processOcrImage(input, mode) {
         if (mode === 'line_friends' && json.result?.friends) {
           renderOcrFriends(json.result.friends);
         } else if (mode === 'business_card' && json.result) {
-          renderOcrBusinessCard(json.result);
+          const prev = resultDiv._cardFront;
+          if (prev) {
+            const merged = mergeBusinessCards(prev, json.result);
+            resultDiv._cardFront = null;
+            renderOcrBusinessCard(merged);
+          } else {
+            resultDiv._cardFront = json.result;
+            renderBackSidePrompt(json.result);
+          }
         } else {
           resultDiv.innerHTML = '<div style="color:#c97070;padding:12px;line-height:1.6;">読み取れませんでした。<br>📌 名刺はできるだけ近くで、明るい場所で撮影してみてください。<br>📌 スクショは文字がはっきり見える画像を選んでください。</div>';
         }
@@ -10835,65 +10843,190 @@ function saveOcrFriends() {
   }
 }
 
+function renderBackSidePrompt(frontCard) {
+  const resultDiv = document.getElementById('ocrResult');
+  let html = '<div style="font-weight:600;margin-bottom:8px;">表面を読み取りました</div>';
+  html += '<div style="background:var(--bg);border-radius:12px;padding:12px;font-size:13px;line-height:2;">';
+  if (frontCard.corpFullName) html += `<div>🏢 ${esc(frontCard.corpFullName)}</div>`;
+  if (frontCard.fullName) html += `<div>👤 ${esc(frontCard.fullName)}</div>`;
+  if (frontCard.position) html += `<div>📋 ${esc(frontCard.position)}</div>`;
+  if (frontCard.phone) html += `<div>📞 ${esc(frontCard.phone)}</div>`;
+  if (frontCard.email) html += `<div>📧 ${esc(frontCard.email)}</div>`;
+  html += '</div>';
+
+  html += `<div style="margin-top:14px;display:flex;flex-direction:column;gap:8px;">
+    <div style="font-size:13px;color:var(--sub);text-align:center;">裏面に情報がありますか？</div>
+    <div style="display:flex;gap:8px;">
+      <button onclick="document.getElementById('ocrBackCamera').click()" style="flex:1;padding:14px;border-radius:12px;border:1px solid var(--accent);background:var(--accent-light);cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;font-size:14px;font-weight:600;color:var(--accent);">📷 裏面を撮影</button>
+      <button onclick="document.getElementById('ocrBackFile').click()" style="flex:1;padding:14px;border-radius:12px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;font-size:13px;">📁 写真を選ぶ</button>
+    </div>
+    <input type="file" id="ocrBackCamera" accept="image/*" capture="environment" style="display:none;" onchange="processOcrImage(this,'business_card')">
+    <input type="file" id="ocrBackFile" accept="image/*" style="display:none;" onchange="processOcrImage(this,'business_card')">
+    <button onclick="skipBackSide()" style="padding:10px;border-radius:10px;border:none;background:transparent;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;font-size:13px;color:var(--sub);text-decoration:underline;">裏面なし — このまま登録へ進む</button>
+  </div>`;
+  resultDiv.innerHTML = html;
+}
+
+function skipBackSide() {
+  const resultDiv = document.getElementById('ocrResult');
+  const frontCard = resultDiv._cardFront;
+  if (!frontCard) return;
+  resultDiv._cardFront = null;
+  renderOcrBusinessCard(frontCard);
+}
+
+function mergeBusinessCards(front, back) {
+  const merged = { ...front };
+  const keys = ['corpFullName','nickname','fullName','position','department','phone','mobile','email','address','url','industry'];
+  keys.forEach(k => {
+    if (back[k] && !merged[k]) {
+      merged[k] = back[k];
+    } else if (back[k] && merged[k] && back[k] !== merged[k]) {
+      merged[k] = merged[k] + '｜' + back[k];
+    }
+  });
+  return merged;
+}
+
 function renderOcrBusinessCard(card) {
   const resultDiv = document.getElementById('ocrResult');
-  let html = '<div style="font-weight:600;margin-bottom:8px;">名刺の読み取り結果</div>';
-  html += '<div style="background:var(--bg);border-radius:12px;padding:12px;font-size:13px;line-height:2;">';
-  if (card.corpFullName) html += `<div>🏢 ${esc(card.corpFullName)}</div>`;
-  if (card.fullName) html += `<div>👤 ${esc(card.fullName)}</div>`;
-  if (card.position) html += `<div>📋 ${esc(card.position)}${card.department ? ' / ' + esc(card.department) : ''}</div>`;
-  if (card.phone) html += `<div>📞 ${esc(card.phone)}</div>`;
-  if (card.mobile) html += `<div>📱 ${esc(card.mobile)}</div>`;
-  if (card.email) html += `<div>📧 ${esc(card.email)}</div>`;
-  if (card.address) html += `<div>📍 ${esc(card.address)}</div>`;
-  if (card.url) html += `<div>🔗 ${esc(card.url)}</div>`;
-  if (card.industry) html += `<div>🏭 ${esc(card.industry)}</div>`;
+  const fields = [
+    { key: 'corpFullName', label: '会社名', icon: '🏢', dest: 'corp' },
+    { key: 'nickname', label: '略称', icon: '🏷️', dest: 'corp' },
+    { key: 'fullName', label: '氏名', icon: '👤', dest: 'person' },
+    { key: 'position', label: '役職', icon: '📋', dest: 'person' },
+    { key: 'department', label: '部署', icon: '🏛️', dest: 'person' },
+    { key: 'phone', label: '電話番号', icon: '📞', dest: 'corp' },
+    { key: 'mobile', label: '携帯', icon: '📱', dest: 'person' },
+    { key: 'email', label: 'メール', icon: '📧', dest: 'person' },
+    { key: 'address', label: '住所', icon: '📍', dest: 'corp' },
+    { key: 'url', label: 'URL', icon: '🔗', dest: 'corp' },
+    { key: 'industry', label: '業種', icon: '🏭', dest: 'corp' },
+  ].filter(f => card[f.key]);
+
+  let html = '<div style="font-weight:600;margin-bottom:4px;">名刺の読み取り結果</div>';
+  html += '<div style="font-size:11px;color:var(--sub);margin-bottom:10px;">各項目の登録先を選んでください</div>';
+  html += '<style>.ocr-dest-btn{width:32px;height:32px;border-radius:8px;border:1.5px solid var(--border);background:var(--card);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;opacity:0.4;flex-shrink:0;}.ocr-dest-btn.active{opacity:1;border-color:transparent;}.ocr-dest-btn[data-dest="corp"].active{background:#e3f0ff;}.ocr-dest-btn[data-dest="person"].active{background:#e6f7ed;}.ocr-dest-btn[data-dest="skip"].active{background:#f0f0f0;}</style>';
+
+  html += '<div style="display:flex;flex-direction:column;gap:6px;">';
+  html += `<div style="display:flex;align-items:center;gap:6px;padding:0 4px;">
+    <div style="flex:1;font-size:11px;color:var(--sub);">読み取り内容</div>
+    <div style="display:flex;gap:4px;font-size:10px;color:var(--sub);text-align:center;">
+      <div style="width:32px;">会社</div><div style="width:32px;">個人</div><div style="width:32px;">除外</div>
+    </div>
+  </div>`;
+
+  fields.forEach((f, i) => {
+    html += `<div style="display:flex;align-items:center;gap:6px;padding:8px;background:var(--bg);border-radius:10px;">
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:11px;color:var(--sub);">${f.icon} ${f.label}</div>
+        <div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(card[f.key])}</div>
+      </div>
+      <div style="display:flex;gap:4px;" id="ocrDest${i}">
+        <button class="ocr-dest-btn ${f.dest==='corp'?'active':''}" data-dest="corp" data-idx="${i}" onclick="toggleOcrDest(this)" title="会社に登録">🏢</button>
+        <button class="ocr-dest-btn ${f.dest==='person'?'active':''}" data-dest="person" data-idx="${i}" onclick="toggleOcrDest(this)" title="個人に登録">👤</button>
+        <button class="ocr-dest-btn ${f.dest==='skip'?'active':''}" data-dest="skip" data-idx="${i}" onclick="toggleOcrDest(this)" title="登録しない">✕</button>
+      </div>
+    </div>`;
+  });
   html += '</div>';
-  html += `<div style="margin-top:12px;text-align:center;">
-    <button class="btn btn-primary" onclick="saveOcrBusinessCard()" style="font-size:14px;padding:10px 24px;">✅ この内容で登録</button>
+
+  html += `<div style="margin-top:14px;text-align:center;">
+    <button class="btn btn-primary" onclick="saveOcrBusinessCard()" style="font-size:14px;padding:10px 24px;">✅ 振り分けて登録</button>
   </div>`;
   resultDiv.innerHTML = html;
   resultDiv._card = card;
+  resultDiv._fields = fields;
+}
+
+function toggleOcrDest(btn) {
+  const group = btn.parentElement;
+  group.querySelectorAll('.ocr-dest-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
 }
 
 function saveOcrBusinessCard() {
   const resultDiv = document.getElementById('ocrResult');
   const card = resultDiv._card;
-  if (!card) return;
+  const fields = resultDiv._fields;
+  if (!card || !fields) return;
+
+  const corpData = {};
+  const personData = {};
+  fields.forEach((f, i) => {
+    const group = document.getElementById('ocrDest' + i);
+    const active = group?.querySelector('.ocr-dest-btn.active');
+    const dest = active?.dataset.dest || 'skip';
+    if (dest === 'corp') corpData[f.key] = card[f.key];
+    else if (dest === 'person') personData[f.key] = card[f.key];
+  });
+
   const now = new Date().toISOString();
-  const isCorp = card.type === 'corporate';
+  let createdCount = 0;
+  let names = [];
+  let corpId = null;
 
-  const person = {
-    id: genId(),
-    type: isCorp ? 'corporate' : 'individual',
-    nickname: card.nickname || card.corpFullName || card.fullName || '名前なし',
-    corpFullName: card.corpFullName || '',
-    corpNickname: card.nickname || '',
-    fullName: card.fullName || '',
-    position: card.position || '',
-    department: card.department || '',
-    phone: card.phone || card.mobile || '',
-    email: card.email || '',
-    address: card.address || '',
-    url: card.url || '',
-    industry: card.industry || '',
-    relation: card.position ? card.position : '仕事関係',
-    interests: [],
-    brands: [],
-    foodLike: [],
-    foodDislike: [],
-    personality: [],
-    memo: [card.department, card.mobile ? '携帯:' + card.mobile : ''].filter(Boolean).join(' / '),
-    anniversaries: [],
-    pinned: false,
-    createdAt: now,
-    updatedAt: now
-  };
+  if (Object.keys(corpData).length > 0) {
+    corpId = genId();
+    const corp = {
+      id: corpId,
+      type: 'corporate',
+      nickname: corpData.nickname || corpData.corpFullName || '会社名なし',
+      corpFullName: corpData.corpFullName || '',
+      corpNickname: corpData.nickname || '',
+      fullName: corpData.fullName || '',
+      position: corpData.position || '',
+      department: corpData.department || '',
+      phone: corpData.phone || corpData.mobile || '',
+      email: corpData.email || '',
+      address: corpData.address || '',
+      url: corpData.url || '',
+      industry: corpData.industry || '',
+      relation: '仕事関係',
+      interests: [], brands: [], foodLike: [], foodDislike: [], personality: [],
+      memo: '',
+      anniversaries: [],
+      pinned: false,
+      createdAt: now, updatedAt: now
+    };
+    data.people.push(corp);
+    createdCount++;
+    names.push(corp.nickname);
+  }
 
-  data.people.push(person);
-  saveData(); render();
-  showToast(`🪪 ${person.nickname} を登録しました`);
-  document.getElementById('aiModalOverlay').classList.remove('open');
+  if (Object.keys(personData).length > 0) {
+    const indiv = {
+      id: genId(),
+      type: 'individual',
+      nickname: personData.fullName || personData.nickname || '名前なし',
+      corpFullName: personData.corpFullName || '',
+      fullName: personData.fullName || '',
+      position: personData.position || '',
+      department: personData.department || '',
+      phone: personData.phone || personData.mobile || '',
+      email: personData.email || '',
+      address: personData.address || '',
+      url: personData.url || '',
+      relation: personData.position || '仕事関係',
+      interests: [], brands: [], foodLike: [], foodDislike: [], personality: [],
+      memo: corpId ? '会社: ' + (corpData.corpFullName || corpData.nickname || '') : '',
+      linkedCorp: corpId || '',
+      anniversaries: [],
+      pinned: false,
+      createdAt: now, updatedAt: now
+    };
+    data.people.push(indiv);
+    createdCount++;
+    names.push(indiv.nickname);
+  }
+
+  if (createdCount) {
+    saveData(); render();
+    showToast(`🪪 ${names.join(' と ')} を登録しました`);
+    document.getElementById('aiModalOverlay').classList.remove('open');
+  } else {
+    showToast('登録する項目がありません');
+  }
 }
 
 // ===== Card Search =====

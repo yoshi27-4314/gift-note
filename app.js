@@ -1547,7 +1547,7 @@ function regiftItemReceived(tab, id) {
   if (data.people.length) {
     html += `<div style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:12px;">`;
     data.people.filter(p=>p.type!=='corporate').forEach(p => {
-      html += `<div class="list-item" onclick="doRegiftReceived('${p.nickname.replace(/'/g,"\\'")}')" style="padding:10px 12px;">
+      html += `<div class="list-item" onclick="selectReceivedPerson(this,'${p.nickname.replace(/'/g,"\\'")}')" style="padding:10px 12px;cursor:pointer;">
         <div class="list-avatar" style="width:36px;height:36px;font-size:18px;background:${p.avatar?'transparent':personIcon(p).bg}">${p.avatar?`<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;">`:personIcon(p).emoji}</div>
         <div class="list-name" style="font-size:14px;">${esc(p.nickname)}</div>
       </div>`;
@@ -1563,6 +1563,13 @@ function regiftItemReceived(tab, id) {
     <button class="btn btn-primary" onclick="doRegiftReceivedManual()">✅ 記録する</button>
   </div>`;
   modal.innerHTML = html;
+}
+
+function selectReceivedPerson(el, name) {
+  document.getElementById('rgReceivedName').value = name;
+  // 選択状態をハイライト
+  el.closest('div[style*="overflow-y"]').querySelectorAll('.list-item').forEach(li => li.style.background = '');
+  el.style.background = 'var(--accent-light)';
 }
 
 function doRegiftReceived(senderName) {

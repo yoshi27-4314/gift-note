@@ -8060,7 +8060,8 @@ function renderCalendar(cardList) {
   // Month navigation
   html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px 8px;">
     <button onclick="calPrev()" style="background:none;border:none;font-size:18px;cursor:pointer;padding:8px;color:var(--sub);">◀</button>
-    <div style="font-family:'Shippori Mincho',serif;font-size:20px;font-weight:600;letter-spacing:2px;cursor:pointer;" onclick="openCalFullscreen()">${year}年 ${monthNames[month]} <span style="font-size:12px;color:var(--sub);">🔍</span></div>
+    <div style="font-family:'Shippori Mincho',serif;font-size:20px;font-weight:600;letter-spacing:2px;">${year}年 ${monthNames[month]}</div>
+    <button onclick="openCalFullscreen()" style="background:none;border:1px solid var(--border);border-radius:10px;padding:6px 12px;cursor:pointer;font-size:18px;margin-left:8px;" title="詳細カレンダー">📑</button>
     <button onclick="calNext()" style="background:none;border:none;font-size:18px;cursor:pointer;padding:8px;color:var(--sub);">▶</button>
   </div>`;
 
@@ -8251,12 +8252,12 @@ function openCalFullscreen() {
   overlay.id = 'calFullscreen';
   overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:10000;background:var(--bg);overflow-y:auto;animation:slideUp 0.3s ease;';
 
-  // ヘッダー（✕ボタン）
-  let html = `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);">
-    <button onclick="calFullPrev()" style="background:none;border:none;font-size:22px;cursor:pointer;padding:8px;color:var(--sub);">◀</button>
-    <span id="calFullTitle" style="font-size:18px;font-weight:700;font-family:'Shippori Mincho',serif;"></span>
-    <button onclick="calFullNext()" style="background:none;border:none;font-size:22px;cursor:pointer;padding:8px;color:var(--sub);">▶</button>
-    <button onclick="closeCalFullscreen()" style="position:absolute;right:12px;top:12px;background:none;border:none;font-size:24px;cursor:pointer;color:var(--sub);padding:8px;">✕</button>
+  // ヘッダー
+  let html = `<div style="display:flex;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border);gap:8px;">
+    <button onclick="closeCalFullscreen()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--sub);padding:8px;flex-shrink:0;">✕</button>
+    <button onclick="calFullPrev()" style="background:none;border:none;font-size:22px;cursor:pointer;padding:8px;color:var(--sub);flex-shrink:0;">◀</button>
+    <span id="calFullTitle" style="font-size:18px;font-weight:700;font-family:'Shippori Mincho',serif;flex:1;text-align:center;"></span>
+    <button onclick="calFullNext()" style="background:none;border:none;font-size:22px;cursor:pointer;padding:8px;color:var(--sub);flex-shrink:0;">▶</button>
   </div>`;
   html += `<div id="calFullBody" style="padding:8px;"></div>`;
   overlay.innerHTML = html;

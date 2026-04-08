@@ -52,16 +52,16 @@ async function sbInit() {
         if (loginOv) loginOv.remove();
         setTimeout(() => showToast('✅ ' + _sbUser.email + ' でログインしました'), 500);
       }
-      // ログイン済み（メールあり）の場合のみクラウド同期
+      // クラウド同期
+      await sbLoad();
+      await sbSave();
       if (_sbUser.email) {
-        await sbLoad();
-        await sbSave();
         checkShareRequests();
         ensureShareCode();
         syncReferralPoints();
         showLoginWarningHide();
-        render();
       }
+      render();
     } else {
       _sbUser = null;
     }

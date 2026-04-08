@@ -3562,6 +3562,29 @@ function renderItems(items, cardList) {
 }
 
 // ===== Items Tab =====
+function openItemsFabMenu() {
+  const modal = document.getElementById('aiModal');
+  modal.innerHTML = `<h2>アイテムを登録</h2>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <button onclick="document.getElementById('aiModalOverlay').classList.remove('open');openItemsTabModal()" class="fab-menu-btn">
+        <span style="font-size:24px;">✏️</span>
+        <div><div style="font-size:14px;font-weight:500;">手動で追加</div><div style="font-size:11px;color:var(--sub);">名前やカテゴリを入力して登録</div></div>
+      </button>
+      <button onclick="document.getElementById('aiModalOverlay').classList.remove('open');startItemOcr('item_ocr','items','camera')" class="fab-menu-btn">
+        <span style="font-size:24px;">📷</span>
+        <div><div style="font-size:14px;font-weight:500;">カメラで撮影</div><div style="font-size:11px;color:var(--sub);">商品を撮影してAIが自動判定</div></div>
+      </button>
+      <button onclick="document.getElementById('aiModalOverlay').classList.remove('open');startItemOcr('item_ocr','items','file')" class="fab-menu-btn">
+        <span style="font-size:24px;">📁</span>
+        <div><div style="font-size:14px;font-weight:500;">ファイルから選択</div><div style="font-size:11px;color:var(--sub);">スクリーンショットもOK！</div></div>
+      </button>
+    </div>
+    <div class="form-btns" style="margin-top:12px;">
+      <button class="btn btn-secondary" onclick="document.getElementById('aiModalOverlay').classList.remove('open')">閉じる</button>
+    </div>`;
+  document.getElementById('aiModalOverlay').classList.add('open');
+}
+
 function openItemsTabModal(editId) {
   const modal = document.getElementById('modal');
   const item = editId ? data.items.find(i=>i.id===editId) : null;
@@ -11074,7 +11097,7 @@ if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().t
     else if (currentTab==='place' && currentLabel==='closed') openPlaceMemoryModal();
     else if (currentTab==='place') openPlaceFabMenu();
     else if (currentTab==='gift') openGiftFabMenu();
-    else if (currentTab==='items') openItemsTabModal();
+    else if (currentTab==='items') openItemsFabMenu();
     else if (currentTab==='calendar') { const t=new Date(); calDayTap(t.getFullYear(),t.getMonth(),t.getDate()); }
     else openWishFabMenu();
   });

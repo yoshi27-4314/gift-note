@@ -8904,7 +8904,7 @@ function obStartWithName() {
   if (!name) { showToast('お名前を入力してください'); return; }
   window._obMyName = name;
   document.getElementById('obMyName').value = name;
-  obNext('install');
+  obNext(2);
 }
 
 function obShowEmailRegister() {
@@ -8943,12 +8943,12 @@ async function obCreateAccountWithEmail() {
     msgDiv.innerHTML = '';
     window._obMyName = name;
     document.getElementById('obMyName').value = name;
-    obNext('install');
+    obNext(2);
   } catch(e) {
     msgDiv.innerHTML = '';
     window._obMyName = name;
     document.getElementById('obMyName').value = name;
-    obNext('install');
+    obNext(2);
   }
 }
 
@@ -11430,12 +11430,26 @@ function renderSettingContent(id) {
           <div style="font-weight:600;margin-bottom:8px;">パスコード</div>
           <div style="display:flex;gap:8px;">
             <button class="card-btn" onclick="openPinSetup()" style="font-size:14px;padding:8px 16px;">${localStorage.getItem(PIN_KEY)?'変更':'設定'}</button>
-            ${localStorage.getItem(PIN_KEY)?`<button class="card-btn delete" onclick="removePinLock();render();" style="font-size:14px;padding:8px 16px;">解除</button>`:''}
+            ${localStorage.getItem(PIN_KEY)?`<button class="card-btn delete" onclick="removePinLock();_openSettingId='security';render();" style="font-size:14px;padding:8px 16px;">解除</button>`:''}
           </div>
         </div>
-        <div>
+        <div style="margin-top:16px;">
+          <div style="font-weight:600;margin-bottom:8px;">生体認証</div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button class="card-btn" onclick="setupBiometric()" style="font-size:14px;padding:8px 16px;">${localStorage.getItem('awai_biometric')?'✅ 有効':'設定する'}</button>
+            ${localStorage.getItem('awai_biometric')?`<button class="card-btn delete" onclick="localStorage.removeItem('awai_biometric');_openSettingId='security';render();showToast('生体認証を解除しました');" style="font-size:14px;padding:8px 16px;">解除</button>`:''}
+          </div>
+          <div style="font-size:12px;color:var(--sub);margin-top:4px;">指紋・顔認証で非表示やロックを解除</div>
+        </div>
+        <div style="margin-top:16px;">
           <div style="font-weight:600;margin-bottom:8px;">非表示の解除方法</div>
-          <div style="font-size:13px;color:var(--sub);">PINコードが設定されている場合、非表示を開く時にPINが必要です</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;">
+            ${['pin','biometric','none'].map(m => {
+              const current = localStorage.getItem('awai_reveal_method') || (localStorage.getItem(PIN_KEY) ? 'pin' : 'none');
+              const labels = {pin:'🔢 パスコード', biometric:'🔐 生体認証', none:'🔓 なし'};
+              return `<div class="date-type-chip ${current===m?'active':''}" onclick="localStorage.setItem('awai_reveal_method','${m}');_openSettingId='security';render();showToast('変更しました');">${labels[m]}</div>`;
+            }).join('')}
+          </div>
         </div>`;
 
     case 'backup':
@@ -11528,6 +11542,40 @@ function saveSettingsProfile() {
   showToast('プロフィールを保存しました ✓');
 }
 
+// インストール案内（使用頻度でポップアップ）
+function checkInstallPrompt() {
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+  if (isStandalone) return; // 既にインストール済み
+  if (localStorage.getItem('awai_install_dismissed')) return;
+  const openCount = parseInt(localStorage.getItem('awai_open_count')||'0') + 1;
+  localStorage.setItem('awai_open_count', String(openCount));
+  // 5回目、15回目、30回目に案内
+  if ([5, 15, 30].includes(openCount)) {
+    setTimeout(() => {
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:10000;background:rgba(0,0,0,0.4);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.3s ease;';
+      overlay.onclick = (e) => { if(e.target===overlay){overlay.style.opacity='0';setTimeout(()=>overlay.remove(),300);} };
+      const card = document.createElement('div');
+      card.style.cssText = 'background:var(--card);border-radius:20px;padding:28px 24px;text-align:center;max-width:300px;width:85%;box-shadow:0 12px 40px rgba(0,0,0,0.2);';
+      const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const guide = isIos
+        ? '① 画面下の ⬆（共有）をタップ<br>② 「ホーム画面に追加」をタップ'
+        : '① 画面右上の ⋮ をタップ<br>② 「ホーム画面に追加」をタップ';
+      card.innerHTML = `
+        <div style="font-size:36px;margin-bottom:12px;">📲</div>
+        <div style="font-size:16px;font-weight:600;margin-bottom:8px;">ホーム画面に追加しませんか？</div>
+        <div style="font-size:13px;color:var(--sub);line-height:1.8;margin-bottom:16px;">アプリのようにすぐ開けます</div>
+        <div style="font-size:12px;color:var(--text);line-height:2;margin-bottom:16px;text-align:left;background:var(--bg);border-radius:12px;padding:12px;">${guide}</div>
+        <button onclick="this.closest('div[style*=fixed]').style.opacity='0';setTimeout(()=>this.closest('div[style*=fixed]').remove(),300);" style="padding:10px 24px;border-radius:12px;border:none;background:var(--accent);color:#fff;font-size:14px;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">わかりました</button>
+        <div style="margin-top:10px;"><a href="#" onclick="event.preventDefault();localStorage.setItem('awai_install_dismissed','1');this.closest('div[style*=fixed]').style.opacity='0';setTimeout(()=>this.closest('div[style*=fixed]').remove(),300);" style="font-size:12px;color:var(--sub);">今後表示しない</a></div>
+      `;
+      overlay.appendChild(card);
+      document.body.appendChild(overlay);
+      requestAnimationFrame(() => overlay.style.opacity = '1');
+    }, 3000);
+  }
+}
+
 function shareAppUrl() {
   const url = getAppUrl();
   if (navigator.share) {
@@ -11543,13 +11591,81 @@ function setSeason(season) {
   showToast('テーマを変更しました');
 }
 
-function requirePinToReveal(callback) {
+async function requirePinToReveal(callback) {
+  const method = localStorage.getItem('awai_reveal_method') || (localStorage.getItem(PIN_KEY) ? 'pin' : 'none');
+
+  if (method === 'none') { callback(); return; }
+
+  if (method === 'biometric') {
+    const ok = await doBiometricAuth();
+    if (ok) { callback(); }
+    else { showToast('認証に失敗しました'); }
+    return;
+  }
+
+  // PIN
   const pin = localStorage.getItem(PIN_KEY);
-  if (!pin) { callback(); return; } // PINが設定されていなければそのまま実行
+  if (!pin) { callback(); return; }
   const input = prompt('非表示を開くにはパスコードを入力してください');
-  if (input === null) return; // キャンセル
+  if (input === null) return;
   if (input === pin) { callback(); }
   else { showToast('パスコードが違います'); }
+}
+
+async function setupBiometric() {
+  if (!window.PublicKeyCredential) {
+    showToast('このブラウザは生体認証に対応していません');
+    return;
+  }
+  try {
+    const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+    if (!available) {
+      showToast('この端末は生体認証に対応していません');
+      return;
+    }
+    // テスト認証
+    const ok = await doBiometricAuth();
+    if (ok) {
+      localStorage.setItem('awai_biometric', '1');
+      localStorage.setItem('awai_reveal_method', 'biometric');
+      _openSettingId = 'security';
+      render();
+      showToast('生体認証を設定しました');
+    } else {
+      showToast('認証に失敗しました');
+    }
+  } catch(e) {
+    showToast('生体認証の設定に失敗しました');
+    console.error('Biometric setup error:', e);
+  }
+}
+
+async function doBiometricAuth() {
+  try {
+    const challenge = new Uint8Array(32);
+    crypto.getRandomValues(challenge);
+    const credential = await navigator.credentials.create({
+      publicKey: {
+        challenge,
+        rp: { name: 'AWAI', id: location.hostname },
+        user: {
+          id: new Uint8Array(16),
+          name: 'awai-user',
+          displayName: 'AWAI User'
+        },
+        pubKeyCredParams: [{ alg: -7, type: 'public-key' }],
+        authenticatorSelection: {
+          authenticatorAttachment: 'platform',
+          userVerification: 'required'
+        },
+        timeout: 60000
+      }
+    });
+    return !!credential;
+  } catch(e) {
+    console.error('Biometric auth error:', e);
+    return false;
+  }
 }
 
 function removePinLock() {
@@ -11579,6 +11695,7 @@ if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().t
   setTimeout(showAwaiMemory, 3000);
   setTimeout(checkSpecialEvent, 1500);
   setTimeout(checkStartupCelebrations, 2500);
+  setTimeout(checkInstallPrompt, 5000);
   initLongPress();
   initSwipeGestures();
 

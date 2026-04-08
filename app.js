@@ -94,8 +94,10 @@ function showLoginWarning() {
 async function sbLoad() {
   if (!_sbUser) return;
   try {
+    console.log('[sbLoad] user:', _sbUser.id, 'email:', _sbUser.email);
     const { data: row, error } = await _sb.from('user_data').select('data,profile,user_id,updated_at').eq('user_id', _sbUser.id).single();
-    if (error && error.code !== 'PGRST116') { console.error('Load error:', error); return; }
+    if (error && error.code !== 'PGRST116') { console.error('[sbLoad] ERROR:', error.message, error.code); return; }
+    console.log('[sbLoad] row:', row ? 'found' : 'null', 'profile:', row?.profile ? Object.keys(row.profile) : 'none');
     if (row) {
       // 二重チェック：取得したデータのuser_idが自分のものか確認
       if (row.user_id !== _sbUser.id) {
@@ -144,14 +146,19 @@ async function sbSave() {
   try {
     const dataObj = JSON.parse(localStorage.getItem('awai_data') || '{}');
     const profileObj = JSON.parse(localStorage.getItem('awai_my_profile') || '{}');
+    console.log('[sbSave] user:', _sbUser.id, 'email:', _sbUser.email, 'profile keys:', Object.keys(profileObj));
     const { error } = await _sb.from('user_data').upsert({
       user_id: _sbUser.id,
       data: dataObj,
       profile: profileObj,
       updated_at: new Date().toISOString()
     }, { onConflict: 'user_id' });
-    if (error) console.error('Save error:', error);
-  } catch(e) { console.error('sbSave error:', e); }
+    if (error) {
+      console.error('[sbSave] ERROR:', error.message, error.code, error);
+    } else {
+      console.log('[sbSave] OK - saved profile');
+    }
+  } catch(e) { console.error('[sbSave] CATCH:', e); }
   _sbSyncing = false;
 }
 

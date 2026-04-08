@@ -3463,11 +3463,10 @@ function render() {
         if (m) id = m[1];
       }
       if (!id) return;
-      el.style.position = 'relative';
       const btn = document.createElement('button');
       btn.className = 'awai-menu-btn';
       btn.textContent = '⋮';
-      btn.style.cssText = 'position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:22px;font-weight:bold;color:#3a302a;background:none;border:none;padding:12px;cursor:pointer;z-index:5;';
+      btn.style.cssText = 'font-size:22px;font-weight:bold;color:#3a302a;background:none;border:none;padding:8px;cursor:pointer;flex-shrink:0;';
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         e.preventDefault();

@@ -155,6 +155,7 @@ async function sbSave() {
     }, { onConflict: 'user_id' });
     if (error) {
       console.error('[sbSave] ERROR:', error.message, error.code, error);
+      alert('⚠️ クラウド保存エラー: ' + error.message);
     } else {
       console.log('[sbSave] OK - saved profile');
     }

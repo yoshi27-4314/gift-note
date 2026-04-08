@@ -11208,11 +11208,11 @@ function searchFromCard(tab, itemId) {
   modal.innerHTML = `<h2>🔍 「${esc(title)}」をもっと探す</h2>
     <div style="font-size:13px;color:var(--sub);margin-bottom:14px;">Perplexityコンシェルジュが探します</div>
     <div style="display:flex;flex-direction:column;gap:10px;">
-      <button onclick="searchPerplexity('similar','${esc(title.replace(/'/g,"\\'"))}')" style="${_gs}" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='scale(1)'">
+      <button onclick="searchPerplexityInApp('similar','${esc(title.replace(/'/g,"\\'"))}')" style="${_gs}" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='scale(1)'">
         <span style="font-size:28px;">✨</span>
         <div><div style="font-size:15px;font-weight:600;">似たものを探す</div><div style="font-size:12px;color:var(--sub);">同じジャンルの類似商品を検索</div></div>
       </button>
-      <button onclick="searchPerplexity('related','${esc(title.replace(/'/g,"\\'"))}')" style="${_gs}" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='scale(1)'">
+      <button onclick="searchPerplexityInApp('related','${esc(title.replace(/'/g,"\\'"))}')" style="${_gs}" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='scale(1)'">
         <span style="font-size:28px;">🔗</span>
         <div><div style="font-size:15px;font-weight:600;">関連するものを探す</div><div style="font-size:12px;color:var(--sub);">一緒に使えるアイテムやアクセサリ</div></div>
       </button>
@@ -11223,15 +11223,89 @@ function searchFromCard(tab, itemId) {
   document.getElementById('aiModalOverlay').classList.add('open');
 }
 
-function searchPerplexity(type, title) {
+async function searchPerplexityInApp(type, title) {
+  const modal = document.getElementById('aiModal');
   let query = '';
   if (type === 'similar') {
-    query = `「${title}」に似たおすすめ商品を教えて 購入できるサイトのURLも含めて`;
+    query = `「${title}」に似たおすすめ商品を3つ教えてください。それぞれ購入できるサイトも含めて。`;
   } else {
-    query = `「${title}」と一緒に使える関連アイテムやアクセサリを教えて 購入できるサイトのURLも含めて`;
+    query = `「${title}」と一緒に使える関連アイテムやアクセサリを3つ教えてください。それぞれ購入できるサイトも含めて。`;
   }
-  window.open('https://www.perplexity.ai/search?q=' + encodeURIComponent(query), '_blank');
-  document.getElementById('aiModalOverlay').classList.remove('open');
+
+  modal.innerHTML = `<h2>🔍 ${type==='similar'?'似たもの':'関連するもの'}を探しています</h2>
+    ${conciergeWaitingHtml('Perplexityコンシェルジュが検索中・・・')}
+    <div id="pplxResult"></div>
+    <div class="form-btns" style="margin-top:12px;">
+      <button class="btn btn-secondary" onclick="document.getElementById('aiModalOverlay').classList.remove('open')">閉じる</button>
+    </div>`;
+
+  try {
+    if (!_sbUser) throw new Error('ログインが必要です');
+    const session = await _sb.auth.getSession();
+    const token = session?.data?.session?.access_token;
+
+    const res = await fetch(AI_EDGE_FN, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + (token || ''),
+        'apikey': SUPABASE_KEY
+      },
+      body: JSON.stringify({ message: query, structured: true, onboarding: true })
+    });
+    const json = await res.json();
+    const resultDiv = document.getElementById('pplxResult');
+    if (!resultDiv) return;
+
+    if (json.suggestions && json.suggestions.length) {
+      let html = `<div style="font-weight:600;margin-bottom:10px;">${json.suggestions.length}件見つかりました</div>`;
+      json.suggestions.forEach(s => {
+        html += `<div style="background:var(--bg);border-radius:14px;padding:14px;margin-bottom:10px;">`;
+        html += `<div style="font-size:15px;font-weight:600;">${esc(s.name)}</div>`;
+        if (s.shop) html += `<div style="font-size:12px;color:var(--sub);margin-top:2px;">${esc(s.shop)}</div>`;
+        if (s.reason) html += `<div style="font-size:13px;margin-top:6px;line-height:1.6;">${esc(s.reason)}</div>`;
+        if (s.budget) html += `<div style="font-size:13px;font-weight:600;color:var(--accent);margin-top:4px;">¥${Number(s.budget).toLocaleString()}</div>`;
+        // リンクボタン
+        const _lb = 'display:inline-flex;align-items:center;gap:4px;padding:8px 14px;border-radius:10px;font-size:12px;text-decoration:none;font-weight:600;margin:2px;';
+        html += `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">`;
+        if (s.amazonUrl) html += `<a href="${esc(s.amazonUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="${_lb}background:#fff3e0;color:#e65100;">🛒 Amazon</a>`;
+        if (s.rakuten?.url) html += `<a href="${esc(s.rakuten.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="${_lb}background:#fce4ec;color:#c62828;">🏪 楽天</a>`;
+        if (s.webLinks?.official) html += `<a href="${esc(s.webLinks.official)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="${_lb}background:#e3f2fd;color:#1565c0;">🏷 公式</a>`;
+        if (s.webLinks?.instagram) html += `<a href="${esc(s.webLinks.instagram)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="${_lb}background:#fce4ec;color:#c2185b;">📸 Instagram</a>`;
+        html += `</div>`;
+        // お気に入り登録ボタン
+        html += `<button onclick="saveSearchResult(this,'${esc(s.name.replace(/'/g,"\\'"))}','${esc((s.shop||'').replace(/'/g,"\\'"))}','${s.budget||''}','${esc((s.amazonUrl||'').replace(/'/g,"\\'"))}')" style="margin-top:8px;padding:8px 16px;border-radius:10px;border:1px solid var(--accent);background:var(--card);color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">✅ お気に入りに登録</button>`;
+        html += `</div>`;
+      });
+      resultDiv.innerHTML = html;
+    } else if (json.reply) {
+      resultDiv.innerHTML = `<div style="font-size:13px;line-height:1.8;padding:12px;">${esc(json.reply)}</div>`;
+    } else {
+      resultDiv.innerHTML = '<div style="color:#c97070;padding:12px;">結果が見つかりませんでした。</div>';
+    }
+  } catch (err) {
+    const resultDiv = document.getElementById('pplxResult');
+    if (resultDiv) resultDiv.innerHTML = `<div style="color:#c97070;padding:12px;">エラー: ${esc(err.message)}</div>`;
+  }
+}
+
+function saveSearchResult(btn, name, shop, budget, url) {
+  const now = new Date().toISOString();
+  if (!data.items) data.items = [];
+  data.items.push({
+    id: genId(), title: name,
+    itemCategory: '', tags: [],
+    price: budget, memo: shop ? 'ブランド: ' + shop : '',
+    rating: 0, url: url,
+    productLinks: url ? [{ label: '🛒 Amazon', url: url }] : [],
+    pinned: false, createdAt: now, updatedAt: now
+  });
+  saveData(); render();
+  btn.textContent = '✅ 登録済み';
+  btn.style.background = 'var(--accent-light)';
+  btn.style.color = 'var(--text)';
+  btn.disabled = true;
+  showToast(`✅ ${name} をお気に入りに登録しました`);
 }
 
 async function runCardSearch() {

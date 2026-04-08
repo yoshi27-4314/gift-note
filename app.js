@@ -10948,12 +10948,11 @@ if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().t
   initSwipeGestures();
 
   // カード外クリックで個別カードを閉じる
-  document.getElementById('cardList').addEventListener('click', (e) => {
-    // 開いている詳細カードがなければ何もしない
+  document.addEventListener('click', (e) => {
     if (!openPersonId && !openItemId && !openGroupId && !openAllRecordId) return;
-    // 詳細カードやlist-item内のクリックは無視
-    if (e.target.closest('#personDetail, #itemDetail, #groupDetail, #allRecordDetail, .list-item, .card-item, .awai-menu-btn, button, a, input')) return;
-    // カード外クリック → 閉じる
+    // 詳細カード内・モーダル・ボタン等のクリックは無視
+    if (e.target.closest('#personDetail, #itemDetail, #groupDetail, #allRecordDetail, .modal-overlay, .modal, #longPressMenu, #selectBar, .fab, .tabs, .header, button, a, input, textarea, select, .awai-menu-btn')) return;
+    // 開いている詳細カードを閉じる
     if (openPersonId) { openPersonId = null; render(); }
     else if (openItemId) { openItemId = null; render(); }
     else if (openGroupId) { openGroupId = null; render(); }

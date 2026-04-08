@@ -11201,38 +11201,37 @@ function saveOcrBusinessCard() {
 function searchFromCard(tab, itemId) {
   const item = tab === 'place' ? data.place.find(i=>i.id===itemId) : data[tab]?.find(i=>i.id===itemId);
   if (!item) return;
-  // 関連する人を探す
-  let personId = null;
-  if (item.withPeople?.length) personId = item.withPeople[0];
-  else if (item.person) {
-    const p = data.people.find(x=>x.nickname===item.person);
-    if (p) personId = p.id;
-  }
-  if (personId) {
-    openAiSuggest(personId);
-    // シーン欄にアイテム情報をプリフィル
-    setTimeout(() => {
-      const sceneEl = document.getElementById('aiScene');
-      if (sceneEl) sceneEl.value = `「${item.title}」に似たもの・関連するもの`;
-    }, 100);
+  const title = item.title || '';
+  const modal = document.getElementById('aiModal');
+  const _gs = 'display:flex;align-items:center;gap:12px;padding:18px;border-radius:16px;border:1px solid var(--border);cursor:pointer;font-family:"Zen Maru Gothic",sans-serif;text-align:left;width:100%;background:var(--card);transition:transform 0.1s;';
+
+  modal.innerHTML = `<h2>🔍 「${esc(title)}」をもっと探す</h2>
+    <div style="font-size:13px;color:var(--sub);margin-bottom:14px;">Perplexityコンシェルジュが探します</div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <button onclick="searchPerplexity('similar','${esc(title.replace(/'/g,"\\'"))}')" style="${_gs}" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='scale(1)'">
+        <span style="font-size:28px;">✨</span>
+        <div><div style="font-size:15px;font-weight:600;">似たものを探す</div><div style="font-size:12px;color:var(--sub);">同じジャンルの類似商品を検索</div></div>
+      </button>
+      <button onclick="searchPerplexity('related','${esc(title.replace(/'/g,"\\'"))}')" style="${_gs}" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='scale(1)'">
+        <span style="font-size:28px;">🔗</span>
+        <div><div style="font-size:15px;font-weight:600;">関連するものを探す</div><div style="font-size:12px;color:var(--sub);">一緒に使えるアイテムやアクセサリ</div></div>
+      </button>
+    </div>
+    <div class="form-btns" style="margin-top:14px;">
+      <button class="btn btn-secondary" onclick="document.getElementById('aiModalOverlay').classList.remove('open')">閉じる</button>
+    </div>`;
+  document.getElementById('aiModalOverlay').classList.add('open');
+}
+
+function searchPerplexity(type, title) {
+  let query = '';
+  if (type === 'similar') {
+    query = `「${title}」に似たおすすめ商品を教えて 購入できるサイトのURLも含めて`;
   } else {
-    // 人が紐づいていない場合はキーワード検索
-    const keyword = item.title || '';
-    const modal = document.getElementById('aiModal');
-    modal.innerHTML = `<h2>🔍 「${esc(keyword)}」で探す</h2>
-      <div class="form-group"><label>探したいもの</label>
-        <input id="aiCardSearch" value="${esc(keyword)}">
-      </div>
-      <div class="form-group"><label>予算（任意）</label>
-        <input id="aiCardBudget" placeholder="例：5000" value="${item.amount||''}">
-      </div>
-      <div class="form-btns" style="margin-bottom:12px;">
-        <button class="btn btn-secondary" onclick="document.getElementById('aiModalOverlay').classList.remove('open')">閉じる</button>
-        <button class="btn btn-primary" id="aiCardSearchBtn" onclick="runCardSearch()">🔍 検索</button>
-      </div>
-      <div id="aiCardResult" style="font-size:13px;line-height:1.8;"></div>`;
-    document.getElementById('aiModalOverlay').classList.add('open');
+    query = `「${title}」と一緒に使える関連アイテムやアクセサリを教えて 購入できるサイトのURLも含めて`;
   }
+  window.open('https://www.perplexity.ai/search?q=' + encodeURIComponent(query), '_blank');
+  document.getElementById('aiModalOverlay').classList.remove('open');
 }
 
 async function runCardSearch() {

@@ -1914,13 +1914,8 @@ function getNearestAnnDays(person) {
 
 function renderItemCard(item, tab, rank) {
   let html = '<div class="card" style="position:relative;">';
-  html += `<div style="position:absolute;top:42px;right:12px;display:flex;gap:8px;z-index:1;">
-    <label style="font-size:11px;color:var(--sub);display:flex;align-items:center;gap:2px;cursor:pointer;" onclick="event.stopPropagation();">
-      <input type="checkbox" ${item.pinned?'checked':''} onchange="event.stopPropagation();togglePin('${tab}','${item.id}')"><span>📌</span>
-    </label>
-    <label style="font-size:11px;color:var(--sub);display:flex;align-items:center;gap:2px;cursor:pointer;" onclick="event.stopPropagation();">
-      <input type="checkbox" ${item.hidden?'checked':''} onchange="event.stopPropagation();toggleItemHidden('${tab}','${item.id}')"><span>${item.hidden?'👁':'👁‍🗨'}</span>
-    </label>
+  html += `<div style="position:absolute;top:10px;right:12px;z-index:1;">
+    <button onclick="event.stopPropagation();showLongPressMenu('${tab}','${item.id}')" style="font-size:22px;font-weight:bold;color:#b0a49e;background:none;border:none;padding:8px;cursor:pointer;">⋮</button>
   </div>`;
   if (rank) html += `<div style="display:flex;align-items:center;gap:8px;">
     <span class="rank-number">${rank}</span><div style="flex:1;">`;
@@ -2002,31 +1997,15 @@ function renderItemCard(item, tab, rank) {
     }
     html += `</div>`;
   }
-  const _bs = 'display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border-radius:14px;font-size:13px;font-weight:500;cursor:pointer;font-family:"Zen Maru Gothic",sans-serif;';
-  html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
-    <button onclick="event.stopPropagation();openGiftChoice('${tab}','${item.id}')" style="${_bs}border:1px solid var(--pickup-border);background:linear-gradient(135deg,var(--pickup),#fff4e6);color:var(--text);">🎁 ギフト</button>
-    <button onclick="event.stopPropagation();searchFromCard('${tab}','${item.id}')" style="${_bs}border:1px solid #d4c8e8;background:linear-gradient(135deg,#f3eefa,#ece0f8);color:#7a60a0;">🔍 もっと探す</button>
-    ${tab==='place'&&!item.isClosed?`<button onclick="event.stopPropagation();markVisited('${item.id}')" style="${_bs}border:1px solid ${item.visited?'#a5d6a7':'var(--pickup-border)'};background:linear-gradient(135deg,${item.visited?'#e8f5e9':'var(--pickup)'},${item.visited?'#d4ecd6':'#fff4e6'});color:var(--text);">${item.visited?'✅ 行った！':'📍 行った！'}</button>`:''}
-    ${tab==='place'&&!item.isClosed?`<button onclick="event.stopPropagation();closePlacePrompt('${item.id}')" style="${_bs}border:1px solid #d8d0c8;background:linear-gradient(135deg,#f5f0eb,#ece5dd);color:#8a7e74;">🤍 記憶に移す</button>`:''}
-    ${tab==='place'&&item.isClosed?`<button onclick="event.stopPropagation();reopenPlace('${item.id}')" style="${_bs}border:1px solid #90caf9;background:linear-gradient(135deg,#e8f4ff,#d6ebfc);color:#4a7aaa;">↩ 戻す</button>`:''}
-    ${tab!=='received'&&tab!=='gave'?`<button onclick="event.stopPropagation();shareItem('${tab}','${item.id}')" style="${_bs}border:1px solid #bdd8f0;background:linear-gradient(135deg,#e8f2fc,#daeaf8);color:#4a7aaa;">📤 共有</button>`:''}
-    <button onclick="event.stopPropagation();editItem('${tab}','${item.id}')" style="${_bs}border:1px solid var(--border);background:linear-gradient(135deg,#faf8f6,#f3eeea);color:var(--text);">✏️ 編集</button>
-    <button onclick="event.stopPropagation();duplicateItem('${tab}','${item.id}')" style="${_bs}border:1px solid #c8d8c0;background:linear-gradient(135deg,#f0f8ee,#e4f0e0);color:#6a8a60;">📋 コピー</button>
-    <button onclick="event.stopPropagation();deleteItem('${tab}','${item.id}')" style="${_bs}border:1px solid #e8c0c0;background:linear-gradient(135deg,#fdf0f0,#f8e4e4);color:#c07070;">🗑 削除</button>
-  </div></div>`;
+  html += '</div>';
   return html;
 }
 
 function renderPersonCard(p) {
   let html = '<div class="person-card" style="position:relative;">';
   const isCorp = p.type==='corporate';
-  html += `<div style="position:absolute;top:42px;right:12px;display:flex;gap:8px;z-index:1;">
-    <label style="font-size:11px;color:var(--sub);display:flex;align-items:center;gap:2px;cursor:pointer;" onclick="event.stopPropagation();">
-      <input type="checkbox" ${p.pinned?'checked':''} onchange="event.stopPropagation();togglePin('people','${p.id}')"><span>📌</span>
-    </label>
-    <label style="font-size:11px;color:var(--sub);display:flex;align-items:center;gap:2px;cursor:pointer;" onclick="event.stopPropagation();">
-      <input type="checkbox" ${p.hidden?'checked':''} onchange="event.stopPropagation();toggleHidden('${p.id}')"><span>${p.hidden?'👁':'👁‍🗨'}</span>
-    </label>
+  html += `<div style="position:absolute;top:10px;right:12px;z-index:1;">
+    <button onclick="event.stopPropagation();showLongPressMenu('people','${p.id}')" style="font-size:22px;font-weight:bold;color:#b0a49e;background:none;border:none;padding:8px;cursor:pointer;">⋮</button>
   </div>`;
   html += `<div style="padding:8px 16px 0;"><span style="font-size:12px;color:var(--accent);cursor:pointer;" onclick="event.stopPropagation();openPersonId=null;render();window.scrollTo({top:0,behavior:'smooth'});">← 一覧に戻る</span></div>`;
   html += `<div class="person-header">
@@ -5137,18 +5116,41 @@ function showLongPressMenu(type, id) {
 
   const btnStyle = 'display:flex;align-items:center;gap:12px;padding:14px 20px;width:100%;border:none;background:none;cursor:pointer;font-family:"Zen Maru Gothic",sans-serif;font-size:14px;color:var(--text);text-align:left;transition:background 0.15s;';
 
+  const _b = (icon, label, action, color) => `<button style="${btnStyle}${color?'color:'+color+';':''}" onmousedown="this.style.background='var(--bg)'" onmouseup="this.style.background=''" onclick="closeLongPressMenu();${action}"><span style="font-size:18px;">${icon}</span>${label}</button>`;
+  const _sep = '<div style="height:1px;background:var(--border);margin:4px 0;"></div>';
+
   let buttons = '';
-  buttons += `<button style="${btnStyle}" onmousedown="this.style.background='var(--bg)'" onmouseup="this.style.background=''" onclick="closeLongPressMenu();${isPeople?`openPeopleModal('${id}')`:(isPlace?`openPlaceModal('${id}')`:`openItemModal('${id}')`)}"><span style="font-size:18px;">✏️</span>編集</button>`;
-  buttons += `<button style="${btnStyle}" onmousedown="this.style.background='var(--bg)'" onmouseup="this.style.background=''" onclick="closeLongPressMenu();duplicateCard('${type}','${id}')"><span style="font-size:18px;">📋</span>複製</button>`;
-  buttons += `<button style="${btnStyle}" onmousedown="this.style.background='var(--bg)'" onmouseup="this.style.background=''" onclick="closeLongPressMenu();shareCard('${type}','${id}')"><span style="font-size:18px;">📤</span>共有</button>`;
-  buttons += `<button style="${btnStyle}" onmousedown="this.style.background='var(--bg)'" onmouseup="this.style.background=''" onclick="closeLongPressMenu();togglePin('${isPeople?'people':type}','${id}');render()"><span style="font-size:18px;">📌</span>${item.pinned?'ピン留め解除':'ピン留め'}</button>`;
-  // まとめて選択（お気に入り・行きたいのみ。友だち・ギフトは対象外）
-  if (['wish','place','items'].includes(type)) {
-    buttons += `<div style="height:1px;background:var(--border);margin:4px 0;"></div>`;
-    buttons += `<button style="${btnStyle}" onmousedown="this.style.background='var(--bg)'" onmouseup="this.style.background=''" onclick="closeLongPressMenu();selectModeStart('${type}')"><span style="font-size:18px;">☑️</span>まとめて選択</button>`;
+  // 編集
+  buttons += _b('✏️', '編集', isPeople?`openPeopleModal('${id}')`:(isPlace?`openPlaceModal('${id}')`:(type==='items'?`openItemsTabModal('${id}')`:`openItemModal('${id}')`)));
+  // ギフト（people以外）
+  if (!isPeople) buttons += _b('🎁', 'ギフトに記録', `openGiftChoice('${type}','${id}')`);
+  // コンシェルジュ（peopleのみ）
+  if (isPeople) buttons += _b('💡', 'コンシェルジュ', `openAiSuggest('${id}')`);
+  // もっと探す
+  if (!isPeople) buttons += _b('🔍', 'もっと探す', `searchFromCard('${type}','${id}')`);
+  // 行った（placeのみ）
+  if (isPlace && !item.isClosed) buttons += _b(item.visited?'✅':'📍', item.visited?'行った！':'行った！', `markVisited('${id}');render()`);
+  // 記憶に移す（placeのみ）
+  if (isPlace && !item.isClosed) buttons += _b('🤍', '記憶に移す', `closePlacePrompt('${id}')`);
+  if (isPlace && item.isClosed) buttons += _b('↩', '戻す', `reopenPlace('${id}');render()`);
+  buttons += _sep;
+  // 共有・ピン・複製
+  buttons += _b('📤', '共有', `shareCard('${type}','${id}')`);
+  buttons += _b('📌', item.pinned?'ピン留め解除':'ピン留め', `togglePin('${isPeople?'people':type}','${id}');render()`);
+  buttons += _b('📋', '複製', `duplicateCard('${type}','${id}')`);
+  // 非表示
+  if (isPeople) {
+    buttons += _b(item.hidden?'👁':'👁‍🗨', item.hidden?'非表示解除':'非表示にする', `toggleHidden('${id}');render()`);
+  } else {
+    buttons += _b(item.hidden?'👁':'👁‍🗨', item.hidden?'非表示解除':'非表示にする', `toggleItemHidden('${type}','${id}');render()`);
   }
-  buttons += `<div style="height:1px;background:var(--border);margin:4px 0;"></div>`;
-  buttons += `<button style="${btnStyle}color:#c97070;" onmousedown="this.style.background='#fff0f0'" onmouseup="this.style.background=''" onclick="closeLongPressMenu();deleteCardFromMenu('${type}','${id}')"><span style="font-size:18px;">🗑</span>削除</button>`;
+  // まとめて選択
+  if (['wish','place','items'].includes(type)) {
+    buttons += _sep;
+    buttons += _b('☑️', 'まとめて選択', `selectModeStart('${type}')`);
+  }
+  buttons += _sep;
+  buttons += _b('🗑', '削除', `deleteCardFromMenu('${type}','${id}')`, '#c97070');
 
   menu.innerHTML = header + buttons;
   overlay.appendChild(menu);

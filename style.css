@@ -607,7 +607,7 @@ h1,h2,h3,.app-title { font-family: 'Shippori Mincho', serif; }
   display: flex; align-items: center; gap: 14px;
   padding: 14px 20px; border-bottom: 1px solid var(--border);
   cursor: pointer; transition: background 0.15s ease;
-  -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: pan-y;
+  -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: pan-y pinch-zoom;
   position: relative;
 }
 .list-item:active { background: var(--accent-light); }

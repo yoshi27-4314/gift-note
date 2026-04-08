@@ -205,9 +205,16 @@ async function sbSave() {
     }, { onConflict: 'user_id' });
     if (error) {
       console.error('[sbSave] ERROR:', error.message, error.code, error);
-      alert('⚠️ クラウド保存エラー: ' + error.message);
-    } else {
-      console.log('[sbSave] OK - saved profile');
+      // RLSエラーの場合、INSERTを試す（upsertがブロックされるケース対策）
+      if (error.code === '42501' || error.message.includes('policy')) {
+        const { error: err2 } = await _sb.from('user_data').insert({
+          user_id: _sbUser.id,
+          data: dataObj,
+          profile: profileObj,
+          updated_at: new Date().toISOString()
+        });
+        if (err2) console.error('[sbSave] INSERT retry also failed:', err2.message);
+      }
     }
   } catch(e) { console.error('[sbSave] CATCH:', e); }
   _sbSyncing = false;
@@ -11945,15 +11952,20 @@ function renderSettingContent(id) {
       return `
         <div class="form-group"><label>名前</label><input id="stMyName" value="${esc(p.name||'')}" placeholder="あなたの名前"></div>
         <div class="form-group" style="margin-top:10px;"><label>🎂 誕生日</label>
+          <div style="display:flex;gap:8px;margin-bottom:8px;">
+            <div class="date-type-chip ${(p.birthType||'monthday')==='monthday'?'active':''}" onclick="toggleBirthType('monthday',this)" style="flex:1;text-align:center;">月日</div>
+            <div class="date-type-chip ${p.birthType==='full'?'active':''}" onclick="toggleBirthType('full',this)" style="flex:1;text-align:center;">年月日</div>
+          </div>
+          <input type="hidden" id="stBirthType" value="${p.birthType||'monthday'}">
+          <div id="stBirthYearRow" style="display:${p.birthType==='full'?'flex':'none'};gap:8px;align-items:center;margin-bottom:6px;">
+            <input type="number" id="stBirthYear" placeholder="年" value="${p.birthYear||''}" style="flex:1;text-align:center;">
+            <span>年</span>
+          </div>
           <div style="display:flex;gap:8px;align-items:center;">
             <input type="number" id="stBirthMonth" placeholder="月" min="1" max="12" value="${p.birthMonth||''}" style="flex:1;text-align:center;">
             <span>月</span>
             <input type="number" id="stBirthDay" placeholder="日" min="1" max="31" value="${p.birthDay||''}" style="flex:1;text-align:center;">
             <span>日</span>
-          </div>
-          <div style="display:flex;gap:8px;align-items:center;margin-top:6px;">
-            <input type="number" id="stBirthYear" placeholder="年（任意）" value="${p.birthYear||''}" style="flex:1;">
-            <span style="font-size:12px;color:var(--sub);">※年は任意</span>
           </div>
         </div>
         <div class="form-group" style="margin-top:10px;"><label>性別</label>
@@ -12169,12 +12181,20 @@ function addCustomField() {
   `);
 }
 
+function toggleBirthType(type, el) {
+  el.parentElement.querySelectorAll('.date-type-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('stBirthType').value = type;
+  document.getElementById('stBirthYearRow').style.display = type === 'full' ? 'flex' : 'none';
+}
+
 function saveSettingsProfile() {
   const profile = getMyProfile();
   profile.name = document.getElementById('stMyName')?.value.trim() || profile.name;
+  profile.birthType = document.getElementById('stBirthType')?.value || 'monthday';
   profile.birthMonth = document.getElementById('stBirthMonth')?.value ? Number(document.getElementById('stBirthMonth').value) : null;
   profile.birthDay = document.getElementById('stBirthDay')?.value ? Number(document.getElementById('stBirthDay').value) : null;
-  profile.birthYear = document.getElementById('stBirthYear')?.value ? Number(document.getElementById('stBirthYear').value) : null;
+  profile.birthYear = profile.birthType === 'full' && document.getElementById('stBirthYear')?.value ? Number(document.getElementById('stBirthYear').value) : null;
   // 誕生日を記念日リストにも反映
   if (profile.birthMonth && profile.birthDay) {
     if (!profile.anniversaries) profile.anniversaries = [];

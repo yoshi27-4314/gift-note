@@ -178,8 +178,14 @@ Deno.serve(async (req) => {
     }
 
     if (!result) {
+      const failMsg: Record<string, string> = {
+        business_card: "名刺を読み取れませんでした。できるだけ近くで、明るい場所で撮影してみてください。",
+        line_friends: "友だちの名前を読み取れませんでした。文字がはっきり見える画像でお試しください。",
+        item_ocr: "商品情報を読み取れませんでした。商品名やパッケージがはっきり写った画像でお試しください。",
+        place_ocr: "場所の情報を読み取れませんでした。店名や看板がはっきり写った画像でお試しください。",
+      };
       return new Response(
-        JSON.stringify({ error: "文字を読み取れませんでした。名刺をできるだけ近くで、明るい場所で撮影してみてください。", raw: aiText }),
+        JSON.stringify({ error: failMsg[mode] || "画像を読み取れませんでした。別の画像でお試しください。", raw: aiText }),
         { status: 200, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
       );
     }
@@ -190,8 +196,14 @@ Deno.serve(async (req) => {
     );
   } catch (error) {
     console.error("Edge Function error:", error);
+    const errMsg: Record<string, string> = {
+      business_card: "名刺の解析に失敗しました。近くで撮り直すか、明るい場所でもう一度お試しください。",
+      line_friends: "友だちリストの解析に失敗しました。しばらくしてからお試しください。",
+      item_ocr: "商品の解析に失敗しました。しばらくしてからお試しください。",
+      place_ocr: "場所の解析に失敗しました。しばらくしてからお試しください。",
+    };
     return new Response(
-      JSON.stringify({ error: "画像解析に失敗しました。名刺を近くで撮り直すか、明るい場所でもう一度お試しください。" }),
+      JSON.stringify({ error: errMsg[mode] || "画像解析に失敗しました。しばらくしてからお試しください。" }),
       { status: 500, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
     );
   }

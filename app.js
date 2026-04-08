@@ -10668,7 +10668,14 @@ async function processItemOcrImage(input, ocrMode, tabType) {
       if (json.result) {
         renderItemOcrResult(json.result, tabType);
       } else {
-        resultDiv.innerHTML = '<div style="color:#c97070;padding:12px;line-height:1.6;">読み取れませんでした。別の画像でお試しください。</div>';
+        const ocrFailMsg = {
+          items: '商品・アイテムを読み取れませんでした。<br>📌 商品名やパッケージがはっきり写った画像をお試しください。',
+          wish: 'ほしいものを読み取れませんでした。<br>📌 商品名や価格が見える画像をお試しください。',
+          received: 'もらったギフトを読み取れませんでした。<br>📌 商品がはっきり写った画像をお試しください。',
+          gave: 'あげたギフトを読み取れませんでした。<br>📌 商品がはっきり写った画像をお試しください。',
+          place: '場所・お店を読み取れませんでした。<br>📌 店名や看板がはっきり写った画像をお試しください。',
+        };
+        resultDiv.innerHTML = `<div style="color:#c97070;padding:12px;line-height:1.6;">${ocrFailMsg[tabType] || '読み取れませんでした。別の画像でお試しください。'}</div>`;
       }
     } catch (err) {
       resultDiv.innerHTML = `<div style="color:#c97070;padding:12px;">エラー: ${esc(err.message)}</div>`;
@@ -10935,7 +10942,10 @@ async function processOcrImage(input, mode) {
             renderBackSidePrompt(json.result);
           }
         } else {
-          resultDiv.innerHTML = '<div style="color:#c97070;padding:12px;line-height:1.6;">読み取れませんでした。<br>📌 名刺はできるだけ近くで、明るい場所で撮影してみてください。<br>📌 スクショは文字がはっきり見える画像を選んでください。</div>';
+          const msg = mode === 'business_card'
+            ? '名刺を読み取れませんでした。<br>📌 名刺はできるだけ近くで、明るい場所で撮影してみてください。'
+            : '友だちの名前を読み取れませんでした。<br>📌 スクリーンショットは文字がはっきり見える画像を選んでください。';
+          resultDiv.innerHTML = `<div style="color:#c97070;padding:12px;line-height:1.6;">${msg}</div>`;
         }
       } catch (err) {
         resultDiv.innerHTML = `<div style="color:#c97070;padding:12px;">エラー: ${esc(err.message)}</div>`;

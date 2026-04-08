@@ -3425,7 +3425,7 @@ function render() {
           <div class="list-date">${item.date||''}</div>
           ${item.amount?`<div style="font-size:11px;color:var(--accent);font-weight:600;">¥${Number(item.amount).toLocaleString()}</div>`:''}
         </div>
-        <span class="awai-menu-btn" style="font-size:24px;color:#3a302a;padding:8px 12px;cursor:pointer;flex-shrink:0;line-height:1;font-weight:bold;" onclick="event.stopPropagation();showLongPressMenu('${tab}','${item.id}')">⋮</span>
+        <span class="awai-menu-btn" style="font-size:24px;color:#b0a49e;padding:8px 12px;cursor:pointer;flex-shrink:0;line-height:1;font-weight:bold;" onclick="event.stopPropagation();showLongPressMenu('${tab}','${item.id}')">⋮</span>
       </div>`;
     }).join('');
     if (hiddenItems.length) {
@@ -3436,7 +3436,7 @@ function render() {
         const preview = item.person ? '👤 '+item.person : (item.memo?item.memo.substring(0,20):'');
         return `<div class="list-item" data-lp-type="${tab}" data-lp-id="${item.id}" onclick="toggleItemDetail('${item.id}')">
           <div class="list-body"><div class="list-name">${esc(item.title||'無題')}</div><div class="list-preview">${esc(preview)}</div></div>
-          <span class="awai-menu-btn" style="font-size:24px;color:#3a302a;padding:8px 12px;cursor:pointer;flex-shrink:0;line-height:1;font-weight:bold;" onclick="event.stopPropagation();showLongPressMenu('${tab}','${item.id}')">⋮</span>
+          <span class="awai-menu-btn" style="font-size:24px;color:#b0a49e;padding:8px 12px;cursor:pointer;flex-shrink:0;line-height:1;font-weight:bold;" onclick="event.stopPropagation();showLongPressMenu('${tab}','${item.id}')">⋮</span>
         </div>`;
       }).join('');
       listHtml += '</div>';
@@ -3466,7 +3466,7 @@ function render() {
       const btn = document.createElement('button');
       btn.className = 'awai-menu-btn';
       btn.textContent = '⋮';
-      btn.style.cssText = 'font-size:22px;font-weight:bold;color:#3a302a;background:none;border:none;padding:8px;cursor:pointer;flex-shrink:0;';
+      btn.style.cssText = 'font-size:22px;font-weight:bold;color:#b0a49e;background:none;border:none;padding:8px;cursor:pointer;flex-shrink:0;';
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         e.preventDefault();
@@ -3744,7 +3744,7 @@ function renderItemsTab(cardList) {
         ${item.date?`<div style="font-size:12px;color:var(--sub);">${item.date}</div>`:''}
         ${item.amount?`<div style="font-size:11px;color:var(--accent);font-weight:600;">¥${Number(item.amount).toLocaleString()}</div>`:''}
       </div>
-      ${inSelect?'':`<button class="awai-menu-btn" style="font-size:22px;font-weight:bold;color:#3a302a;background:none;border:none;padding:8px;cursor:pointer;flex-shrink:0;" onclick="event.stopPropagation();showLongPressMenu('items','${item.id}')">⋮</button>`}
+      ${inSelect?'':`<button class="awai-menu-btn" style="font-size:22px;font-weight:bold;color:#b0a49e;background:none;border:none;padding:8px;cursor:pointer;flex-shrink:0;" onclick="event.stopPropagation();showLongPressMenu('items','${item.id}')">⋮</button>`}
     </div>`;
   }).join('');
   cardList.innerHTML = html;

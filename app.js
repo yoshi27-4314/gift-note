@@ -3984,6 +3984,20 @@ function setItemPurpose(purpose, el) {
   if (targetGroup) targetGroup.style.display = purpose==='gift' ? '' : 'none';
 }
 
+function addPersonCustomField() {
+  const container = document.getElementById('pCustomFields');
+  if (!container) return;
+  container.insertAdjacentHTML('beforeend', `
+    <div style="margin-top:8px;display:flex;gap:8px;align-items:start;">
+      <div style="flex:1;">
+        <input class="p-cf-name" placeholder="項目名（例：車、推し、コスメ）" style="margin-bottom:4px;font-weight:600;">
+        <input class="p-cf-value" placeholder="内容">
+      </div>
+      <button onclick="this.parentElement.remove();" style="background:none;border:none;color:#c97070;font-size:18px;cursor:pointer;padding:4px 8px;flex-shrink:0;">✕</button>
+    </div>
+  `);
+}
+
 function filterPersonSuggest(query) {
   const list = document.getElementById('personSuggestList');
   if (!list) return;
@@ -4335,6 +4349,23 @@ function openPeopleModal(id) {
 
   // Memo
   html += `<div class="form-group"><label>📝 メモ ${helpBtn('memo')}</label><textarea id="pMemo" placeholder="自由にメモ。ここに書いた内容も検索でヒットします">${esc(p?.memo||'')}</textarea></div>`;
+
+  // カスタムフィールド
+  html += `<div class="form-group" style="border-top:1px solid var(--border);padding-top:12px;">
+    <label>📌 カスタム項目</label>
+    <div id="pCustomFields">
+      ${(p?.customFields||[]).map((f,i) => `
+        <div style="margin-top:8px;display:flex;gap:8px;align-items:start;">
+          <div style="flex:1;">
+            <input class="p-cf-name" placeholder="項目名" value="${esc(f.name||'')}" style="margin-bottom:4px;font-weight:600;">
+            <input class="p-cf-value" placeholder="内容" value="${esc(f.value||'')}">
+          </div>
+          <button onclick="this.parentElement.remove();" style="background:none;border:none;color:#c97070;font-size:18px;cursor:pointer;padding:4px 8px;flex-shrink:0;">✕</button>
+        </div>
+      `).join('')}
+    </div>
+    <div style="margin-top:8px;cursor:pointer;color:var(--accent);font-size:14px;" onclick="addPersonCustomField()">＋ 項目を追加</div>
+  </div>`;
 
   // Memory fields (記憶の人の場合のみ表示)
   if (p?.isMemory) {
@@ -5273,6 +5304,17 @@ function savePerson() {
     family,
     personality: parseTags(document.getElementById('pPersonality')?.value||''),
     memo: document.getElementById('pMemo').value.trim()||null,
+    customFields: (() => {
+      const cf = document.getElementById('pCustomFields');
+      if (!cf) return [];
+      const fields = [];
+      cf.querySelectorAll('div[style*="display:flex"]').forEach(row => {
+        const name = row.querySelector('.p-cf-name')?.value.trim();
+        const value = row.querySelector('.p-cf-value')?.value.trim();
+        if (name || value) fields.push({ name: name||'', value: value||'' });
+      });
+      return fields;
+    })(),
     // Memory fields (記憶の人のみ)
     isMemory: editingId ? (data.people.find(p=>p.id===editingId)?.isMemory||false) : false,
     memoryType: document.getElementById('mMemoryType')?.value || (editingId ? data.people.find(p=>p.id===editingId)?.memoryType : null),
@@ -11338,7 +11380,7 @@ let _openSettingId = null;
 
 function renderSettingsTab(cardList) {
   const settings = [
-    { id:'profile', icon:'👤', title:'プロフィール', sub:'名前・生年月日・好み' },
+    { id:'profile', icon:'👤', title:(getMyProfile().name ? getMyProfile().name + ' さま' + '<br>' : '') + 'プロフィール', sub:'名前・生年月日・好み・カスタム項目' },
     { id:'security', icon:'🔐', title:'セキュリティ', sub:'パスコード・非表示の解除方法' },
     { id:'backup', icon:'☁️', title:'バックアップ', sub:'復元・削除・ダウンロード' },
     { id:'theme', icon:'🎨', title:'テーマ・季節', sub:'色・季節の切り替え' },
@@ -11421,7 +11463,22 @@ function renderSettingContent(id) {
         <div class="form-group" style="margin-top:10px;"><label>📝 メモ</label>
           <textarea id="stMemo" placeholder="自由にメモ">${esc(p.memo||'')}</textarea>
         </div>
-        <button class="btn btn-primary" style="margin-top:12px;padding:10px 20px;" onclick="saveSettingsProfile()">保存</button>`;
+        <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px;">
+          <div style="font-weight:600;margin-bottom:8px;">📌 カスタム項目</div>
+          <div id="stCustomFields">
+            ${(p.customFields||[]).map((f,i) => `
+              <div class="form-group" style="margin-top:8px;display:flex;gap:8px;align-items:start;">
+                <div style="flex:1;">
+                  <input class="st-cf-name" placeholder="項目名" value="${esc(f.name||'')}" style="margin-bottom:4px;font-weight:600;">
+                  <input class="st-cf-value" placeholder="内容" value="${esc(f.value||'')}">
+                </div>
+                <button onclick="this.parentElement.remove();" style="background:none;border:none;color:#c97070;font-size:18px;cursor:pointer;padding:4px 8px;flex-shrink:0;">✕</button>
+              </div>
+            `).join('')}
+          </div>
+          <div class="add-btn" style="margin-top:8px;cursor:pointer;color:var(--accent);font-size:14px;" onclick="addCustomField()">＋ 項目を追加</div>
+        </div>
+        <button class="btn btn-primary" style="margin-top:16px;padding:10px 20px;" onclick="saveSettingsProfile()">保存</button>`;
     }
 
     case 'security':
@@ -11516,6 +11573,20 @@ function renderSettingContent(id) {
   }
 }
 
+function addCustomField() {
+  const container = document.getElementById('stCustomFields');
+  if (!container) return;
+  container.insertAdjacentHTML('beforeend', `
+    <div class="form-group" style="margin-top:8px;display:flex;gap:8px;align-items:start;">
+      <div style="flex:1;">
+        <input class="st-cf-name" placeholder="項目名（例：車、推し、コスメ）" style="margin-bottom:4px;font-weight:600;">
+        <input class="st-cf-value" placeholder="内容">
+      </div>
+      <button onclick="this.parentElement.remove();" style="background:none;border:none;color:#c97070;font-size:18px;cursor:pointer;padding:4px 8px;flex-shrink:0;">✕</button>
+    </div>
+  `);
+}
+
 function saveSettingsProfile() {
   const profile = getMyProfile();
   profile.name = document.getElementById('stMyName')?.value.trim() || profile.name;
@@ -11537,6 +11608,17 @@ function saveSettingsProfile() {
   const foodDislike = document.getElementById('stFoodDislike')?.value.trim();
   if (foodDislike) profile.foodDislike = foodDislike.split(/[,、\s]+/).filter(Boolean);
   profile.memo = document.getElementById('stMemo')?.value.trim()||'';
+  // カスタムフィールド保存
+  const cfContainer = document.getElementById('stCustomFields');
+  if (cfContainer) {
+    const fields = [];
+    cfContainer.querySelectorAll('.form-group').forEach(row => {
+      const name = row.querySelector('.st-cf-name')?.value.trim();
+      const value = row.querySelector('.st-cf-value')?.value.trim();
+      if (name || value) fields.push({ name: name||'', value: value||'' });
+    });
+    profile.customFields = fields;
+  }
   localStorage.setItem(MY_PROFILE_KEY, JSON.stringify(profile));
   sbSave();
   showToast('プロフィールを保存しました ✓');

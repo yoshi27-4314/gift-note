@@ -5754,17 +5754,21 @@ function openSettings() {
       `}
     </div>
 
-    <!-- バックアップ -->
+    <!-- バックアップ（折りたたみ） -->
     <div style="${_sc}">
-      <div style="${_sl}">☁️ バックアップ</div>
-      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;margin-bottom:8px;">
-        <span style="color:#6bab8a;font-size:20px;">✅</span>
-        <div style="font-size:13px;">データは自動保存されています</div>
+      <div style="${_sl};cursor:pointer;display:flex;align-items:center;justify-content:space-between;" onclick="const b=document.getElementById('backupContent');const a=this.querySelector('.backup-arrow');if(b.style.display==='none'){b.style.display='';a.textContent='▲';}else{b.style.display='none';a.textContent='▼';}">
+        ☁️ バックアップ <span class="backup-arrow" style="font-size:12px;color:var(--sub);">▼</span>
       </div>
-      <div style="display:flex;gap:8px;margin-bottom:10px;">
-        <button class="card-btn" onclick="createBackup()" style="flex:1;font-size:14px;padding:10px;">☁️ バックアップを作成</button>
+      <div id="backupContent" style="display:none;">
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;margin-bottom:8px;">
+          <span style="color:#6bab8a;font-size:20px;">✅</span>
+          <div style="font-size:13px;">データは自動保存されています</div>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <button class="card-btn" onclick="createBackup()" style="flex:1;font-size:14px;padding:10px;">☁️ バックアップを作成</button>
+        </div>
+        <div id="backupListArea" style="font-size:12px;color:var(--sub);text-align:center;">読み込み中...</div>
       </div>
-      <div id="backupListArea" style="font-size:12px;color:var(--sub);text-align:center;">読み込み中...</div>
     </div>
 
 
@@ -8312,12 +8316,70 @@ async function loadBackupList() {
     }
     area.innerHTML = rows.map(r => {
       const date = new Date(r.created_at).toLocaleString('ja-JP', {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
-      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">
-        <span style="font-size:13px;">${date}</span>
-        <button class="card-btn" onclick="restoreBackup('${r.id}')" style="font-size:12px;padding:4px 12px;">↩ 戻す</button>
+      const btnS = 'font-size:11px;padding:4px 10px;border-radius:8px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-family:"Zen Maru Gothic",sans-serif;';
+      return `<div style="padding:10px 0;border-bottom:1px solid var(--border);">
+        <div style="font-size:13px;font-weight:600;margin-bottom:6px;cursor:pointer;" onclick="toggleBackupActions('bk_${r.id}')">${date} <span style="font-size:11px;color:var(--sub);">▼</span></div>
+        <div id="bk_${r.id}" style="display:none;display:flex;gap:6px;flex-wrap:wrap;">
+          <button style="${btnS}" onclick="restoreBackup('${r.id}')">↩ 復元する</button>
+          <button style="${btnS}" onclick="deleteBackup('${r.id}')">🗑 削除する</button>
+          <button style="${btnS}" onclick="downloadBackup('${r.id}')">📥 ダウンロード</button>
+          <button style="${btnS}" onclick="previewBackup('${r.id}')">👁 詳細を見る</button>
+        </div>
       </div>`;
     }).join('');
   } catch(e) { area.innerHTML = '<div style="font-size:12px;color:#c07070;">読み込みに失敗しました</div>'; }
+}
+
+function toggleBackupActions(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.style.display = el.style.display === 'none' ? 'flex' : 'none';
+}
+
+async function deleteBackup(backupId) {
+  const input = prompt('削除するには「削除」と入力してください');
+  if (input !== '削除') { if (input !== null) showToast('「削除」と入力してください'); return; }
+  if (!_sb || !_sbUser) return;
+  try {
+    await _sb.from('user_backups').delete().eq('id', backupId).eq('user_id', _sbUser.id);
+    showToast('バックアップを削除しました');
+    loadBackupList();
+  } catch(e) { showToast('削除に失敗しました'); }
+}
+
+async function downloadBackup(backupId) {
+  if (!_sb || !_sbUser) return;
+  try {
+    const { data: row, error } = await _sb.from('user_backups').select('data,profile,created_at').eq('id', backupId).eq('user_id', _sbUser.id).single();
+    if (error) throw error;
+    const json = JSON.stringify({ data: row.data, profile: row.profile, created_at: row.created_at }, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `awai_backup_${new Date(row.created_at).toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('ダウンロードしました');
+  } catch(e) { showToast('ダウンロードに失敗しました'); }
+}
+
+async function previewBackup(backupId) {
+  if (!_sb || !_sbUser) return;
+  try {
+    const { data: row, error } = await _sb.from('user_backups').select('data,profile,created_at').eq('id', backupId).eq('user_id', _sbUser.id).single();
+    if (error) throw error;
+    const d = row.data || {};
+    const counts = [];
+    if (d.people?.length) counts.push(`👤 友だち ${d.people.length}人`);
+    if (d.items?.length) counts.push(`📦 アイテム ${d.items.length}件`);
+    if (d.wish?.length) counts.push(`✨ お気に入り ${d.wish.length}件`);
+    if (d.place?.length) counts.push(`📍 行きたい ${d.place.length}件`);
+    if (d.received?.length) counts.push(`🎀 もらった ${d.received.length}件`);
+    if (d.gave?.length) counts.push(`🎁 あげた ${d.gave.length}件`);
+    const date = new Date(row.created_at).toLocaleString('ja-JP');
+    alert(`バックアップ詳細\n${date}\n\n${counts.join('\n') || 'データなし'}`);
+  } catch(e) { showToast('詳細の取得に失敗しました'); }
 }
 
 async function restoreBackup(backupId) {

@@ -3581,7 +3581,7 @@ function renderItems(items, cardList) {
 // ===== Items Tab =====
 function openItemsFabMenu() {
   const modal = document.getElementById('aiModal');
-  modal.innerHTML = `<h2>アイテムを登録</h2>
+  modal.innerHTML = `<h2>お気に入りを登録</h2>
     <div style="display:flex;flex-direction:column;gap:10px;">
       <button onclick="document.getElementById('aiModalOverlay').classList.remove('open');openItemsTabModal()" class="fab-menu-btn">
         <span style="font-size:24px;">✏️</span>
@@ -3609,7 +3609,7 @@ function openItemsTabModal(editId) {
   const currentTags = item?.tags || [];
   const currentCat = item?.itemCategory || '';
 
-  let html = `<h2>📦 アイテムを${isEdit?'編集':'追加'}</h2>`;
+  let html = `<h2>✨ お気に入りを${isEdit?'編集':'登録'}</h2>`;
 
   // 名前
   html += `<div class="form-group"><label>名前 <span style="color:#c97070;font-size:11px;">* 必須</span></label><input id="fItemTitle" placeholder="例：ワイヤレスイヤホン、日本酒 獺祭" value="${esc(item?.title||'')}"></div>`;
@@ -3736,7 +3736,7 @@ function saveItemsTabItem(editId) {
 function renderItemsTab(cardList) {
   const items = (data.items||[]).filter(i => matchesSearch(i, 'items'));
   if (!items.length) {
-    cardList.innerHTML = '<div class="empty-msg">📦 アイテムを追加しましょう<br>下の ＋ ボタンから追加できます</div>';
+    cardList.innerHTML = '<div class="empty-msg">✨ お気に入りを追加しましょう<br>下の ＋ ボタンから追加できます</div>';
     return;
   }
   const sorted = [...items].filter(i=>!i.hidden).sort((a,b) => {
@@ -9176,6 +9176,57 @@ function obSavePersonNew() {
   obFinish();
 }
 
+function obShowGuidePopup() {
+  localStorage.setItem(OB_KEY, '1');
+  const overlay = document.getElementById('onboardingOverlay');
+  const inner = overlay.querySelector(':scope > div');
+
+  // ふわっとポップアップ
+  inner.innerHTML = `<div style="text-align:center;opacity:0;transition:opacity 0.8s ease;" id="obGuidePopup">
+    <div style="font-size:48px;margin-bottom:20px;">✨</div>
+    <h2 style="font-family:'Shippori Mincho',serif;font-size:22px;margin-bottom:32px;">コンシェルジュがご案内します</h2>
+    <div style="display:flex;flex-direction:column;gap:14px;max-width:320px;margin:0 auto;">
+      <button onclick="obGuideChoice('friends')" style="width:100%;padding:18px;font-size:16px;font-weight:600;border-radius:16px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;box-shadow:0 2px 8px var(--shadow);transition:all 0.2s ease;">
+        <div style="font-size:28px;margin-bottom:6px;">👤</div>
+        友だち登録をしてみる
+      </button>
+      <button onclick="obGuideChoice('profile')" style="width:100%;padding:18px;font-size:16px;font-weight:600;border-radius:16px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;box-shadow:0 2px 8px var(--shadow);transition:all 0.2s ease;">
+        <div style="font-size:28px;margin-bottom:6px;">⭐</div>
+        プレゼントを探す
+      </button>
+    </div>
+  </div>`;
+
+  requestAnimationFrame(() => {
+    document.getElementById('obGuidePopup').style.opacity = '1';
+  });
+}
+
+function obGuideChoice(choice) {
+  const overlay = document.getElementById('onboardingOverlay');
+  overlay.style.transition = 'opacity 0.8s ease';
+  overlay.style.opacity = '0';
+
+  setTimeout(() => {
+    overlay.style.display = 'none';
+    overlay.style.opacity = '1';
+    overlay.style.transition = '';
+    loadData();
+    createSampleData();
+
+    if (choice === 'friends') {
+      currentTab = 'people';
+      render();
+      checkReminders();
+    } else {
+      // マイプロフィール追加入力（設定画面のプロフィールを開く）
+      currentTab = 'settings';
+      _openSettingId = 'profile';
+      render();
+    }
+  }, 800);
+}
+
 function obSaveMyProfile() {
   const profile = getMyProfile();
   const foodLike = document.getElementById('obMyFoodLike')?.value.trim();
@@ -9353,6 +9404,53 @@ function createSampleData() {
     isSample: true,
     createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
   });
+
+  // サンプルアイテム（お気に入り）
+  if (!data.items.some(i=>i.isSample)) {
+    data.items.push({
+      id: 'sample_item', title: '京都 一澤信三郎帆布 トートバッグ',
+      itemCategory: 'ファッション', tags: ['バッグ'],
+      rating: 4, url: '', memo: 'サンプルです。お気に入りを登録してみてください。',
+      isSample: true, pinned: false,
+      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+    });
+  }
+
+  // サンプル行きたい場所
+  if (!data.place.some(i=>i.isSample)) {
+    data.place.push({
+      id: 'sample_place', title: '鎌倉 長谷寺',
+      placeCategory: '観光', tags: ['寺','鎌倉'],
+      address: '鎌倉市長谷', rating: 5,
+      memo: 'サンプルです。行きたい場所を登録してみてください。',
+      isSample: true, pinned: false, withPeople: [],
+      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+    });
+  }
+
+  // サンプルギフト（あげた）
+  if (!data.gave.some(i=>i.isSample)) {
+    data.gave.push({
+      id: 'sample_gave', title: 'ワイン（シャトー・マルゴー）',
+      person: '浅野', occasion: '誕生日',
+      itemCategory: 'グルメ', tags: ['ワイン'],
+      memo: 'サンプルです。贈り物の記録を残してみてください。',
+      isSample: true, pinned: false,
+      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+    });
+  }
+
+  // サンプルギフト（もらった）
+  if (!data.received.some(i=>i.isSample)) {
+    data.received.push({
+      id: 'sample_received', title: '万年筆（パイロット カスタム74）',
+      person: '浅野', occasion: '入社祝い',
+      itemCategory: '趣味・体験', tags: ['文房具'],
+      memo: 'サンプルです。もらった贈り物も記録できます。',
+      isSample: true, pinned: false,
+      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+    });
+  }
 
   saveData();
 }

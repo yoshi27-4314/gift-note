@@ -197,37 +197,7 @@
         </div>
       </div>
       <div style="text-align:center;font-size:12px;color:var(--sub);margin-bottom:24px;line-height:1.6;">スマホの電話帳やSNSの友だちリストを<br>スクリーンショットするだけで登録できます</div>
-      <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;" onclick="obNext(8)">次へ</button>
-    </div>
-    <!-- Step 8: マイプロフィール詳細 -->
-    <div id="obStep8" class="ob-step" style="display:none;">
-      <h2 style="text-align:center;font-family:'Shippori Mincho',serif;font-size:22px;margin-bottom:8px;">マイプロフィール</h2>
-      <p style="text-align:center;color:var(--sub);font-size:13px;margin-bottom:24px;">あなたのことをもっと教えてください</p>
-      <div class="form-group"><label>好きな食べ物</label>
-        <input id="obMyFoodLike" placeholder="例：寿司、カレー、チョコレート" style="padding:14px 16px;font-size:16px;border-radius:12px;border:1px solid var(--border);width:100%;">
-      </div>
-      <div class="form-group" style="margin-top:12px;"><label>苦手な食べ物</label>
-        <input id="obMyFoodDislike" placeholder="例：パクチー、辛いもの" style="padding:14px 16px;font-size:16px;border-radius:12px;border:1px solid var(--border);width:100%;">
-      </div>
-      <div class="form-group" style="margin-top:12px;"><label>好きなブランド・お店</label>
-        <input id="obMyBrands" placeholder="例：無印良品、スターバックス" style="padding:14px 16px;font-size:16px;border-radius:12px;border:1px solid var(--border);width:100%;">
-      </div>
-      <div class="form-group" style="margin-top:12px;"><label>趣味・興味</label>
-        <input id="obMyInterests" placeholder="例：ゴルフ、料理、旅行、読書" style="padding:14px 16px;font-size:16px;border-radius:12px;border:1px solid var(--border);width:100%;">
-      </div>
-      <div class="form-group" style="margin-top:12px;"><label>お祝いする日</label>
-        <div style="display:flex;gap:8px;margin-bottom:6px;">
-          <input id="obMyAnnivName" placeholder="例：結婚記念日、入社日、卒業日" style="flex:2;padding:14px 12px;font-size:16px;border-radius:12px;border:1px solid var(--border);">
-        </div>
-        <div style="display:flex;gap:8px;">
-          <input id="obMyAnnivMonth" type="number" min="1" max="12" placeholder="月" style="flex:1;padding:14px 12px;font-size:16px;border-radius:12px;border:1px solid var(--border);">
-          <input id="obMyAnnivDay" type="number" min="1" max="31" placeholder="日" style="flex:1;padding:14px 12px;font-size:16px;border-radius:12px;border:1px solid var(--border);">
-        </div>
-      </div>
-      <div class="form-group" style="margin-top:12px;"><label>ひとことメモ</label>
-        <input id="obMyMemo" placeholder="例：最近引っ越した、来月誕生日" style="padding:14px 16px;font-size:16px;border-radius:12px;border:1px solid var(--border);width:100%;">
-      </div>
-      <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;margin-top:24px;" onclick="obSaveMyProfile()">保存</button>
+      <button class="btn btn-primary" style="width:100%;padding:16px;font-size:17px;border-radius:14px;" onclick="obShowGuidePopup()">次へ</button>
     </div>
   </div>
 </div>
@@ -254,7 +224,7 @@
 
 <div class="tabs" id="tabs">
   <div class="tab active" data-tab="people"><span class="tab-icon">👤</span><span class="tab-label">友だち</span></div>
-  <div class="tab" data-tab="items"><span class="tab-icon">✨</span><span class="tab-label">アイテム</span></div>
+  <div class="tab" data-tab="items"><span class="tab-icon">✨</span><span class="tab-label">お気に入り</span></div>
   <div class="tab" data-tab="calendar"><span class="tab-icon"><span class="cal-date-icon"><span class="cal-date-num"></span></span></span><span class="tab-label">記念日</span></div>
   <div class="tab" data-tab="place"><span class="tab-icon">📍</span><span class="tab-label">行きたい</span></div>
   <div class="tab" data-tab="gift"><span class="tab-icon">🎁</span><span class="tab-label">ギフト</span></div>
@@ -302,6 +272,6 @@
   </div>
 </div>
 
-<script src="app.js?v=49"></script>
+<script src="app.js?v=50"></script>
 </body>
 </html>

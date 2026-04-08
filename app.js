@@ -3785,7 +3785,7 @@ function addMenuButtons(container) {
     const btn = document.createElement('button');
     btn.className = 'awai-menu-btn';
     btn.textContent = '⋮';
-    btn.style.cssText = 'font-size:16px;color:#fff;background:var(--accent);border:none;border-radius:8px;padding:4px 10px;cursor:pointer;flex-shrink:0;font-weight:bold;margin-left:4px;';
+    btn.style.cssText = 'font-size:22px;font-weight:bold;color:#b0a49e;background:none;border:none;padding:8px;cursor:pointer;flex-shrink:0;';
     btn.onclick = (e) => { e.stopPropagation(); showLongPressMenu(type, id); };
     el.appendChild(btn);
   });
@@ -8009,10 +8009,12 @@ function initCalSwipe() {
 function calSwipeStart(e) { _calSwipeX = e.touches[0].clientX; _calSwipeY = e.touches[0].clientY; }
 function calSwipeEnd(e) {
   if (currentTab !== 'calendar') return;
-  const diff = e.changedTouches[0].clientX - _calSwipeX;
-  if (Math.abs(diff) < 60) return; // 60px未満は無視
-  if (diff > 0) calPrev(); // 右スワイプ→前月
-  else calNext(); // 左スワイプ→次月
+  const dx = e.changedTouches[0].clientX - _calSwipeX;
+  const dy = e.changedTouches[0].clientY - _calSwipeY;
+  // 縦スワイプのみ対応（横はタブ切替に使うため）
+  if (Math.abs(dy) < 60 || Math.abs(dx) > Math.abs(dy)) return;
+  if (dy > 0) calPrev(); // 下スワイプ→前月
+  else calNext(); // 上スワイプ→次月
 }
 function calDayTap(y,m,d) {
   const dateStr = y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');

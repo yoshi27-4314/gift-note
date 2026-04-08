@@ -3116,6 +3116,10 @@ function render() {
 
   // Items tab（独立描画）
   if (currentTab === 'items') {
+    document.getElementById('rankingToggle').style.display = '';
+    document.getElementById('rankOnBtn').style.display = '';
+    const annBtn = document.getElementById('annSortBtn');
+    if (annBtn) annBtn.style.display = '';
     renderItemsTab(cardList);
     return;
   }

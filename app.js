@@ -9621,6 +9621,66 @@ function createSampleData() {
 }
 
 // ===== Data Export / Import =====
+async function runDataDiagnosis() {
+  const el = document.getElementById('diagResult');
+  if (!el) return;
+  el.innerHTML = '診断中...';
+  let html = '<div style="background:var(--bg);border-radius:12px;padding:12px;">';
+
+  // 1. localStorage
+  const localRaw = localStorage.getItem('awai_data');
+  const localProfile = localStorage.getItem('awai_my_profile');
+  const localData = localRaw ? JSON.parse(localRaw) : null;
+  const localCount = localData ? Object.values(localData).reduce((s,v) => s + (Array.isArray(v)?v.length:0), 0) : 0;
+  const profileName = localProfile ? (JSON.parse(localProfile).name || '名前なし') : 'なし';
+
+  html += `<div><strong>📱 ローカル</strong></div>`;
+  html += `<div>データ件数: ${localCount}</div>`;
+  html += `<div>プロフィール: ${profileName}</div>`;
+  html += `<div>更新日時: ${localStorage.getItem('awai_data_updated') || 'なし'}</div>`;
+
+  // 2. Supabase
+  html += `<div style="margin-top:8px;"><strong>☁️ クラウド（Supabase）</strong></div>`;
+  if (!_sbUser) {
+    html += `<div style="color:#c97070;">❌ ログインしていません</div>`;
+  } else {
+    html += `<div>ユーザーID: ${_sbUser.id.substring(0,8)}...</div>`;
+    html += `<div>メール: ${_sbUser.email || '未登録（匿名）'}</div>`;
+    try {
+      const { data: row, error } = await _sb.from('user_data').select('data,profile,updated_at').eq('user_id', _sbUser.id).single();
+      if (error) {
+        html += `<div style="color:#c97070;">❌ 読み込みエラー: ${error.message} (${error.code})</div>`;
+      } else if (!row) {
+        html += `<div style="color:#c97070;">❌ クラウドにデータなし（一度も保存されていない）</div>`;
+      } else {
+        const cloudCount = row.data ? Object.values(row.data).reduce((s,v) => s + (Array.isArray(v)?v.length:0), 0) : 0;
+        const cloudProfileName = row.profile?.name || 'なし';
+        html += `<div>データ件数: ${cloudCount}</div>`;
+        html += `<div>プロフィール: ${cloudProfileName}</div>`;
+        html += `<div>更新日時: ${row.updated_at || 'なし'}</div>`;
+      }
+
+      // 書き込みテスト
+      const testResult = await _sb.from('user_data').upsert({
+        user_id: _sbUser.id,
+        data: localData || {},
+        profile: localProfile ? JSON.parse(localProfile) : {},
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id' });
+      if (testResult.error) {
+        html += `<div style="color:#c97070;margin-top:4px;">❌ 書き込みエラー: ${testResult.error.message}</div>`;
+      } else {
+        html += `<div style="color:#2e7d32;margin-top:4px;">✅ 書き込みOK</div>`;
+      }
+    } catch(e) {
+      html += `<div style="color:#c97070;">❌ 通信エラー: ${e.message}</div>`;
+    }
+  }
+
+  html += '</div>';
+  el.innerHTML = html;
+}
+
 function exportData() {
   try {
     const exportObj = {
@@ -11938,11 +11998,13 @@ function renderSettingContent(id) {
 
     case 'data':
       return `
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
           <button class="card-btn" onclick="exportData()" style="font-size:13px;padding:8px 14px;">📥 エクスポート</button>
           <button class="card-btn" onclick="document.getElementById('importFile').click()" style="font-size:13px;padding:8px 14px;">📤 インポート</button>
           <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importData(this)">
-        </div>`;
+        </div>
+        <button class="card-btn" onclick="runDataDiagnosis()" style="font-size:13px;padding:8px 14px;">🔍 データ診断</button>
+        <div id="diagResult" style="margin-top:10px;font-size:12px;line-height:1.8;"></div>`;
 
     case 'about':
       return `

@@ -11961,19 +11961,20 @@ function renderSettingContent(id) {
         <div class="form-group"><label>名前</label><input id="stMyName" value="${esc(p.name||'')}" placeholder="あなたの名前"></div>
         <div class="form-group" style="margin-top:10px;"><label>🎂 誕生日</label>
           <div style="display:flex;gap:8px;margin-bottom:8px;">
-            <div class="date-type-chip ${(p.birthType||'monthday')==='monthday'?'active':''}" onclick="toggleBirthType('monthday',this)" style="flex:1;text-align:center;">月日</div>
             <div class="date-type-chip ${p.birthType==='full'?'active':''}" onclick="toggleBirthType('full',this)" style="flex:1;text-align:center;">年月日</div>
+            <div class="date-type-chip ${(p.birthType||'monthday')==='monthday'?'active':''}" onclick="toggleBirthType('monthday',this)" style="flex:1;text-align:center;">月日</div>
           </div>
           <input type="hidden" id="stBirthType" value="${p.birthType||'monthday'}">
-          <div id="stBirthYearRow" style="display:${p.birthType==='full'?'flex':'none'};gap:8px;align-items:center;margin-bottom:6px;">
-            <input type="number" id="stBirthYear" placeholder="年" value="${p.birthYear||''}" style="flex:1;text-align:center;">
-            <span>年</span>
-          </div>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <input type="number" id="stBirthMonth" placeholder="月" min="1" max="12" value="${p.birthMonth||''}" style="flex:1;text-align:center;">
-            <span>月</span>
-            <input type="number" id="stBirthDay" placeholder="日" min="1" max="31" value="${p.birthDay||''}" style="flex:1;text-align:center;">
-            <span>日</span>
+          <div style="display:flex;gap:6px;">
+            <select id="stBirthYear" style="flex:1;padding:10px 6px;border:1px solid var(--border);border-radius:10px;font-size:14px;font-family:'Zen Maru Gothic',sans-serif;color:var(--text);background:var(--bg);display:${p.birthType==='full'?'':'none'};">
+              <option value="">--</option>${(() => { const y=new Date().getFullYear(); let o=''; for(let i=y;i>=y-100;i--) o+=`<option value="${i}" ${p.birthYear==i?'selected':''}>${i}</option>`; return o; })()}
+            </select>
+            <select id="stBirthMonth" style="flex:1;padding:10px 6px;border:1px solid var(--border);border-radius:10px;font-size:14px;font-family:'Zen Maru Gothic',sans-serif;color:var(--text);background:var(--bg);">
+              <option value="">--</option>${(() => { let o=''; for(let i=1;i<=12;i++) o+=`<option value="${i}" ${p.birthMonth==i?'selected':''}>${i}月</option>`; return o; })()}
+            </select>
+            <select id="stBirthDay" style="flex:1;padding:10px 6px;border:1px solid var(--border);border-radius:10px;font-size:14px;font-family:'Zen Maru Gothic',sans-serif;color:var(--text);background:var(--bg);">
+              <option value="">--</option>${(() => { let o=''; for(let i=1;i<=31;i++) o+=`<option value="${i}" ${p.birthDay==i?'selected':''}>${i}日</option>`; return o; })()}
+            </select>
           </div>
         </div>
         <div class="form-group" style="margin-top:10px;"><label>性別</label>

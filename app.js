@@ -1520,11 +1520,11 @@ function openGiftChoice(tab, id) {
   let html = `<h2>🎁 「${esc(item.title)}」</h2>`;
   html += `<div style="font-size:13px;color:var(--sub);margin-bottom:14px;">このアイテムをギフトとして記録します</div>`;
   html += `<div style="display:flex;flex-direction:column;gap:10px;">
-    <button onclick="regiftDirection='gave';regiftItem('${tab}','${id}')" style="${_gs}" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='scale(1)'">
+    <button class="tap-btn" onclick="regiftDirection='gave';regiftItem('${tab}','${id}')" style="${_gs}">
       <span style="font-size:28px;">🎁</span>
       <div><div style="font-size:15px;font-weight:600;">あげた</div><div style="font-size:12px;color:var(--sub);">プレゼントとして贈った</div></div>
     </button>
-    <button onclick="regiftDirection='received';regiftItemReceived('${tab}','${id}')" style="${_gs}" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='scale(1)'">
+    <button class="tap-btn" onclick="regiftDirection='received';regiftItemReceived('${tab}','${id}')" style="${_gs}">
       <span style="font-size:28px;">🥰</span>
       <div><div style="font-size:15px;font-weight:600;">もらった</div><div style="font-size:12px;color:var(--sub);">プレゼントとしてもらった</div></div>
     </button>
@@ -10617,13 +10617,13 @@ function startItemOcr(ocrMode, tabType, inputMethod) {
   const hint = inputMethod === 'camera' ? '撮影した写真からAIが自動で判定します' : 'スクリーンショットや写真からAIが自動で判定します';
 
   const fileInput = inputMethod === 'camera'
-    ? `<input type="file" id="itemOcrFile" accept="image/*" capture="environment" style="display:none;" onchange="processItemOcrImage(this,'${ocrMode}','${tabType}')">`
-    : `<input type="file" id="itemOcrFile" accept="image/*" multiple style="display:none;" onchange="processItemOcrImage(this,'${ocrMode}','${tabType}')">`;
+    ? `<input type="file" id="itemOcrFile" accept="image/*" capture="environment" style="display:none;" onclick="this.value=''" onchange="processItemOcrImage(this,'${ocrMode}','${tabType}')">`
+    : `<input type="file" id="itemOcrFile" accept="image/*" multiple style="display:none;" onclick="this.value=''" onchange="processItemOcrImage(this,'${ocrMode}','${tabType}')">`;
 
   modal.innerHTML = `<h2>📷 ${title}を画像から登録</h2>
     <div style="font-size:13px;color:var(--sub);margin-bottom:12px;">${hint}</div>
     <div style="margin-bottom:12px;">
-      <button onclick="document.getElementById('itemOcrFile').click()" style="width:100%;padding:16px;border-radius:14px;border:1px solid var(--accent);background:var(--card);cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;font-size:14px;font-weight:500;color:var(--accent);transition:all 0.2s ease;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='scale(1)'">${inputMethod==='camera'?'📷 撮影する':'📁 ファイルを選ぶ'}</button>
+      <button onclick="document.getElementById('itemOcrFile').click()" style="width:100%;padding:16px;border-radius:14px;border:1px solid var(--accent);background:var(--card);cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;font-size:14px;font-weight:500;color:var(--accent);transition:all 0.2s ease;">${inputMethod==='camera'?'📷 撮影する':'📁 ファイルを選ぶ'}</button>
     </div>
     ${fileInput}
     <div id="itemOcrPreview" style="text-align:center;margin-bottom:12px;"></div>
@@ -10875,12 +10875,12 @@ function startOcr(mode) {
     <div style="margin-bottom:12px;">
       <button onclick="document.getElementById('ocrFile').click()" style="width:100%;padding:14px;border-radius:12px;border:1px solid var(--accent);background:var(--card);cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;font-size:14px;font-weight:500;color:var(--accent);">📁 スクショを選ぶ（複数枚OK）</button>
     </div>
-    <input type="file" id="ocrFile" accept="image/*" multiple style="display:none;" onchange="processOcrImage(this,'${mode}')">` : `<div style="display:flex;gap:8px;margin-bottom:12px;">
+    <input type="file" id="ocrFile" accept="image/*" multiple style="display:none;" onclick="this.value=''" onchange="processOcrImage(this,'${mode}')">` : `<div style="display:flex;gap:8px;margin-bottom:12px;">
       <button onclick="document.getElementById('ocrCamera').click()" style="flex:1;padding:14px;border-radius:12px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;font-size:14px;font-weight:500;">📷 撮影する</button>
       <button onclick="document.getElementById('ocrFile').click()" style="flex:1;padding:14px;border-radius:12px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;font-size:14px;font-weight:500;">📁 写真を選ぶ</button>
     </div>
-    <input type="file" id="ocrCamera" accept="image/*" capture="environment" style="display:none;" onchange="processOcrImage(this,'${mode}')">
-    <input type="file" id="ocrFile" accept="image/*" style="display:none;" onchange="processOcrImage(this,'${mode}')">`}
+    <input type="file" id="ocrCamera" accept="image/*" capture="environment" style="display:none;" onclick="this.value=''" onchange="processOcrImage(this,'${mode}')">
+    <input type="file" id="ocrFile" accept="image/*" style="display:none;" onclick="this.value=''" onchange="processOcrImage(this,'${mode}')">`}
     <div id="ocrPreview" style="text-align:center;margin-bottom:12px;"></div>
     <div id="ocrResult"></div>
     <div class="form-btns">
@@ -11028,8 +11028,8 @@ function renderBackSidePrompt(frontCard) {
       <button onclick="document.getElementById('ocrBackCamera').click()" style="flex:1;padding:14px;border-radius:12px;border:1px solid var(--accent);background:var(--accent-light);cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;font-size:14px;font-weight:600;color:var(--accent);">📷 裏面を撮影</button>
       <button onclick="document.getElementById('ocrBackFile').click()" style="flex:1;padding:14px;border-radius:12px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;font-size:13px;">📁 写真を選ぶ</button>
     </div>
-    <input type="file" id="ocrBackCamera" accept="image/*" capture="environment" style="display:none;" onchange="processOcrImage(this,'business_card')">
-    <input type="file" id="ocrBackFile" accept="image/*" style="display:none;" onchange="processOcrImage(this,'business_card')">
+    <input type="file" id="ocrBackCamera" accept="image/*" capture="environment" style="display:none;" onclick="this.value=''" onchange="processOcrImage(this,'business_card')">
+    <input type="file" id="ocrBackFile" accept="image/*" style="display:none;" onclick="this.value=''" onchange="processOcrImage(this,'business_card')">
     <button onclick="skipBackSide()" style="padding:10px;border-radius:10px;border:none;background:transparent;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;font-size:13px;color:var(--sub);text-decoration:underline;">裏面なし — このまま登録へ進む</button>
   </div>`;
   resultDiv.innerHTML = html;
@@ -11208,11 +11208,11 @@ function searchFromCard(tab, itemId) {
   modal.innerHTML = `<h2>🔍 「${esc(title)}」をもっと探す</h2>
     <div style="font-size:13px;color:var(--sub);margin-bottom:14px;">Perplexityコンシェルジュが探します</div>
     <div style="display:flex;flex-direction:column;gap:10px;">
-      <button onclick="searchPerplexityInApp('similar','${esc(title.replace(/'/g,"\\'"))}')" style="${_gs}" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='scale(1)'">
+      <button class="tap-btn" onclick="searchPerplexityInApp('similar','${esc(title.replace(/'/g,"\\'"))}')" style="${_gs}">
         <span style="font-size:28px;">✨</span>
         <div><div style="font-size:15px;font-weight:600;">似たものを探す</div><div style="font-size:12px;color:var(--sub);">同じジャンルの類似商品を検索</div></div>
       </button>
-      <button onclick="searchPerplexityInApp('related','${esc(title.replace(/'/g,"\\'"))}')" style="${_gs}" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='scale(1)'">
+      <button class="tap-btn" onclick="searchPerplexityInApp('related','${esc(title.replace(/'/g,"\\'"))}')" style="${_gs}">
         <span style="font-size:28px;">🔗</span>
         <div><div style="font-size:15px;font-weight:600;">関連するものを探す</div><div style="font-size:12px;color:var(--sub);">一緒に使えるアイテムやアクセサリ</div></div>
       </button>

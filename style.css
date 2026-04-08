@@ -36,7 +36,13 @@ body {
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: none;
   font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
+/* 共通タップアニメーション（iOS/Android統一） */
+.tap-btn { transition: transform 0.1s; }
+.tap-btn:active { transform: scale(0.97); }
 /* Large mode (標準15px → 大21px) */
 body[data-fontsize="large"] { font-size: 21px; }
 body[data-fontsize="large"] .app-title { font-size: 30px; }

@@ -7820,7 +7820,7 @@ function renderCalendar(cardList) {
   // Month navigation
   html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px 8px;">
     <button onclick="calPrev()" style="background:none;border:none;font-size:18px;cursor:pointer;padding:8px;color:var(--sub);">◀</button>
-    <div style="font-family:'Shippori Mincho',serif;font-size:20px;font-weight:600;letter-spacing:2px;">${year}年 ${monthNames[month]}</div>
+    <div style="font-family:'Shippori Mincho',serif;font-size:20px;font-weight:600;letter-spacing:2px;cursor:pointer;" onclick="openCalFullscreen()">${year}年 ${monthNames[month]} <span style="font-size:12px;color:var(--sub);">🔍</span></div>
     <button onclick="calNext()" style="background:none;border:none;font-size:18px;cursor:pointer;padding:8px;color:var(--sub);">▶</button>
   </div>`;
 
@@ -7999,22 +7999,143 @@ function calNext() {
 }
 
 // カレンダースワイプで月切り替え
-let _calSwipeX = 0, _calSwipeY = 0;
-function initCalSwipe() {
-  const el = document.getElementById('cardList');
-  if (!el || currentTab !== 'calendar') return;
-  el.addEventListener('touchstart', calSwipeStart, {passive:true});
-  el.addEventListener('touchend', calSwipeEnd, {passive:true});
+// カレンダーのスワイプ月送りは無効（◀▶ボタンのみ）
+function initCalSwipe() {}
+
+// 全画面カレンダー
+let _calFullscreen = false;
+function openCalFullscreen() {
+  if (_calFullscreen) return;
+  _calFullscreen = true;
+  const overlay = document.createElement('div');
+  overlay.id = 'calFullscreen';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:10000;background:var(--bg);overflow-y:auto;animation:slideUp 0.3s ease;';
+
+  // ヘッダー（✕ボタン）
+  let html = `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);">
+    <button onclick="calFullPrev()" style="background:none;border:none;font-size:22px;cursor:pointer;padding:8px;color:var(--sub);">◀</button>
+    <span id="calFullTitle" style="font-size:18px;font-weight:700;font-family:'Shippori Mincho',serif;"></span>
+    <button onclick="calFullNext()" style="background:none;border:none;font-size:22px;cursor:pointer;padding:8px;color:var(--sub);">▶</button>
+    <button onclick="closeCalFullscreen()" style="position:absolute;right:12px;top:12px;background:none;border:none;font-size:24px;cursor:pointer;color:var(--sub);padding:8px;">✕</button>
+  </div>`;
+  html += `<div id="calFullBody" style="padding:8px;"></div>`;
+  overlay.innerHTML = html;
+  document.body.appendChild(overlay);
+
+  // 横スワイプで月送り
+  let _fsx = 0, _fsy = 0;
+  overlay.addEventListener('touchstart', e => { _fsx = e.touches[0].clientX; _fsy = e.touches[0].clientY; });
+  overlay.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - _fsx;
+    const dy = e.changedTouches[0].clientY - _fsy;
+    // 下スワイプで閉じる
+    if (dy > 120 && Math.abs(dx) < Math.abs(dy)) { closeCalFullscreen(); return; }
+    // 横スワイプで月送り
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) {
+      if (dx > 0) calFullPrev(); else calFullNext();
+    }
+  });
+
+  renderCalFullscreen();
 }
-function calSwipeStart(e) { _calSwipeX = e.touches[0].clientX; _calSwipeY = e.touches[0].clientY; }
-function calSwipeEnd(e) {
-  if (currentTab !== 'calendar') return;
-  const dx = e.changedTouches[0].clientX - _calSwipeX;
-  const dy = e.changedTouches[0].clientY - _calSwipeY;
-  // 縦スワイプのみ対応（横はタブ切替に使うため）
-  if (Math.abs(dy) < 60 || Math.abs(dx) > Math.abs(dy)) return;
-  if (dy > 0) calPrev(); // 下スワイプ→前月
-  else calNext(); // 上スワイプ→次月
+
+function closeCalFullscreen() {
+  _calFullscreen = false;
+  const el = document.getElementById('calFullscreen');
+  if (el) { el.style.opacity = '0'; el.style.transition = 'opacity 0.3s'; setTimeout(() => el.remove(), 300); }
+}
+
+let _calFullYear, _calFullMonth;
+function renderCalFullscreen() {
+  _calFullYear = _calFullYear || _calYear;
+  _calFullMonth = _calFullMonth !== undefined ? _calFullMonth : _calMonth;
+  const title = document.getElementById('calFullTitle');
+  const body = document.getElementById('calFullBody');
+  if (!title || !body) return;
+
+  const year = _calFullYear, month = _calFullMonth;
+  const monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  title.textContent = `${year}年 ${monthNames[month]}`;
+
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+
+  // イベント収集
+  const events = {};
+  data.people.forEach(p => {
+    (p.anniversaries||[]).forEach(a => {
+      if (!a.date) return;
+      const parts = a.date.split('-');
+      const m = parseInt(parts[parts.length - 2]);
+      const d = parseInt(parts[parts.length - 1]);
+      if (m === month + 1) {
+        const key = d;
+        if (!events[key]) events[key] = [];
+        events[key].push({ name: (a.name||'記念日').replace(/[\p{Emoji}]/gu,'').trim() + ' (' + (p.nickname||'') + ')', personId: p.id });
+      }
+    });
+  });
+
+  const days = ['日','月','火','水','木','金','土'];
+  let html = '<table style="width:100%;border-collapse:collapse;font-size:16px;">';
+  html += '<tr>' + days.map((d,i) => `<th style="padding:10px 4px;text-align:center;color:${i===0?'#c97070':i===6?'#7a9ad4':'var(--text)'};font-weight:600;">${d}</th>`).join('') + '</tr>';
+  html += '<tr>';
+  for (let i = 0; i < firstDay; i++) html += '<td></td>';
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday = dateStr === todayStr;
+    const dayOfWeek = (firstDay + d - 1) % 7;
+    const hasEvent = events[d];
+    const color = dayOfWeek === 0 ? '#c97070' : dayOfWeek === 6 ? '#7a9ad4' : 'var(--text)';
+    html += `<td style="padding:8px 4px;text-align:center;vertical-align:top;cursor:pointer;" onclick="calFullDayTap(${d})">
+      <div style="width:36px;height:36px;margin:0 auto;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:${isToday?'700':'400'};color:${isToday?'#fff':color};${isToday?'background:var(--accent);':''}">
+        ${d}
+      </div>
+      ${hasEvent ? `<div style="width:6px;height:6px;border-radius:50%;background:var(--accent);margin:2px auto;"></div>` : ''}
+    </td>`;
+    if ((firstDay + d) % 7 === 0 && d < daysInMonth) html += '</tr><tr>';
+  }
+  html += '</tr></table>';
+
+  // イベントリスト
+  const allEvents = [];
+  Object.keys(events).sort((a,b)=>a-b).forEach(d => {
+    events[d].forEach(ev => {
+      allEvents.push({ day: d, ...ev });
+    });
+  });
+  if (allEvents.length) {
+    html += '<div style="margin-top:16px;padding:0 8px;">';
+    html += '<div style="font-weight:600;margin-bottom:8px;font-size:14px;">この月の予定</div>';
+    allEvents.forEach(ev => {
+      html += `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer;" onclick="closeCalFullscreen();openPersonId='${ev.personId}';currentTab='people';render();">
+        <div style="font-size:16px;font-weight:700;color:var(--accent);width:30px;text-align:center;">${ev.day}</div>
+        <div style="font-size:14px;">${esc(ev.name)}</div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  body.innerHTML = html;
+}
+
+function calFullDayTap(d) {
+  closeCalFullscreen();
+  calDayTap(_calFullYear, _calFullMonth, d);
+}
+
+function calFullPrev() {
+  _calFullMonth--;
+  if (_calFullMonth < 0) { _calFullMonth = 11; _calFullYear--; }
+  renderCalFullscreen();
+}
+
+function calFullNext() {
+  _calFullMonth++;
+  if (_calFullMonth > 11) { _calFullMonth = 0; _calFullYear++; }
+  renderCalFullscreen();
 }
 function calDayTap(y,m,d) {
   const dateStr = y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');

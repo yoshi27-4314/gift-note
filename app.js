@@ -3108,8 +3108,11 @@ function render() {
   renderPickup();
   renderAnnSection();
 
-  // Items tab: wish/place等と同じパスで描画
-  // （下のフィルター処理→直接描画パスに統合済み）
+  // Items tab（独立描画）
+  if (currentTab === 'items') {
+    renderItemsTab(cardList);
+    return;
+  }
 
   // Calendar tab
   if (currentTab === 'calendar') {
@@ -3378,7 +3381,7 @@ function render() {
     }
   }
   // アイテム系タブは常にここで描画（elseチェーンから独立）
-  if (['wish','received','gave','place','items'].includes(currentTab)) {
+  if (['wish','received','gave','place'].includes(currentTab)) {
     console.log('[AWAI DEBUG] wish/place direct render path for', currentTab, 'items:', items.length);
     // アイテム系タブ: 直接描画（⋮ボタン確実表示）
     const visibleItems = items.filter(i => !i.hidden);
@@ -10980,7 +10983,7 @@ if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().t
     else if (currentTab==='place' && currentLabel==='closed') openPlaceMemoryModal();
     else if (currentTab==='place') openPlaceFabMenu();
     else if (currentTab==='gift') openGiftFabMenu();
-    else if (currentTab==='items') openWishFabMenu();
+    else if (currentTab==='items') openItemsTabModal();
     else if (currentTab==='calendar') { const t=new Date(); calDayTap(t.getFullYear(),t.getMonth(),t.getDate()); }
     else openWishFabMenu();
   });

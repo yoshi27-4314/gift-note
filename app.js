@@ -9191,7 +9191,7 @@ function obShowGuidePopup() {
         友だち登録をしてみる
       </button>
       <button onclick="obGuideChoice('profile')" style="width:100%;padding:18px;font-size:16px;font-weight:600;border-radius:16px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;box-shadow:0 2px 8px var(--shadow);transition:all 0.2s ease;">
-        <div style="font-size:28px;margin-bottom:6px;">⭐</div>
+        <div style="font-size:28px;margin-bottom:6px;">✨</div>
         プレゼントを探す
       </button>
     </div>

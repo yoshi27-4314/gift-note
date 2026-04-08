@@ -3114,6 +3114,13 @@ function render() {
   renderPickup();
   renderAnnSection();
 
+  // Settings tab（独立描画）
+  if (currentTab === 'settings') {
+    renderSettingsTab(cardList);
+    document.getElementById('rankingToggle').style.display = 'none';
+    return;
+  }
+
   // Items tab（独立描画）
   if (currentTab === 'items') {
     document.getElementById('rankingToggle').style.display = '';
@@ -11098,6 +11105,168 @@ function removeBiometric() {
   }
 }
 
+// ===== Settings Tab =====
+let _openSettingId = null;
+
+function renderSettingsTab(cardList) {
+  const settings = [
+    { id:'profile', icon:'👤', title:'プロフィール', sub:'名前・生年月日・好み' },
+    { id:'security', icon:'🔐', title:'セキュリティ', sub:'パスコード・非表示の解除方法' },
+    { id:'backup', icon:'☁️', title:'バックアップ', sub:'復元・削除・ダウンロード' },
+    { id:'theme', icon:'🎨', title:'テーマ・季節', sub:'色・季節の切り替え' },
+    { id:'notify', icon:'🔔', title:'通知', sub:'リマインド設定' },
+    { id:'share', icon:'📤', title:'友達に紹介', sub:'QRコード・共有コード' },
+    { id:'data', icon:'📊', title:'データ管理', sub:'エクスポート・インポート' },
+    { id:'about', icon:'ℹ️', title:'AWAIについて', sub:'バージョン・プライバシーポリシー' },
+    { id:'account', icon:'🔑', title:'アカウント', sub:'ログイン・ログアウト' },
+  ];
+
+  let html = '<div style="padding:8px 0;">';
+  settings.forEach(s => {
+    const isOpen = _openSettingId === s.id;
+    html += `<div class="list-item" style="display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1px solid var(--border);cursor:pointer;${isOpen?'background:var(--accent-light);':''}" onclick="toggleSettingDetail('${s.id}')">
+      <span style="font-size:24px;flex-shrink:0;">${s.icon}</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:16px;font-weight:600;">${s.title}</div>
+        <div style="font-size:12px;color:var(--sub);margin-top:2px;">${s.sub}</div>
+      </div>
+      <span style="font-size:14px;color:var(--sub);">${isOpen?'▲':'▶'}</span>
+    </div>`;
+    if (isOpen) {
+      html += `<div id="settingDetail" style="padding:16px 20px;background:var(--card);border-bottom:1px solid var(--border);">${renderSettingContent(s.id)}</div>`;
+    }
+  });
+  html += '</div>';
+  cardList.innerHTML = html;
+}
+
+function toggleSettingDetail(id) {
+  _openSettingId = _openSettingId === id ? null : id;
+  render();
+  if (_openSettingId) {
+    setTimeout(() => {
+      const detail = document.getElementById('settingDetail');
+      if (detail) detail.scrollIntoView({ behavior:'smooth', block:'start' });
+    }, 100);
+  }
+}
+
+function renderSettingContent(id) {
+  const p = getMyProfile();
+  switch(id) {
+    case 'profile':
+      return `
+        <div class="form-group"><label>名前</label><input id="stMyName" value="${esc(p.name||'')}" placeholder="あなたの名前"></div>
+        <div class="form-group" style="margin-top:10px;"><label>性別</label>
+          <div style="display:flex;gap:8px;">
+            <div class="date-type-chip ${p.gender==='female'?'active':''}" onclick="document.getElementById('stMyGender').value='female';this.parentElement.querySelectorAll('.date-type-chip').forEach(c=>c.classList.remove('active'));this.classList.add('active');" style="flex:1;text-align:center;">女性</div>
+            <div class="date-type-chip ${p.gender==='male'?'active':''}" onclick="document.getElementById('stMyGender').value='male';this.parentElement.querySelectorAll('.date-type-chip').forEach(c=>c.classList.remove('active'));this.classList.add('active');" style="flex:1;text-align:center;">男性</div>
+            <div class="date-type-chip ${!p.gender||p.gender==='unset'?'active':''}" onclick="document.getElementById('stMyGender').value='unset';this.parentElement.querySelectorAll('.date-type-chip').forEach(c=>c.classList.remove('active'));this.classList.add('active');" style="flex:1;text-align:center;">未設定</div>
+          </div>
+          <input type="hidden" id="stMyGender" value="${p.gender||'unset'}">
+        </div>
+        <button class="btn btn-primary" style="margin-top:12px;padding:10px 20px;" onclick="saveSettingsProfile()">保存</button>`;
+
+    case 'security':
+      return `
+        <div style="margin-bottom:12px;">
+          <div style="font-weight:600;margin-bottom:8px;">パスコード</div>
+          <div style="display:flex;gap:8px;">
+            <button class="card-btn" onclick="openPinSetup()" style="font-size:14px;padding:8px 16px;">${localStorage.getItem(PIN_KEY)?'変更':'設定'}</button>
+            ${localStorage.getItem(PIN_KEY)?`<button class="card-btn delete" onclick="removePinLock();render();" style="font-size:14px;padding:8px 16px;">解除</button>`:''}
+          </div>
+        </div>
+        <div>
+          <div style="font-weight:600;margin-bottom:8px;">非表示の解除方法</div>
+          <div style="font-size:13px;color:var(--sub);">PINコードが設定されている場合、非表示を開く時にPINが必要です</div>
+        </div>`;
+
+    case 'backup':
+      return `
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+          <button class="card-btn" onclick="createBackup()" style="flex:1;font-size:14px;padding:10px;">☁️ バックアップを作成</button>
+        </div>
+        <div id="backupListArea" style="font-size:12px;color:var(--sub);text-align:center;">読み込み中...</div>
+        <script>setTimeout(loadBackupList,100)</script>`;
+
+    case 'theme':
+      return `
+        <div style="font-weight:600;margin-bottom:8px;">季節テーマ</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+          <div class="date-type-chip" onclick="setSeason('spring')">🌸 春</div>
+          <div class="date-type-chip" onclick="setSeason('summer')">🌊 夏</div>
+          <div class="date-type-chip" onclick="setSeason('autumn')">🍁 秋</div>
+          <div class="date-type-chip" onclick="setSeason('winter')">❄️ 冬</div>
+        </div>`;
+
+    case 'notify':
+      return `<div style="font-size:13px;color:var(--sub);">リマインド通知の設定は各カードの記念日から行えます</div>`;
+
+    case 'share':
+      return `
+        <div id="qrArea" style="text-align:center;margin-bottom:12px;"></div>
+        <div style="text-align:center;margin-bottom:8px;">
+          <button class="card-btn" onclick="shareAppUrl()" style="font-size:14px;padding:8px 16px;">🔗 URLをシェア</button>
+        </div>
+        <div style="text-align:center;font-size:13px;color:var(--sub);">
+          紹介 <strong id="referralCount">0</strong>人　<strong id="referralPoints">0</strong>pt
+        </div>
+        <script>setTimeout(showQR,100)</script>`;
+
+    case 'data':
+      return `
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="card-btn" onclick="exportData()" style="font-size:13px;padding:8px 14px;">📥 エクスポート</button>
+          <button class="card-btn" onclick="document.getElementById('importFile').click()" style="font-size:13px;padding:8px 14px;">📤 インポート</button>
+          <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importData(this)">
+        </div>`;
+
+    case 'about':
+      return `
+        <div style="font-size:13px;line-height:2;">
+          <div>バージョン: AWAI v${APP_VERSION}</div>
+          <div><a href="privacy.html" target="_blank" style="color:var(--accent);">プライバシーポリシー</a></div>
+        </div>`;
+
+    case 'account':
+      if (_sbUser && _sbUser.email) {
+        return `
+          <div style="font-size:13px;margin-bottom:10px;">ログイン中: ${esc(_sbUser.email)}</div>
+          <button class="card-btn delete" onclick="logoutAccount()" style="font-size:13px;padding:8px 14px;">ログアウト</button>`;
+      }
+      return `
+        <button onclick="loginWithGoogle()" style="width:100%;padding:12px;font-size:14px;border-radius:12px;border:1px solid #dadce0;background:#fff;color:#3c4043;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;font-family:'Zen Maru Gothic',sans-serif;">
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:18px;height:18px;"> Googleでログイン
+        </button>`;
+
+    default: return '';
+  }
+}
+
+function saveSettingsProfile() {
+  const profile = getMyProfile();
+  profile.name = document.getElementById('stMyName')?.value.trim() || profile.name;
+  profile.gender = document.getElementById('stMyGender')?.value || 'unset';
+  localStorage.setItem(MY_PROFILE_KEY, JSON.stringify(profile));
+  sbSave();
+  showToast('プロフィールを保存しました ✓');
+}
+
+function shareAppUrl() {
+  const url = getAppUrl();
+  if (navigator.share) {
+    navigator.share({ title:'AWAI', text:'お気に入りと友だちの記録', url }).catch(()=>{});
+  } else {
+    navigator.clipboard.writeText(url).then(() => showToast('URLをコピーしました'));
+  }
+}
+
+function setSeason(season) {
+  document.body.dataset.season = season;
+  localStorage.setItem('awai_season', season);
+  showToast('テーマを変更しました');
+}
+
 function requirePinToReveal(callback) {
   const pin = localStorage.getItem(PIN_KEY);
   if (!pin) { callback(); return; } // PINが設定されていなければそのまま実行
@@ -11192,7 +11361,13 @@ if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().t
     _searchTimer = setTimeout(() => { searchQuery = e.target.value.trim(); render(); }, 200);
   });
 
-  document.getElementById('settingsBtn').addEventListener('click', openSettings);
+  document.getElementById('settingsBtn').addEventListener('click', () => {
+    currentTab = 'settings';
+    currentLabel = null;
+    openPersonId = null; openItemId = null; openGroupId = null; openAllRecordId = null;
+    document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+    render();
+  });
   document.getElementById('aiModalOverlay').addEventListener('click', e => {
     if (e.target===e.currentTarget) e.currentTarget.classList.remove('open');
   });

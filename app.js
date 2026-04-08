@@ -1951,7 +1951,7 @@ function renderPersonCard(p) {
   function collapsibleSection(icon, title, count, threshold, contentFn) {
     const id = secId();
     const collapsed = count >= threshold;
-    let h = `<div class="person-section"><div class="person-section-title" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;" onclick="event.stopPropagation();const b=document.getElementById('${id}');const t=this.querySelector('.sec-toggle');if(b.style.display==='none'){b.style.display='';t.textContent='▼';}else{b.style.display='none';t.textContent='▶';}">
+    let h = `<div class="person-section"><div class="person-section-title" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;" onclick="event.stopPropagation();const b=document.getElementById('${id}');const t=this.querySelector('.sec-toggle');if(b.style.display==='none'){b.style.display='';t.textContent='▼';});return;}else{b.style.display='none';t.textContent='▶';}">
       <span>${icon} ${title}${count?' ('+count+')':''}</span>
       <span class="sec-toggle" style="font-size:12px;color:var(--sub);">${collapsed?'▶':'▼'}</span>
     </div>`;
@@ -3190,7 +3190,7 @@ function render() {
       }).join('');
       if (hiddenGifts.length) {
         const hid = 'hiddenGifts_'+Math.random().toString(36).slice(2);
-        giftHtml += `<div style="margin-top:12px;padding:8px 12px;cursor:pointer;color:var(--sub);font-size:13px;text-align:center;border:1px dashed var(--border);border-radius:12px;" onclick="const b=document.getElementById('${hid}');const t=this;if(b.style.display==='none'){b.style.display='';t.textContent='▲ 非表示を閉じる (${hiddenGifts.length}件)';}else{b.style.display='none';t.textContent='▼ 非表示を表示 (${hiddenGifts.length}件)';}">▼ 非表示を表示 (${hiddenGifts.length}件)</div>`;
+        giftHtml += `<div style="margin-top:12px;padding:8px 12px;cursor:pointer;color:var(--sub);font-size:13px;text-align:center;border:1px dashed var(--border);border-radius:12px;" onclick="const b=document.getElementById('${hid}');const t=this;if(b.style.display==='none'){requirePinToReveal(()=>{b.style.display='';t.textContent='▲ 非表示を閉じる (${hiddenGifts.length}件)';});return;}else{b.style.display='none';t.textContent='▼ 非表示を表示 (${hiddenGifts.length}件)';}">▼ 非表示を表示 (${hiddenGifts.length}件)</div>`;
         giftHtml += `<div id="${hid}" style="display:none;opacity:0.5;">${hiddenGifts.map(item => {
           const preview = (item._tab==='gave'?'🎁':'🎀') + ' ' + (item.person||'');
           return `<div class="list-item" data-lp-type="${item._tab}" data-lp-id="${item.id}" ontouchstart="lpStart(event,'${item._tab}','${item.id}')" ontouchend="lpEnd()" ontouchmove="lpMove(event)" onclick="toggleAllRecordDetail('${item._tab}','${item.id}')"><div style="width:6px;height:40px;border-radius:3px;background:${item._tab==='gave'?'#d48a7a':'#7a9ad4'};flex-shrink:0;"></div><div class="list-body"><div class="list-name">${esc(item.title||'無題')}</div><div class="list-preview">${esc(preview)}</div></div></div>`;
@@ -3317,7 +3317,7 @@ function render() {
     let groupHtml = sorted.map(g => renderGroupListItem(g)).join('');
     if (hiddenGroups.length) {
       const hid = 'hiddenGroups_'+Math.random().toString(36).slice(2);
-      groupHtml += `<div style="margin-top:12px;padding:8px 12px;cursor:pointer;color:var(--sub);font-size:13px;text-align:center;border:1px dashed var(--border);border-radius:12px;" onclick="const b=document.getElementById('${hid}');const t=this;if(b.style.display==='none'){b.style.display='';t.textContent='▲ 非表示を閉じる (${hiddenGroups.length}件)';}else{b.style.display='none';t.textContent='▼ 非表示を表示 (${hiddenGroups.length}件)';}">▼ 非表示を表示 (${hiddenGroups.length}件)</div>`;
+      groupHtml += `<div style="margin-top:12px;padding:8px 12px;cursor:pointer;color:var(--sub);font-size:13px;text-align:center;border:1px dashed var(--border);border-radius:12px;" onclick="const b=document.getElementById('${hid}');const t=this;if(b.style.display==='none'){requirePinToReveal(()=>{b.style.display='';t.textContent='▲ 非表示を閉じる (${hiddenGroups.length}件)';});return;}else{b.style.display='none';t.textContent='▼ 非表示を表示 (${hiddenGroups.length}件)';}">▼ 非表示を表示 (${hiddenGroups.length}件)</div>`;
       groupHtml += `<div id="${hid}" style="display:none;opacity:0.5;">`;
       groupHtml += hiddenGroups.map(g => renderGroupListItem(g)).join('');
       groupHtml += '</div>';
@@ -3343,7 +3343,7 @@ function render() {
       let gHtml = sortedG.map(g => renderGroupListItem(g)).join('');
       if (hiddenG.length) {
         const hid='hidG_'+Math.random().toString(36).slice(2);
-        gHtml += `<div style="margin-top:12px;padding:8px 12px;cursor:pointer;color:var(--sub);font-size:13px;text-align:center;border:1px dashed var(--border);border-radius:12px;" onclick="const b=document.getElementById('${hid}');const t=this;if(b.style.display==='none'){b.style.display='';t.textContent='▲ 非表示を閉じる (${hiddenG.length}件)';}else{b.style.display='none';t.textContent='▼ 非表示を表示 (${hiddenG.length}件)';}">▼ 非表示を表示 (${hiddenG.length}件)</div>`;
+        gHtml += `<div style="margin-top:12px;padding:8px 12px;cursor:pointer;color:var(--sub);font-size:13px;text-align:center;border:1px dashed var(--border);border-radius:12px;" onclick="const b=document.getElementById('${hid}');const t=this;if(b.style.display==='none'){requirePinToReveal(()=>{b.style.display='';t.textContent='▲ 非表示を閉じる (${hiddenG.length}件)';});return;}else{b.style.display='none';t.textContent='▼ 非表示を表示 (${hiddenG.length}件)';}">▼ 非表示を表示 (${hiddenG.length}件)</div>`;
         gHtml += `<div id="${hid}" style="display:none;opacity:0.5;">${hiddenG.map(g=>renderGroupListItem(g)).join('')}</div>`;
       }
       cardList.innerHTML = gHtml;
@@ -3376,7 +3376,7 @@ function render() {
     let peopleHtml = sortedPeople.map(p => renderPersonListItem(p)).join('');
     if (hiddenPeople.length) {
       const hid = 'hiddenPeople_'+Math.random().toString(36).slice(2);
-      peopleHtml += `<div style="margin-top:12px;padding:8px 12px;cursor:pointer;color:var(--sub);font-size:13px;text-align:center;border:1px dashed var(--border);border-radius:12px;" onclick="const b=document.getElementById('${hid}');const t=this;if(b.style.display==='none'){b.style.display='';t.textContent='▲ 非表示を閉じる (${hiddenPeople.length}人)';}else{b.style.display='none';t.textContent='▼ 非表示を表示 (${hiddenPeople.length}人)';}">▼ 非表示を表示 (${hiddenPeople.length}人)</div>`;
+      peopleHtml += `<div style="margin-top:12px;padding:8px 12px;cursor:pointer;color:var(--sub);font-size:13px;text-align:center;border:1px dashed var(--border);border-radius:12px;" onclick="const b=document.getElementById('${hid}');const t=this;if(b.style.display==='none'){requirePinToReveal(()=>{b.style.display='';t.textContent='▲ 非表示を閉じる (${hiddenPeople.length}人)';});return;}else{b.style.display='none';t.textContent='▼ 非表示を表示 (${hiddenPeople.length}人)';}">▼ 非表示を表示 (${hiddenPeople.length}人)</div>`;
       peopleHtml += `<div id="${hid}" style="display:none;">`;
       const sortedHidden = [...hiddenPeople].sort((a,b) => (a.nickname||'').localeCompare(b.nickname||'', 'ja'));
       peopleHtml += sortedHidden.map(p => renderPersonListItem(p)).join('');
@@ -3430,7 +3430,7 @@ function render() {
     }).join('');
     if (hiddenItems.length) {
       const hid = 'hiddenItems_'+Math.random().toString(36).slice(2);
-      listHtml += `<div style="margin-top:12px;padding:8px 12px;cursor:pointer;color:var(--sub);font-size:13px;text-align:center;border:1px dashed var(--border);border-radius:12px;" onclick="const b=document.getElementById('${hid}');const t=this;if(b.style.display==='none'){b.style.display='';t.textContent='▲ 非表示を閉じる (${hiddenItems.length}件)';}else{b.style.display='none';t.textContent='▼ 非表示を表示 (${hiddenItems.length}件)';}">▼ 非表示を表示 (${hiddenItems.length}件)</div>`;
+      listHtml += `<div style="margin-top:12px;padding:8px 12px;cursor:pointer;color:var(--sub);font-size:13px;text-align:center;border:1px dashed var(--border);border-radius:12px;" onclick="const b=document.getElementById('${hid}');const t=this;if(b.style.display==='none'){requirePinToReveal(()=>{b.style.display='';t.textContent='▲ 非表示を閉じる (${hiddenItems.length}件)';});return;}else{b.style.display='none';t.textContent='▼ 非表示を表示 (${hiddenItems.length}件)';}">▼ 非表示を表示 (${hiddenItems.length}件)</div>`;
       listHtml += `<div id="${hid}" style="display:none;opacity:0.5;">`;
       listHtml += [...hiddenItems].sort((a,b) => (b.date||b.createdAt||'').localeCompare(a.date||a.createdAt||'')).map(item => {
         const preview = item.person ? '👤 '+item.person : (item.memo?item.memo.substring(0,20):'');
@@ -3549,7 +3549,7 @@ function renderItems(items, cardList) {
     // 非表示アイテムの折りたたみ
     if (hiddenItems.length) {
       const hid = 'hiddenItems_'+Math.random().toString(36).slice(2);
-      listHtml += `<div style="margin-top:12px;padding:8px 12px;cursor:pointer;color:var(--sub);font-size:13px;text-align:center;border:1px dashed var(--border);border-radius:12px;" onclick="const b=document.getElementById('${hid}');const t=this;if(b.style.display==='none'){b.style.display='';t.textContent='▲ 非表示を閉じる (${hiddenItems.length}件)';}else{b.style.display='none';t.textContent='▼ 非表示を表示 (${hiddenItems.length}件)';}">▼ 非表示を表示 (${hiddenItems.length}件)</div>`;
+      listHtml += `<div style="margin-top:12px;padding:8px 12px;cursor:pointer;color:var(--sub);font-size:13px;text-align:center;border:1px dashed var(--border);border-radius:12px;" onclick="const b=document.getElementById('${hid}');const t=this;if(b.style.display==='none'){requirePinToReveal(()=>{b.style.display='';t.textContent='▲ 非表示を閉じる (${hiddenItems.length}件)';});return;}else{b.style.display='none';t.textContent='▼ 非表示を表示 (${hiddenItems.length}件)';}">▼ 非表示を表示 (${hiddenItems.length}件)</div>`;
       listHtml += `<div id="${hid}" style="display:none;opacity:0.5;">`;
       listHtml += [...hiddenItems].sort((a,b) => (b.date||b.createdAt||'').localeCompare(a.date||a.createdAt||'')).map(i => renderItemListItem(i, currentTab)).join('');
       listHtml += '</div>';
@@ -5756,7 +5756,7 @@ function openSettings() {
 
     <!-- バックアップ（折りたたみ） -->
     <div style="${_sc}">
-      <div style="${_sl};cursor:pointer;display:flex;align-items:center;justify-content:space-between;" onclick="const b=document.getElementById('backupContent');const a=this.querySelector('.backup-arrow');if(b.style.display==='none'){b.style.display='';a.textContent='▲';}else{b.style.display='none';a.textContent='▼';}">
+      <div style="${_sl};cursor:pointer;display:flex;align-items:center;justify-content:space-between;" onclick="const b=document.getElementById('backupContent');const a=this.querySelector('.backup-arrow');if(b.style.display==='none'){b.style.display='';a.textContent='▲';});return;}else{b.style.display='none';a.textContent='▼';}">
         ☁️ バックアップ <span class="backup-arrow" style="font-size:12px;color:var(--sub);">▼</span>
       </div>
       <div id="backupContent" style="display:none;">
@@ -7930,7 +7930,7 @@ function renderCalendar(cardList) {
   // 非表示の記念日（折りたたみ）
   if (hiddenEvents.length) {
     const hid = 'hiddenCal_'+Math.random().toString(36).slice(2);
-    html += `<div style="margin:8px 16px;padding:8px 12px;cursor:pointer;color:var(--sub);font-size:13px;text-align:center;border:1px dashed var(--border);border-radius:12px;" onclick="const b=document.getElementById('${hid}');const t=this;if(b.style.display==='none'){b.style.display='';t.textContent='▲ 非表示を閉じる (${hiddenEvents.length}件)';}else{b.style.display='none';t.textContent='▼ 非表示を表示 (${hiddenEvents.length}件)';}">▼ 非表示を表示 (${hiddenEvents.length}件)</div>`;
+    html += `<div style="margin:8px 16px;padding:8px 12px;cursor:pointer;color:var(--sub);font-size:13px;text-align:center;border:1px dashed var(--border);border-radius:12px;" onclick="const b=document.getElementById('${hid}');const t=this;if(b.style.display==='none'){requirePinToReveal(()=>{b.style.display='';t.textContent='▲ 非表示を閉じる (${hiddenEvents.length}件)';});return;}else{b.style.display='none';t.textContent='▼ 非表示を表示 (${hiddenEvents.length}件)';}">▼ 非表示を表示 (${hiddenEvents.length}件)</div>`;
     html += `<div id="${hid}" style="display:none;opacity:0.5;">`;
     hiddenEvents.forEach(e => {
       html += `<div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border);">
@@ -11096,6 +11096,15 @@ function removeBiometric() {
     document.getElementById('settingsModalOverlay').classList.remove('open');
     openSettings();
   }
+}
+
+function requirePinToReveal(callback) {
+  const pin = localStorage.getItem(PIN_KEY);
+  if (!pin) { callback(); return; } // PINが設定されていなければそのまま実行
+  const input = prompt('非表示を開くにはパスコードを入力してください');
+  if (input === null) return; // キャンセル
+  if (input === pin) { callback(); }
+  else { showToast('パスコードが違います'); }
 }
 
 function removePinLock() {

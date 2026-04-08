@@ -11161,7 +11161,8 @@ function toggleSettingDetail(id) {
 function renderSettingContent(id) {
   const p = getMyProfile();
   switch(id) {
-    case 'profile':
+    case 'profile': {
+      const sz = p.sizes||{};
       return `
         <div class="form-group"><label>名前</label><input id="stMyName" value="${esc(p.name||'')}" placeholder="あなたの名前"></div>
         <div class="form-group" style="margin-top:10px;"><label>性別</label>
@@ -11172,7 +11173,35 @@ function renderSettingContent(id) {
           </div>
           <input type="hidden" id="stMyGender" value="${p.gender||'unset'}">
         </div>
+        <div class="form-group" style="margin-top:10px;"><label>📏 サイズ</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <input id="stSizeTops" placeholder="服トップス" value="${esc(sz.tops||'')}">
+            <input id="stSizeBottoms" placeholder="服ボトムス" value="${esc(sz.bottoms||'')}">
+            <input id="stSizeShoes" placeholder="靴サイズ" value="${esc(sz.shoes||'')}">
+            <input id="stSizeRing" placeholder="指輪サイズ" value="${esc(sz.ring||'')}">
+          </div>
+        </div>
+        <div class="form-group" style="margin-top:10px;"><label>🚬 嗜好品</label>
+          <div style="display:flex;gap:8px;">
+            <input id="stSmoking" placeholder="タバコ（銘柄）" value="${esc(p.smoking||'')}" style="flex:1;">
+            <input id="stDrinking" placeholder="お酒（種類）" value="${esc(p.drinking||'')}" style="flex:1;">
+          </div>
+        </div>
+        <div class="form-group" style="margin-top:10px;"><label>💖 好きなもの・趣味</label>
+          <input id="stInterests" placeholder="例：音楽, ゴルフ, ワイン" value="${(p.interests||[]).join(', ')}">
+        </div>
+        <div class="form-group" style="margin-top:10px;"><label>🎨 好きなブランド・色</label>
+          <input id="stBrands" placeholder="例：ZARA, 無印, ベージュ系" value="${(p.brands||[]).join(', ')}">
+        </div>
+        <div class="form-group" style="margin-top:10px;"><label>🍽 食の好み</label>
+          <input id="stFoodLike" placeholder="好きなもの（カンマ区切り）" value="${(p.foodLike||[]).join(', ')}" style="margin-bottom:6px;">
+          <input id="stFoodDislike" placeholder="苦手なもの（カンマ区切り）" value="${(p.foodDislike||[]).join(', ')}">
+        </div>
+        <div class="form-group" style="margin-top:10px;"><label>📝 メモ</label>
+          <textarea id="stMemo" placeholder="自由にメモ">${esc(p.memo||'')}</textarea>
+        </div>
         <button class="btn btn-primary" style="margin-top:12px;padding:10px 20px;" onclick="saveSettingsProfile()">保存</button>`;
+    }
 
     case 'security':
       return `
@@ -11254,6 +11283,23 @@ function saveSettingsProfile() {
   const profile = getMyProfile();
   profile.name = document.getElementById('stMyName')?.value.trim() || profile.name;
   profile.gender = document.getElementById('stMyGender')?.value || 'unset';
+  profile.sizes = {
+    tops: document.getElementById('stSizeTops')?.value.trim()||'',
+    bottoms: document.getElementById('stSizeBottoms')?.value.trim()||'',
+    shoes: document.getElementById('stSizeShoes')?.value.trim()||'',
+    ring: document.getElementById('stSizeRing')?.value.trim()||''
+  };
+  profile.smoking = document.getElementById('stSmoking')?.value.trim()||'';
+  profile.drinking = document.getElementById('stDrinking')?.value.trim()||'';
+  const interests = document.getElementById('stInterests')?.value.trim();
+  if (interests) profile.interests = interests.split(/[,、\s]+/).filter(Boolean);
+  const brands = document.getElementById('stBrands')?.value.trim();
+  if (brands) profile.brands = brands.split(/[,、\s]+/).filter(Boolean);
+  const foodLike = document.getElementById('stFoodLike')?.value.trim();
+  if (foodLike) profile.foodLike = foodLike.split(/[,、\s]+/).filter(Boolean);
+  const foodDislike = document.getElementById('stFoodDislike')?.value.trim();
+  if (foodDislike) profile.foodDislike = foodDislike.split(/[,、\s]+/).filter(Boolean);
+  profile.memo = document.getElementById('stMemo')?.value.trim()||'';
   localStorage.setItem(MY_PROFILE_KEY, JSON.stringify(profile));
   sbSave();
   showToast('プロフィールを保存しました ✓');

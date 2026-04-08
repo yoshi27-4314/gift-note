@@ -3560,45 +3560,130 @@ function openItemsTabModal(editId) {
   const modal = document.getElementById('modal');
   const item = editId ? data.items.find(i=>i.id===editId) : null;
   const isEdit = !!editId;
+  const currentTags = item?.tags || [];
+  const currentCat = item?.itemCategory || '';
+
   let html = `<h2>📦 アイテムを${isEdit?'編集':'追加'}</h2>`;
-  html += `<div class="form-group"><label>名前 <span style="color:#c97070;font-size:11px;">* 必須</span></label><input id="fItemTitle" placeholder="例：商品名、アイテム名" value="${esc(item?.title||'')}"></div>`;
-  html += `<div class="form-group" style="margin-top:12px;"><label>メモ</label><textarea id="fItemMemo" rows="3" placeholder="詳細、説明など">${esc(item?.memo||'')}</textarea></div>`;
-  html += `<div class="form-group" style="margin-top:12px;"><label>金額</label><input id="fItemAmount" type="number" placeholder="例：5000" value="${esc(item?.amount||'')}"></div>`;
-  html += `<div class="form-group" style="margin-top:12px;"><label>日付</label><input id="fItemDate" type="date" value="${item?.date||''}"></div>`;
-  html += `<div class="form-group" style="margin-top:12px;"><label>URL</label><input id="fItemUrl" placeholder="https://..." value="${esc(item?.url||'')}"></div>`;
-  html += `<div class="form-group" style="margin-top:12px;"><label>タグ</label><input id="fItemTags" placeholder="カンマ区切り" value="${(item?.tags||[]).join(', ')}"></div>`;
-  html += `<div class="form-btns" style="margin-top:20px;">
-    <button class="btn btn-secondary" onclick="closeModal()">キャンセル</button>
-    <button class="btn btn-primary" onclick="saveItemsTabItem('${editId||''}')">保存</button>
+
+  // 名前
+  html += `<div class="form-group"><label>名前 <span style="color:#c97070;font-size:11px;">* 必須</span></label><input id="fItemTitle" placeholder="例：ワイヤレスイヤホン、日本酒 獺祭" value="${esc(item?.title||'')}"></div>`;
+
+  // カテゴリ
+  const itemCatKeys = Object.keys(ITEM_CATEGORIES);
+  html += `<div class="form-group"><label>カテゴリ</label>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">`;
+  itemCatKeys.forEach((cat, ci) => {
+    const active = currentCat === cat;
+    const emoji = _itemCatEmoji[_itemCatData.indexOf(cat)] || '';
+    html += `<div class="date-type-chip ${active?'active':''}" onclick="selectItemsTabCat(this,${ci})" style="font-size:13px;padding:6px 14px;">${emoji} ${cat}</div>`;
+  });
+  html += `</div><input type="hidden" id="fItemCategory" value="${currentCat}"></div>`;
+
+  // ジャンル
+  html += `<div class="form-group"><label>ジャンル</label>
+    <div id="itemsTabGenreTags" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;">`;
+  const showGenres = currentCat && ITEM_CATEGORIES[currentCat] ? ITEM_CATEGORIES[currentCat] : ALL_ITEM_GENRES;
+  showGenres.forEach(g => {
+    const active = currentTags.includes(g.toLowerCase()) || currentTags.includes(g);
+    html += `<div class="date-type-chip ${active?'active':''}" onclick="toggleItemsTabTag(this,'${g}')" style="font-size:12px;">${g}</div>`;
+  });
+  html += `</div>
+    <input id="fItemTags" placeholder="その他のタグ（カンマ区切り）" value="${currentTags.filter(t=>!ALL_ITEM_GENRES.map(g=>g.toLowerCase()).includes(t)&&!ALL_ITEM_GENRES.includes(t)).join(', ')}">
+    <input type="hidden" id="fItemSelectedTags" value="${currentTags.filter(t=>ALL_ITEM_GENRES.map(g=>g.toLowerCase()).includes(t)||ALL_ITEM_GENRES.includes(t)).join(',')}">
   </div>`;
+
+  // 評価
+  const curRating = item?.rating||0;
+  html += `<div class="form-group"><label>評価</label><div class="stars" id="fItemStars">`;
+  for (let i=1; i<=5; i++) {
+    html += `<span class="star ${i<=curRating?'on':''}" onclick="setItemsTabStar(${i})">★</span>`;
+  }
+  html += `</div><input type="hidden" id="fItemRating" value="${curRating}"></div>`;
+
+  // 商品URL
+  html += `<div class="form-group"><label>🔗 商品URL</label><input type="url" id="fItemUrl" placeholder="https://..." value="${esc(item?.url||'')}">
+  <div class="form-hint">Amazon・楽天・公式サイトなどのリンク</div></div>`;
+
+  // メモ
+  html += `<div class="form-group"><label>メモ</label><textarea id="fItemMemo" placeholder="気になった理由、どこで見たかなど">${esc(item?.memo||'')}</textarea></div>`;
+
+  // 写真
+  html += photoInputHTML('fItemImg', item?.img);
+
+  html += `<div class="form-btns"><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button><button class="btn btn-primary" onclick="saveItemsTabItem('${editId||''}')">保存</button></div>`;
   modal.innerHTML = html;
-  document.getElementById('modalOverlay').classList.add('open');
+  openModal();
+}
+
+function selectItemsTabCat(el, ci) {
+  const cat = _itemCatData[ci];
+  el.parentElement.querySelectorAll('.date-type-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('fItemCategory').value = cat;
+  // ジャンルタグを更新
+  const container = document.getElementById('itemsTabGenreTags');
+  if (!container) return;
+  const genres = ITEM_CATEGORIES[cat] || ALL_ITEM_GENRES;
+  const selected = (document.getElementById('fItemSelectedTags')?.value||'').split(',').filter(Boolean);
+  container.innerHTML = genres.map(g => {
+    const active = selected.includes(g) || selected.includes(g.toLowerCase());
+    return `<div class="date-type-chip ${active?'active':''}" onclick="toggleItemsTabTag(this,'${g}')" style="font-size:12px;">${g}</div>`;
+  }).join('');
+}
+
+function toggleItemsTabTag(el, tag) {
+  el.classList.toggle('active');
+  const input = document.getElementById('fItemSelectedTags');
+  let tags = input.value.split(',').filter(Boolean);
+  if (el.classList.contains('active')) { if (!tags.includes(tag)) tags.push(tag); }
+  else { tags = tags.filter(t=>t!==tag&&t!==tag.toLowerCase()); }
+  input.value = tags.join(',');
+}
+
+function setItemsTabStar(n) {
+  document.getElementById('fItemRating').value = n;
+  document.querySelectorAll('#fItemStars .star').forEach((s,i) => s.classList.toggle('on', i<n));
 }
 
 function saveItemsTabItem(editId) {
   const title = document.getElementById('fItemTitle').value.trim();
   if (!title) { alert('名前を入力してください'); return; }
-  const now = new Date().toISOString();
-  const item = {
-    id: editId || genId(),
-    title,
-    memo: document.getElementById('fItemMemo')?.value.trim()||'',
-    amount: document.getElementById('fItemAmount')?.value||'',
-    date: document.getElementById('fItemDate')?.value||'',
-    url: document.getElementById('fItemUrl')?.value.trim()||'',
-    tags: parseTags(document.getElementById('fItemTags')?.value||''),
-    pinned: false,
-    createdAt: editId ? (data.items.find(i=>i.id===editId)?.createdAt||now) : now,
-    updatedAt: now
-  };
-  if (editId) {
-    const idx = data.items.findIndex(i=>i.id===editId);
-    if (idx >= 0) data.items[idx] = {...data.items[idx], ...item};
-  } else {
-    data.items.push(item);
+  const selectedTags = (document.getElementById('fItemSelectedTags')?.value||'').split(',').filter(Boolean);
+  const typedTags = parseTags(document.getElementById('fItemTags')?.value||'');
+  const tags = [...new Set([...selectedTags, ...typedTags])];
+  const fileInput = getPhotoData('fItemImg');
+  function doSave(imgData) {
+    const now = new Date().toISOString();
+    const existing = editId ? data.items.find(i=>i.id===editId) : null;
+    const item = {
+      id: editId || genId(),
+      title,
+      itemCategory: document.getElementById('fItemCategory')?.value||'',
+      tags: tags.length ? tags : [],
+      rating: parseInt(document.getElementById('fItemRating')?.value)||0,
+      url: document.getElementById('fItemUrl')?.value.trim()||'',
+      memo: document.getElementById('fItemMemo')?.value.trim()||'',
+      img: imgData,
+      pinned: existing?.pinned||false,
+      createdAt: existing?.createdAt||now,
+      updatedAt: now
+    };
+    if (editId) {
+      const idx = data.items.findIndex(i=>i.id===editId);
+      if (idx >= 0) data.items[idx] = {...data.items[idx], ...item};
+    } else {
+      data.items.push(item);
+    }
+    saveData(); closeModal(); render();
+    showToast(editId ? '更新しました' : '登録しました ✓');
   }
-  saveData(); closeModal(); render();
-  showToast(editId ? '更新しました' : '登録しました ✓');
+  if (fileInput && fileInput.files?.length) {
+    const reader = new FileReader();
+    reader.onload = e => doSave(e.target.result);
+    reader.readAsDataURL(fileInput.files[0]);
+  } else {
+    doSave(editId ? (editPhotoAction==='delete'?null:(data.items.find(i=>i.id===editId)?.img||null)) : null);
+  }
 }
 
 // ===== Items Tab（完全独立描画） =====

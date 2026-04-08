@@ -3787,11 +3787,11 @@ function openItemsFabMenu() {
       </button>
       <button onclick="document.getElementById('aiModalOverlay').classList.remove('open');startItemOcr('item_ocr','items','camera')" class="fab-menu-btn">
         <span style="font-size:24px;">📷</span>
-        <div><div style="font-size:14px;font-weight:500;">撮影する</div><div style="font-size:11px;color:var(--sub);">商品もバーコードもOK</div></div>
+        <div><div style="font-size:14px;font-weight:500;">撮影する</div><div style="font-size:11px;color:var(--sub);">商品を撮影してAIが自動判定</div></div>
       </button>
       <button onclick="document.getElementById('aiModalOverlay').classList.remove('open');startItemOcr('item_ocr','items','file')" class="fab-menu-btn">
         <span style="font-size:24px;">📁</span>
-        <div><div style="font-size:14px;font-weight:500;">画像を選ぶ</div><div style="font-size:11px;color:var(--sub);">スクショもバーコード画像もOK</div></div>
+        <div><div style="font-size:14px;font-weight:500;">画像を選ぶ</div><div style="font-size:11px;color:var(--sub);">スクリーンショットもOK！</div></div>
       </button>
     </div>
     <div class="form-btns" style="margin-top:12px;">
@@ -10655,11 +10655,11 @@ function openWishFabMenu() {
       </button>
       <button onclick="document.getElementById('aiModalOverlay').classList.remove('open');startItemOcr('item_ocr','wish','camera')" class="fab-menu-btn">
         <span style="font-size:24px;">📷</span>
-        <div><div style="font-size:14px;font-weight:500;">撮影する</div><div style="font-size:11px;color:var(--sub);">商品もバーコードもOK</div></div>
+        <div><div style="font-size:14px;font-weight:500;">撮影する</div><div style="font-size:11px;color:var(--sub);">商品を撮影してAIが自動判定</div></div>
       </button>
       <button onclick="document.getElementById('aiModalOverlay').classList.remove('open');startItemOcr('item_ocr','wish','file')" class="fab-menu-btn">
         <span style="font-size:24px;">📁</span>
-        <div><div style="font-size:14px;font-weight:500;">画像を選ぶ</div><div style="font-size:11px;color:var(--sub);">スクショもバーコード画像もOK</div></div>
+        <div><div style="font-size:14px;font-weight:500;">画像を選ぶ</div><div style="font-size:11px;color:var(--sub);">スクリーンショットもOK！</div></div>
       </button>
     </div>
     <div class="form-btns" style="margin-top:12px;">
@@ -10713,11 +10713,11 @@ function openGiftFabMenu() {
       </button>
       <button onclick="proceedGiftFab('camera')" class="fab-menu-btn">
         <span style="font-size:24px;">📷</span>
-        <div><div style="font-size:14px;font-weight:500;">撮影する</div><div style="font-size:11px;color:var(--sub);">商品もバーコードもOK</div></div>
+        <div><div style="font-size:14px;font-weight:500;">撮影する</div><div style="font-size:11px;color:var(--sub);">商品を撮影してAIが自動判定</div></div>
       </button>
       <button onclick="proceedGiftFab('file')" class="fab-menu-btn">
         <span style="font-size:24px;">📁</span>
-        <div><div style="font-size:14px;font-weight:500;">画像を選ぶ</div><div style="font-size:11px;color:var(--sub);">スクショもバーコード画像もOK</div></div>
+        <div><div style="font-size:14px;font-weight:500;">画像を選ぶ</div><div style="font-size:11px;color:var(--sub);">スクリーンショットもOK！</div></div>
       </button>
     </div>
     <div class="form-btns" style="margin-top:12px;">
@@ -11181,11 +11181,11 @@ function renderBackSidePrompt(frontCard) {
     <div style="font-size:13px;color:var(--sub);text-align:center;">裏面に情報がありますか？</div>
     <div style="display:flex;gap:8px;">
       <button onclick="document.getElementById('ocrBackCamera').click()" style="flex:1;padding:14px;border-radius:12px;border:1px solid var(--accent);background:var(--accent-light);cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;font-size:14px;font-weight:600;color:var(--accent);">📷 裏面を撮影</button>
-      <button onclick="document.getElementById('ocrBackFile').click()" style="flex:1;padding:14px;border-radius:12px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;font-size:13px;">📁 写真を選ぶ</button>
+      <button onclick="document.getElementById('ocrBackFile').click()" style="flex:1;padding:14px;border-radius:12px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;font-size:14px;font-weight:500;">📁 ファイル</button>
+      <button onclick="skipBackSide()" style="flex:1;padding:14px;border-radius:12px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;font-size:14px;font-weight:500;">✅ このまま登録</button>
     </div>
     <input type="file" id="ocrBackCamera" accept="image/*" capture="environment" style="display:none;" onclick="this.value=''" onchange="processOcrImage(this,'business_card')">
     <input type="file" id="ocrBackFile" accept="image/*" style="display:none;" onclick="this.value=''" onchange="processOcrImage(this,'business_card')">
-    <button onclick="skipBackSide()" style="padding:10px;border-radius:10px;border:none;background:transparent;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;font-size:13px;color:var(--sub);text-decoration:underline;">裏面なし — このまま登録へ進む</button>
   </div>`;
   resultDiv.innerHTML = html;
 }

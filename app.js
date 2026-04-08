@@ -3398,13 +3398,16 @@ function render() {
       return (b.date||b.createdAt||'').localeCompare(a.date||a.createdAt||'');
     });
     const tab = currentTab;
+    const inSelect = _selectMode && _selectType === tab;
     let listHtml = sorted.map(item => {
       const stars = item.rating ? '★'.repeat(item.rating) : '';
       const tagPreview = item.tags?.slice(0,3).map(t=>'#'+t).join(' ')||'';
       const personPreview = item.person ? '👤 '+item.person : '';
       const preview = personPreview || tagPreview || (item.memo?item.memo.substring(0,20):'');
       const isOpen = openItemId === item.id;
-      return `<div class="list-item" data-lp-type="${tab}" data-lp-id="${item.id}" onclick="toggleItemDetail('${item.id}')" style="${isOpen?'background:var(--accent-light);':''}">
+      const selected = inSelect && _selectedIds.has(item.id);
+      return `<div class="list-item" data-lp-type="${tab}" data-lp-id="${item.id}" onclick="${inSelect?`toggleSelectItem('${item.id}')`:`toggleItemDetail('${item.id}')`}" style="${isOpen?'background:var(--accent-light);':''}${selected?'background:rgba(193,154,132,0.15);':''}">
+        ${inSelect?`<input type="checkbox" ${selected?'checked':''} onclick="event.stopPropagation();toggleSelectItem('${item.id}')" style="width:22px;height:22px;flex-shrink:0;accent-color:var(--accent);">`:''}
         <div class="list-body">
           <div class="list-name">${item.visited?'✅ ':''}${item.pinned?'📌 ':''}${esc(item.title||'無題')}${stars?` <span style="color:#f0b040;font-size:12px;">${stars}</span>`:''}</div>
           <div class="list-preview">${esc(preview)}</div>
@@ -10947,16 +10950,17 @@ if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().t
   initLongPress();
   initSwipeGestures();
 
-  // カード外クリックで個別カードを閉じる
-  document.addEventListener('click', (e) => {
+  // カード外クリックで個別カードを閉じる（個別カードが開いている時だけ、背景クリックで閉じる）
+  // 注意: list-itemのクリックと競合しないよう、cardListの外側のみ対象
+  document.querySelector('.card-list')?.addEventListener('click', (e) => {
     if (!openPersonId && !openItemId && !openGroupId && !openAllRecordId) return;
-    // 詳細カード内・モーダル・ボタン等のクリックは無視
-    if (e.target.closest('#personDetail, #itemDetail, #groupDetail, #allRecordDetail, .modal-overlay, .modal, #longPressMenu, #selectBar, .fab, .tabs, .header, button, a, input, textarea, select, .awai-menu-btn')) return;
-    // 開いている詳細カードを閉じる
-    if (openPersonId) { openPersonId = null; render(); }
-    else if (openItemId) { openItemId = null; render(); }
-    else if (openGroupId) { openGroupId = null; render(); }
-    else if (openAllRecordId) { openAllRecordId = null; render(); }
+    // cardListの直接クリック（子要素ではない）のみ閉じる
+    if (e.target.id === 'cardList' || e.target.classList.contains('card-list')) {
+      if (openPersonId) { openPersonId = null; render(); }
+      else if (openItemId) { openItemId = null; render(); }
+      else if (openGroupId) { openGroupId = null; render(); }
+      else if (openAllRecordId) { openAllRecordId = null; render(); }
+    }
   });
 
   // Supabase初期化（クラウド同期開始）

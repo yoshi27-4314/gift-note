@@ -3116,10 +3116,17 @@ function render() {
 
   // Settings tab（独立描画）
   if (currentTab === 'settings') {
-    renderSettingsTab(cardList);
+    document.getElementById('labelBar').innerHTML = '';
     document.getElementById('rankingToggle').style.display = 'none';
+    document.querySelector('.search-bar').style.display = 'none';
+    document.getElementById('reminderZone').innerHTML = '';
+    document.getElementById('pickupZone').innerHTML = '';
+    document.getElementById('annSection').innerHTML = '';
+    renderSettingsTab(cardList);
     return;
   }
+  // 設定以外では検索窓を表示
+  document.querySelector('.search-bar').style.display = '';
 
   // Items tab（独立描画）
   if (currentTab === 'items') {

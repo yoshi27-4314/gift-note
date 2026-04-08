@@ -6152,7 +6152,7 @@ function openDevMemoEdit(idx) {
 
   const savedSender = localStorage.getItem('awai_dev_sender') || (getMyProfile().name || '');
   let html = `<h2>🛠 ${isEdit ? 'メモを編集' : '新規メモ'}</h2>`;
-  html += `<div class="form-group"><label>あなたの名前</label><input id="devSender" placeholder="例：浅野" value="${esc(m?.sender || savedSender)}"></div>`;
+  html += `<div class="form-group"><label>あなたの名前</label><input id="devSender" placeholder="例：太郎" value="${esc(m?.sender || savedSender)}"></div>`;
   html += `<div class="form-group"><label>タイトル</label><input id="devTitle" placeholder="例：行きたい場所の閉じたボタン位置がずれる" value="${esc(m?.title||'')}"></div>`;
   html += `<div class="form-group"><label>内容</label><textarea id="devText" rows="5" placeholder="詳細や修正方針を書く">${esc(m?.text||'')}</textarea></div>`;
 
@@ -9541,22 +9541,22 @@ function createSampleData() {
   // サンプルデータがなければ作成
   if (data.people.some(p=>p.id==='sample_person')) return;
 
-  // 浅野さん（サンプル・開発者）
+  // サンプル太郎（AWAIの管理人）
   data.people.push({
-    id: 'sample_person', nickname: '浅野', fullName: '浅野',
-    type: 'individual', gender: 'male', avatar: null, relation: 'AWAIの作り手',
+    id: 'sample_person', nickname: 'サンプル太郎', fullName: 'サンプル太郎',
+    type: 'individual', gender: 'male', avatar: null, relation: 'AWAIの管理人',
     companyLink: null, position: null,
     anniversaries: [],
     sizes: {},
     smoking: null, drinking: null,
-    interests: ['AI', 'アプリ開発', '経営', 'ゴルフ'],
+    interests: ['AI', 'アプリ開発', 'ゴルフ'],
     brands: [],
     oshi: [],
     foodLike: [],
     foodDislike: [],
     family: [],
-    personality: ['行動が早い', '仕組みを作るのが好き'],
-    memo: 'AWAIを作った人です。このカードを参考に、あなたの友だちを登録してみてください。\n\n各項目の？ボタンを押すと使い方のヒントが見れます。',
+    personality: ['仕組みを作るのが好き', 'めんどくさがり', '人見知り'],
+    memo: 'AWAIの管理人です。このカードを参考に、あなたの友だちを登録してみてください。\n\n各項目の？ボタンを押すと使い方のヒントが見れます。',
     counters: [],
     isSample: true,
     createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
@@ -9589,7 +9589,7 @@ function createSampleData() {
   if (!data.gave.some(i=>i.isSample)) {
     data.gave.push({
       id: 'sample_gave', title: 'ワイン（シャトー・マルゴー）',
-      person: '浅野', occasion: '誕生日',
+      person: 'サンプル太郎', occasion: '誕生日',
       itemCategory: 'グルメ', tags: ['ワイン'],
       memo: 'サンプルです。贈り物の記録を残してみてください。',
       isSample: true, pinned: false,
@@ -9601,7 +9601,7 @@ function createSampleData() {
   if (!data.received.some(i=>i.isSample)) {
     data.received.push({
       id: 'sample_received', title: '万年筆（パイロット カスタム74）',
-      person: '浅野', occasion: '入社祝い',
+      person: 'サンプル太郎', occasion: '入社祝い',
       itemCategory: '趣味・体験', tags: ['文房具'],
       memo: 'サンプルです。もらった贈り物も記録できます。',
       isSample: true, pinned: false,

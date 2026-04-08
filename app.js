@@ -1508,6 +1508,94 @@ function toggleAllRecordDetail(tab, id) {
 // ===== Regift (give to someone) =====
 let regiftSourceTab = null;
 let regiftSourceId = null;
+let regiftDirection = 'gave'; // 'gave' or 'received'
+
+function openGiftChoice(tab, id) {
+  const item = data[tab]?.find(i=>i.id===id);
+  if (!item) return;
+  regiftSourceTab = tab;
+  regiftSourceId = id;
+  const modal = document.getElementById('modal');
+  const _gs = 'display:flex;align-items:center;gap:12px;padding:18px;border-radius:16px;border:1px solid var(--border);cursor:pointer;font-family:"Zen Maru Gothic",sans-serif;text-align:left;width:100%;background:var(--card);transition:transform 0.1s;';
+  let html = `<h2>🎁 「${esc(item.title)}」</h2>`;
+  html += `<div style="font-size:13px;color:var(--sub);margin-bottom:14px;">このアイテムをギフトとして記録します</div>`;
+  html += `<div style="display:flex;flex-direction:column;gap:10px;">
+    <button onclick="regiftDirection='gave';regiftItem('${tab}','${id}')" style="${_gs}" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='scale(1)'">
+      <span style="font-size:28px;">🎁</span>
+      <div><div style="font-size:15px;font-weight:600;">あげた</div><div style="font-size:12px;color:var(--sub);">プレゼントとして贈った</div></div>
+    </button>
+    <button onclick="regiftDirection='received';regiftItemReceived('${tab}','${id}')" style="${_gs}" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='scale(1)'">
+      <span style="font-size:28px;">🥰</span>
+      <div><div style="font-size:15px;font-weight:600;">もらった</div><div style="font-size:12px;color:var(--sub);">プレゼントとしてもらった</div></div>
+    </button>
+  </div>
+  <div class="form-btns" style="margin-top:14px;"><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button></div>`;
+  modal.innerHTML = html;
+  openModal();
+}
+
+function regiftItemReceived(tab, id) {
+  const item = data[tab]?.find(i=>i.id===id);
+  if (!item) return;
+  regiftSourceTab = tab;
+  regiftSourceId = id;
+  const modal = document.getElementById('modal');
+  const today = toLocalDateStr();
+
+  let html = `<h2>🥰 「${esc(item.title)}」をもらった</h2>`;
+  html += `<div class="form-group"><label>誰からもらった？</label>`;
+  if (data.people.length) {
+    html += `<div style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:12px;">`;
+    data.people.filter(p=>p.type!=='corporate').forEach(p => {
+      html += `<div class="list-item" onclick="doRegiftReceived('${p.nickname.replace(/'/g,"\\'")}')" style="padding:10px 12px;">
+        <div class="list-avatar" style="width:36px;height:36px;font-size:18px;background:${p.avatar?'transparent':personIcon(p).bg}">${p.avatar?`<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;">`:personIcon(p).emoji}</div>
+        <div class="list-name" style="font-size:14px;">${esc(p.nickname)}</div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+  html += `<div style="margin-top:8px;"><input id="rgReceivedName" placeholder="または名前を直接入力" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:12px;font-size:14px;font-family:'Zen Maru Gothic',sans-serif;color:var(--text);background:var(--bg);"></div>`;
+  html += `</div>`;
+  html += `<div class="form-group"><label>日付</label><input type="date" id="rgReceivedDate" value="${today}"></div>`;
+  html += `<div class="form-group"><label>何の記念？（任意）</label><input id="rgReceivedOccasion" placeholder="例：誕生日、お礼"></div>`;
+  html += `<div class="form-btns">
+    <button class="btn btn-secondary" onclick="openGiftChoice('${tab}','${id}')">← 戻る</button>
+    <button class="btn btn-primary" onclick="doRegiftReceivedManual()">✅ 記録する</button>
+  </div>`;
+  modal.innerHTML = html;
+}
+
+function doRegiftReceived(senderName) {
+  const item = data[regiftSourceTab]?.find(i=>i.id===regiftSourceId);
+  if (!item) return;
+  if (!senderName) { senderName = document.getElementById('rgReceivedName')?.value.trim(); }
+  if (!senderName) { alert('相手の名前を入力してください'); return; }
+  const now = new Date().toISOString();
+  const rcvItem = {
+    id: genId(),
+    title: item.title,
+    person: senderName,
+    date: document.getElementById('rgReceivedDate')?.value || now.split('T')[0],
+    occasion: document.getElementById('rgReceivedOccasion')?.value.trim() || null,
+    amount: item.amount || null,
+    tags: item.tags || null,
+    memo: item.memo || null,
+    img: item.img || null,
+    rating: null,
+    pinned: false,
+    createdAt: now,
+    updatedAt: now
+  };
+  data.received.push(rcvItem);
+  saveData(); closeModal(); render();
+  showToast(`🥰 ${rcvItem.title} をもらったギフトに記録しました`);
+}
+
+function doRegiftReceivedManual() {
+  const name = document.getElementById('rgReceivedName')?.value.trim();
+  if (!name) { alert('名前を入力するか、リストから選んでください'); return; }
+  doRegiftReceived(name);
+}
 
 function regiftItem(tab, id) {
   const item = data[tab].find(i=>i.id===id);
@@ -1516,7 +1604,7 @@ function regiftItem(tab, id) {
   regiftSourceId = id;
   const modal = document.getElementById('modal');
 
-  let html = `<h2>🎁 「${esc(item.title)}」をプレゼントする</h2>`;
+  let html = `<h2>🎁 「${esc(item.title)}」をあげる</h2>`;
   html += `<div class="form-group"><label>誰にあげる？</label>`;
   if (data.people.length) {
     html += `<div style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:12px;">`;
@@ -1801,12 +1889,32 @@ function renderItemCard(item, tab, rank) {
   if (item.tags&&item.tags.length) html += `<div class="card-tags">${item.tags.map(t=>`<span class="card-tag">#${esc(t)}</span>`).join('')}</div>`;
   if (item.address) html += `<div style="font-size:13px;color:var(--sub);margin-top:6px;">📍 ${esc(item.address)}</div>`;
   if (item.phone) html += `<a href="tel:${esc(item.phone)}" style="display:block;font-size:13px;color:var(--accent);margin-top:6px;text-decoration:none;">📞 ${esc(item.phone)}</a>`;
-  if (item.googleMapUrl) html += `<a class="card-url" href="${esc(item.googleMapUrl)}" target="_blank" rel="noopener" style="margin-top:6px;font-size:15px;">🗺 Googleマップで開く</a>`;
-  if (item.mapUrl) html += `<a class="card-url" href="${esc(item.mapUrl)}" target="_blank" rel="noopener" style="margin-top:6px;font-size:15px;">🔗 ホームページを開く</a>`;
-  else if (item.url) html += `<a class="card-url" href="${esc(item.url)}" target="_blank" rel="noopener" style="font-size:15px;">🔗 ${esc(truncUrl(item.url))}</a>`;
+  // リンクボタン表示
+  const _lb = 'display:inline-flex;align-items:center;gap:4px;padding:8px 14px;border-radius:10px;font-size:12px;text-decoration:none;font-weight:600;margin:2px;';
+  const hasLinks = item.googleMapUrl || item.mapUrl || item.url || (item.productLinks && item.productLinks.length);
+  if (hasLinks) {
+    html += `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;">`;
+    if (item.googleMapUrl) html += `<a href="${esc(item.googleMapUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="${_lb}background:#e8f5e9;color:#2e7d32;">🗺 マップ</a>`;
+    if (item.mapUrl) html += `<a href="${esc(item.mapUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="${_lb}background:#e3f2fd;color:#1565c0;">🔗 HP</a>`;
+    else if (item.url && !item.productLinks?.length) {
+      const urlLabel = item.url.includes('amazon') ? '🛒 Amazon' : item.url.includes('rakuten') ? '🏪 楽天' : '🔗 リンク';
+      html += `<a href="${esc(item.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="${_lb}background:#fff3e0;color:#e65100;">${urlLabel}</a>`;
+    }
+    if (item.productLinks && item.productLinks.length) {
+      item.productLinks.forEach(lnk => {
+        const lbl = lnk.label || '🔗 リンク';
+        let bg = '#f5f5f5', clr = '#333';
+        if (lbl.includes('Amazon')) { bg = '#fff3e0'; clr = '#e65100'; }
+        else if (lbl.includes('楽天')) { bg = '#fce4ec'; clr = '#c62828'; }
+        else if (lbl.includes('公式')) { bg = '#e3f2fd'; clr = '#1565c0'; }
+        html += `<a href="${esc(lnk.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="${_lb}background:${bg};color:${clr};">${lbl}</a>`;
+      });
+    }
+    html += `</div>`;
+  }
   const _bs = 'display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border-radius:14px;font-size:13px;font-weight:500;cursor:pointer;font-family:"Zen Maru Gothic",sans-serif;';
   html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
-    <button onclick="event.stopPropagation();regiftItem('${tab}','${item.id}')" style="${_bs}border:1px solid var(--pickup-border);background:linear-gradient(135deg,var(--pickup),#fff4e6);color:var(--text);">🎁 プレゼントする</button>
+    <button onclick="event.stopPropagation();openGiftChoice('${tab}','${item.id}')" style="${_bs}border:1px solid var(--pickup-border);background:linear-gradient(135deg,var(--pickup),#fff4e6);color:var(--text);">🎁 ギフト</button>
     <button onclick="event.stopPropagation();searchFromCard('${tab}','${item.id}')" style="${_bs}border:1px solid #d4c8e8;background:linear-gradient(135deg,#f3eefa,#ece0f8);color:#7a60a0;">🔍 もっと探す</button>
     ${tab==='place'&&!item.isClosed?`<button onclick="event.stopPropagation();markVisited('${item.id}')" style="${_bs}border:1px solid ${item.visited?'#a5d6a7':'var(--pickup-border)'};background:linear-gradient(135deg,${item.visited?'#e8f5e9':'var(--pickup)'},${item.visited?'#d4ecd6':'#fff4e6'});color:var(--text);">${item.visited?'✅ 行った！':'📍 行った！'}</button>`:''}
     ${tab==='place'&&!item.isClosed?`<button onclick="event.stopPropagation();closePlacePrompt('${item.id}')" style="${_bs}border:1px solid #d8d0c8;background:linear-gradient(135deg,#f5f0eb,#ece5dd);color:#8a7e74;">🤍 記憶に移す</button>`:''}
@@ -10562,6 +10670,21 @@ async function processItemOcrImage(input, ocrMode, tabType) {
   reader.readAsDataURL(file);
 }
 
+function generateProductLinks(title, brand) {
+  const links = [];
+  const q = [brand, title].filter(Boolean).join(' ');
+  if (!q) return links;
+  // Amazon検索
+  links.push({ label: '🛒 Amazon', url: 'https://www.amazon.co.jp/s?k=' + encodeURIComponent(q) });
+  // 楽天検索
+  links.push({ label: '🏪 楽天', url: 'https://search.rakuten.co.jp/search/mall/' + encodeURIComponent(q) });
+  // ブランド公式（ブランド名がある場合）
+  if (brand) {
+    links.push({ label: '🏷 公式サイト', url: 'https://www.google.com/search?q=' + encodeURIComponent(brand + ' 公式サイト') });
+  }
+  return links;
+}
+
 function renderItemOcrResult(result, tabType) {
   const resultDiv = document.getElementById('itemOcrResult');
   const isPlace = tabType === 'place';
@@ -10572,12 +10695,31 @@ function renderItemOcrResult(result, tabType) {
   let html = '<div style="font-weight:600;margin-bottom:10px;">読み取り結果</div>';
   html += '<div style="background:var(--bg);border-radius:14px;padding:14px;font-size:13px;line-height:2;">';
   if (result.title) html += `<div>📌 <strong>${esc(result.title)}</strong></div>`;
+  if (result.brand) html += `<div>🏷 ${esc(result.brand)}</div>`;
   if (result.category) html += `<div>📂 ${catIdx >= 0 ? catEmoji[catIdx]+' ' : ''}${esc(result.category)}</div>`;
   if (result.genres?.length) html += `<div>🏷 ${result.genres.map(g => esc(g)).join(', ')}</div>`;
   if (result.price) html += `<div>💰 ¥${Number(result.price).toLocaleString()}</div>`;
   if (result.address) html += `<div>📍 ${esc(result.address)}</div>`;
   if (result.memo) html += `<div>📝 ${esc(result.memo)}</div>`;
   html += '</div>';
+
+  // 商品リンク自動生成（場所以外）
+  if (!isPlace && (result.title || result.brand)) {
+    const links = generateProductLinks(result.title, result.brand);
+    if (links.length) {
+      html += '<div style="margin-top:10px;font-weight:600;font-size:12px;margin-bottom:6px;">🔗 購入リンク（自動検索）</div>';
+      html += '<div style="display:flex;flex-direction:column;gap:4px;">';
+      links.forEach((lnk, li) => {
+        html += `<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg);border-radius:10px;font-size:12px;">
+          <input type="checkbox" id="ocrLink${li}" checked>
+          <span style="flex-shrink:0;">${lnk.label}</span>
+          <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--sub);font-size:11px;">${esc(decodeURIComponent(lnk.url).substring(0,60))}</span>
+        </label>`;
+      });
+      html += '</div>';
+      resultDiv._productLinks = links;
+    }
+  }
 
   html += `<div style="margin-top:14px;display:flex;gap:8px;">
     <button class="btn btn-primary" onclick="saveItemOcrResult('${tabType}')" style="flex:1;font-size:14px;padding:12px;">✅ この内容で登録</button>
@@ -10586,6 +10728,17 @@ function renderItemOcrResult(result, tabType) {
 
   resultDiv.innerHTML = html;
   resultDiv._ocrResult = result;
+}
+
+function getCheckedProductLinks() {
+  const resultDiv = document.getElementById('itemOcrResult');
+  const links = resultDiv?._productLinks || [];
+  const checked = [];
+  links.forEach((lnk, li) => {
+    const cb = document.getElementById('ocrLink' + li);
+    if (cb && cb.checked) checked.push(lnk);
+  });
+  return checked;
 }
 
 function saveItemOcrResult(tabType) {
@@ -10612,12 +10765,20 @@ function saveItemOcrResult(tabType) {
       id: genId(), title: r.title || '名称なし',
       itemCategory: r.category || '', tags: r.genres || [],
       price: r.price ? String(r.price) : '', memo: r.memo || '',
-      person: '', occasion: '', url: '',
+      person: '', occasion: '',
+      url: '',
+      productLinks: [],
       pinned: false, createdAt: now, updatedAt: now
     };
+    // パワプレで自動取得したリンクを付与
+    const checkedLinks = getCheckedProductLinks();
+    if (checkedLinks.length) {
+      item.productLinks = checkedLinks;
+      item.url = checkedLinks[0].url;
+    }
     data[tab].push(item);
     saveData(); render();
-    const labels = {wish:'ほしいもの',received:'もらったギフト',gave:'あげたギフト'};
+    const labels = {wish:'ほしいもの',received:'もらったギフト',gave:'あげたギフト',items:'お気に入り'};
     showToast(`✅ ${item.title} を${labels[tab]||''}に登録しました`);
   }
   document.getElementById('aiModalOverlay').classList.remove('open');

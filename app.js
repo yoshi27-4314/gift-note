@@ -12194,7 +12194,8 @@ function toggleBirthType(type, el) {
   el.parentElement.querySelectorAll('.date-type-chip').forEach(c => c.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('stBirthType').value = type;
-  document.getElementById('stBirthYearRow').style.display = type === 'full' ? 'flex' : 'none';
+  const yearEl = document.getElementById('stBirthYear');
+  if (yearEl) yearEl.style.display = type === 'full' ? '' : 'none';
 }
 
 function saveSettingsProfile() {

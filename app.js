@@ -9422,18 +9422,14 @@ function obShowGuidePopup() {
   const overlay = document.getElementById('onboardingOverlay');
   const inner = overlay.querySelector(':scope > div');
 
-  // ふわっとポップアップ
+  // ふわっとポップアップ（1択：友だち登録）
   inner.innerHTML = `<div style="text-align:center;opacity:0;transition:opacity 0.8s ease;" id="obGuidePopup">
     <div style="font-size:48px;margin-bottom:20px;">✨</div>
-    <h2 style="font-family:'Shippori Mincho',serif;font-size:22px;margin-bottom:32px;">コンシェルジュがご案内します</h2>
-    <div style="display:flex;flex-direction:column;gap:14px;max-width:320px;margin:0 auto;">
+    <h2 style="font-family:'Shippori Mincho',serif;font-size:22px;margin-bottom:32px;">さっそく始めましょう</h2>
+    <div style="max-width:320px;margin:0 auto;">
       <button onclick="obGuideChoice('friends')" style="width:100%;padding:18px;font-size:16px;font-weight:600;border-radius:16px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;box-shadow:0 2px 8px var(--shadow);transition:all 0.2s ease;">
         <div style="font-size:28px;margin-bottom:6px;">👤</div>
-        友だち登録をしてみる
-      </button>
-      <button onclick="obGuideChoice('profile')" style="width:100%;padding:18px;font-size:16px;font-weight:600;border-radius:16px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;box-shadow:0 2px 8px var(--shadow);transition:all 0.2s ease;">
-        <div style="font-size:28px;margin-bottom:6px;">✨</div>
-        プレゼントを探す
+        友だちを登録してみる
       </button>
     </div>
   </div>`;

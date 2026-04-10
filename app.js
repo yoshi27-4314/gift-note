@@ -8850,12 +8850,6 @@ function obNext(step) {
     }
     obRunAiSuggest1();
   }
-  // Step 6: 2回目コンシェルジュ提案を自動実行（演出付き）
-  if (step === 6 || step === '6') {
-    const nameEl2 = document.getElementById('obUserNameDisplay2');
-    if (nameEl2) nameEl2.textContent = window._obMyName || '';
-    obRunAiSuggest2();
-  }
   // Step 7: 友だちギフト予告アニメーション開始
   if (step === 7 || step === '7') {
     setTimeout(() => obPlayLineDemo(), 500);
@@ -9247,7 +9241,9 @@ function obSaveSuggestions(resultDiv) {
 
 function obSaveFirstSuggestions() {
   // 提案は見せるだけ。お気に入りへの自動登録はしない
-  obNext(5); // 追加情報へ
+  // Step 5/6（追加情報＋2回目提案）を削除したので Step 7 に直行
+  // 本物の感動体験は本編の初回検索で起こす設計
+  obNext(7);
 }
 
 function obSaveSecondSuggestions() {
@@ -12105,10 +12101,11 @@ function renderSettingContent(id) {
     case 'about':
       return `
         <div style="font-size:13px;line-height:2;margin-bottom:16px;">
-          <div>バージョン: AWAI v${APP_VERSION}</div>
+          <div>バージョン: <span style="cursor:default;user-select:none;" onclick="devModeTap()">AWAI v${APP_VERSION}</span></div>
           <div><a href="privacy.html" target="_blank" style="color:var(--accent);">プライバシーポリシー</a></div>
         </div>
-        <button class="btn btn-primary" style="width:100%;padding:14px;font-size:15px;border-radius:14px;" onclick="openAboutPage()">✨ AWAIでできること</button>`;
+        <button class="btn btn-primary" style="width:100%;padding:14px;font-size:15px;border-radius:14px;margin-bottom:10px;" onclick="openAboutPage()">✨ AWAIでできること</button>
+        <button class="card-btn" style="width:100%;padding:12px;font-size:14px;border-radius:12px;" onclick="replayOnboarding()">🔄 オンボーディングをもう一度見る</button>`;
 
     case 'account':
       if (_sbUser && _sbUser.email) {

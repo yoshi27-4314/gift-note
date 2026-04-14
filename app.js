@@ -3435,20 +3435,27 @@ function render() {
     return;
   }
 
-  // For wish tab with category filter, search across wish+received+gave
-  if (currentTab === 'wish' && currentLabel !== null && typeof currentLabel === 'string') {
+  // For wish tab with category or label filter, search across wish+received+gave
+  if (currentTab === 'wish' && currentLabel !== null) {
+    const isLabelFilter = typeof currentLabel === 'number';
+    const labelName = isLabelFilter ? (getLabels('wish')[currentLabel]?.name||'').toLowerCase() : '';
     const tabIcons = {wish:'✨', received:'🎀', gave:'🎁'};
     const allFiltered = [];
     ['wish','received','gave'].forEach(tab => {
       (data[tab]||[]).forEach(item => {
         if (!matchesSearch(item, tab)) return;
-        if (item.itemCategory === currentLabel) {
+        if (isLabelFilter) {
+          if (item.labelIdx === currentLabel) { allFiltered.push({...item, _tab:tab, _icon:tabIcons[tab]}); return; }
+          const text = [item.title, item.memo, ...(item.tags||[])].filter(Boolean).join(' ').toLowerCase();
+          if (labelName && text.includes(labelName)) { allFiltered.push({...item, _tab:tab, _icon:tabIcons[tab]}); }
+        } else if (item.itemCategory === currentLabel) {
           allFiltered.push({...item, _tab:tab, _icon:tabIcons[tab]});
         }
       });
     });
     if (!allFiltered.length) {
-      cardList.innerHTML = `<div class="empty-msg">「${esc(currentLabel)}」のお気に入りはまだありません</div>`;
+      const filterName = isLabelFilter ? (getLabels('wish')[currentLabel]?.name||'ラベル') : currentLabel;
+      cardList.innerHTML = `<div class="empty-msg">「${esc(filterName)}」のお気に入りはまだありません</div>`;
       return;
     }
     allFiltered.sort((a,b) => {

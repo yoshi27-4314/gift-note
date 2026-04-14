@@ -323,7 +323,7 @@ async function logoutAccount() {
 }
 
 // ===== Constants =====
-const APP_VERSION = '2.1';
+const APP_VERSION = '2.2';
 const STORAGE_KEY = 'awai_data';
 const SEASON_KEY = 'awai_season';
 const ANN_POPUP_KEY = 'awai_ann_popup_date';

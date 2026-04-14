@@ -3918,9 +3918,20 @@ function saveItemsTabItem(editId) {
 
 // ===== Items Tab（完全独立描画） =====
 function renderItemsTab(cardList) {
-  const items = (data.items||[]).filter(i => matchesSearch(i, 'items'));
+  let items = (data.items||[]).filter(i => matchesSearch(i, 'items'));
+  // カテゴリ・ラベルフィルタ
+  if (currentLabel !== null && typeof currentLabel === 'string') {
+    items = items.filter(i => i.itemCategory === currentLabel);
+  } else if (currentLabel !== null && typeof currentLabel === 'number') {
+    const ln = (getLabels('items')[currentLabel]?.name||'').toLowerCase();
+    items = items.filter(i => {
+      if (i.labelIdx === currentLabel) return true;
+      const text = [i.title, i.memo, ...(i.tags||[])].filter(Boolean).join(' ').toLowerCase();
+      return ln && text.includes(ln);
+    });
+  }
   if (!items.length) {
-    cardList.innerHTML = '<div class="empty-msg">✨ お気に入りを追加しましょう<br>下の ＋ ボタンから追加できます</div>';
+    cardList.innerHTML = currentLabel !== null ? '<div class="empty-msg">該当するお気に入りはありません</div>' : '<div class="empty-msg">✨ お気に入りを追加しましょう<br>下の ＋ ボタンから追加できます</div>';
     return;
   }
   const sorted = [...items].filter(i=>!i.hidden).sort((a,b) => {

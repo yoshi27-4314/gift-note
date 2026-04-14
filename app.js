@@ -3397,8 +3397,8 @@ function render() {
     return;
   }
 
-  // All records view (wish tab, label = null = "all")
-  if (currentTab === 'wish' && currentLabel === null) {
+  // All records view (items tab, label = null = "all")
+  if ((currentTab === 'wish' || currentTab === 'items') && currentLabel === null) {
     const allItems = [];
     const tabIcons = {wish:'✨', received:'🎀', gave:'🎁', place:'📍'};
     ['wish','received','gave'].forEach(tab => {
@@ -3435,8 +3435,8 @@ function render() {
     return;
   }
 
-  // For wish tab with category or label filter, search across wish+received+gave
-  if (currentTab === 'wish' && currentLabel !== null) {
+  // For items/wish tab with category or label filter, search across wish+received+gave
+  if ((currentTab === 'wish' || currentTab === 'items') && currentLabel !== null) {
     const isLabelFilter = typeof currentLabel === 'number';
     const labelName = isLabelFilter ? (getLabels('wish')[currentLabel]?.name||'').toLowerCase() : '';
     const tabIcons = {wish:'✨', received:'🎀', gave:'🎁'};

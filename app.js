@@ -4534,7 +4534,7 @@ function openPeopleModal(id) {
   // Family
   html += `<div class="form-group"><label>👨‍👩‍👧 家族構成 ${helpBtn('family')}</label><div id="familyContainer">`;
   (p?.family||[]).forEach((f,i) => {
-    html += `<div class="form-row" style="margin-bottom:6px;" id="famRow${i}"><input placeholder="名前・続柄" value="${esc(f.name||'')}" class="fam-name"><input placeholder="メモ" value="${esc(f.note||'')}" class="fam-note"><span style="color:#c97070;cursor:pointer;font-size:18px;" onclick="this.parentElement.remove()">×</span></div>`;
+    html += buildFamilyRowHTML(f, i);
   });
   html += `</div><div class="add-btn" onclick="addFamilyRow()">＋ 家族を追加</div></div>`;
 
@@ -4986,10 +4986,57 @@ function removeCorpPhoto() {
   if (camera) camera.value = '';
   if (file) file.value = '';
 }
+function buildFamilyRowHTML(f, idx) {
+  f = f || {};
+  const dt = f.birthDateType || 'monthday';
+  const parts = (f.birthDate||'').split('-');
+  let selY='',selM='',selD='';
+  if (dt==='full'&&parts.length>=3){selY=parts[0];selM=parseInt(parts[1])||'';selD=parseInt(parts[2])||'';}
+  else if (dt==='monthday'&&parts.length>=2){selM=parseInt(parts[parts.length-2])||'';selD=parseInt(parts[parts.length-1])||'';}
+  else if (dt==='month'){selM=parseInt(parts[0])||'';}
+  const thisYear = new Date().getFullYear();
+  let yOpts='<option value="">--</option>';for(let y=thisYear;y>=thisYear-100;y--)yOpts+=`<option value="${y}" ${selY==y?'selected':''}>${y}</option>`;
+  let mOpts='<option value="">--</option>';for(let m=1;m<=12;m++)mOpts+=`<option value="${m}" ${selM==m?'selected':''}>${m}月</option>`;
+  let dOpts='<option value="">--</option>';for(let d=1;d<=31;d++)dOpts+=`<option value="${d}" ${selD==d?'selected':''}>${d}日</option>`;
+  const fid = 'fam_'+idx;
+  return `<div class="fam-row" id="${fid}" style="margin-bottom:10px;padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--bg);">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <input placeholder="名前・続柄" value="${esc(f.name||'')}" class="fam-name" style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:10px;font-size:14px;">
+      <span style="color:#c97070;cursor:pointer;font-size:18px;padding:4px;" onclick="document.getElementById('${fid}').remove()">×</span>
+    </div>
+    <input placeholder="メモ" value="${esc(f.note||'')}" class="fam-note" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;font-size:13px;margin-bottom:8px;">
+    <div style="font-size:12px;color:var(--sub);margin-bottom:4px;">🎂 誕生日</div>
+    <div class="date-type-chips" style="margin-bottom:6px;">
+      <span class="date-type-chip ${dt==='full'?'active':''}" onclick="setFamDT('${fid}','full',this)">年月日</span>
+      <span class="date-type-chip ${dt==='monthday'?'active':''}" onclick="setFamDT('${fid}','monthday',this)">月日</span>
+      <span class="date-type-chip ${dt==='month'?'active':''}" onclick="setFamDT('${fid}','month',this)">月のみ</span>
+    </div>
+    <input type="hidden" class="fam-dt" value="${dt}">
+    <div style="display:flex;gap:6px;margin-bottom:8px;">
+      <select class="fam-year" style="flex:1;padding:8px 6px;border:1px solid var(--border);border-radius:10px;font-size:13px;background:var(--bg);display:${dt==='full'?'':'none'};">${yOpts}</select>
+      <select class="fam-month" style="flex:1;padding:8px 6px;border:1px solid var(--border);border-radius:10px;font-size:13px;background:var(--bg);">${mOpts}</select>
+      <select class="fam-day" style="flex:1;padding:8px 6px;border:1px solid var(--border);border-radius:10px;font-size:13px;background:var(--bg);display:${dt==='month'?'none':''};">${dOpts}</select>
+    </div>
+    <div style="font-size:12px;color:var(--sub);margin-bottom:4px;">🔔 リマインド</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+      <span class="date-type-chip fam-rem ${(f.reminders||[]).includes(30)?'active':''}" onclick="this.classList.toggle('active')" data-days="30" style="font-size:12px;">30日前</span>
+      <span class="date-type-chip fam-rem ${(f.reminders||[]).includes(7)?'active':''}" onclick="this.classList.toggle('active')" data-days="7" style="font-size:12px;">7日前</span>
+      <span class="date-type-chip fam-rem ${(f.reminders||[]).includes(1)?'active':''}" onclick="this.classList.toggle('active')" data-days="1" style="font-size:12px;">前日</span>
+      <span class="date-type-chip fam-rem ${(f.reminders||[]).includes(0)?'active':''}" onclick="this.classList.toggle('active')" data-days="0" style="font-size:12px;">当日</span>
+    </div>
+  </div>`;
+}
+function setFamDT(fid,type,el){
+  var row=document.getElementById(fid);if(!row)return;
+  row.querySelector('.fam-dt').value=type;
+  el.parentElement.querySelectorAll('.date-type-chip').forEach(function(c){c.classList.remove('active');});
+  el.classList.add('active');
+  row.querySelector('.fam-year').style.display=type==='full'?'':'none';
+  row.querySelector('.fam-day').style.display=type==='month'?'none':'';
+}
 function addFamilyRow() {
   const c = document.getElementById('familyContainer');
-  const idx = c.children.length;
-  c.insertAdjacentHTML('beforeend', `<div class="form-row" style="margin-bottom:6px;"><input placeholder="名前・続柄" class="fam-name"><input placeholder="メモ" class="fam-note"><span style="color:#c97070;cursor:pointer;font-size:18px;" onclick="this.parentElement.remove()">×</span></div>`);
+  c.insertAdjacentHTML('beforeend', buildFamilyRowHTML({}, c.querySelectorAll('.fam-row').length));
 }
 
 let _saving = false;
@@ -5457,11 +5504,23 @@ function savePerson() {
   });
 
   // Collect family
-  const famNames = document.querySelectorAll('.fam-name');
-  const famNotes = document.querySelectorAll('.fam-note');
+  const famRowEls = document.querySelectorAll('.fam-row');
   const family = [];
-  famNames.forEach((el,i) => {
-    if (el.value.trim()) family.push({name:el.value.trim(), note:famNotes[i]?.value.trim()||''});
+  famRowEls.forEach(row => {
+    const name = row.querySelector('.fam-name')?.value.trim();
+    if (!name) return;
+    const note = row.querySelector('.fam-note')?.value.trim()||'';
+    const birthDateType = row.querySelector('.fam-dt')?.value||'monthday';
+    const year = row.querySelector('.fam-year')?.value||'';
+    const month = row.querySelector('.fam-month')?.value||'';
+    const day = row.querySelector('.fam-day')?.value||'';
+    let birthDate = '';
+    if (birthDateType==='full'&&year&&month) birthDate=`${year}-${String(month).padStart(2,'0')}-${String(day||1).padStart(2,'0')}`;
+    else if (birthDateType==='monthday'&&month) birthDate=`${String(month).padStart(2,'0')}-${String(day||1).padStart(2,'0')}`;
+    else if (birthDateType==='month'&&month) birthDate=`${String(month).padStart(2,'0')}`;
+    const reminders = [];
+    row.querySelectorAll('.fam-rem.active').forEach(chip => reminders.push(parseInt(chip.dataset.days)));
+    family.push({name, note, birthDate, birthDateType, reminders});
   });
 
   if (isCorp) {

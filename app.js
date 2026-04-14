@@ -59,7 +59,7 @@ async function sbInit() {
       }
       // クラウド同期
       await sbLoad();
-      if (!document.getElementById('dataChoiceOverlay')) await sbSave();
+      await sbSave();
       if (_sbUser.email) {
         checkShareRequests();
         ensureShareCode();
@@ -189,7 +189,7 @@ function applyCloudData(row) {
     localStorage.setItem('awai_data', JSON.stringify(data));
     localStorage.setItem('awai_data_updated', row.updated_at || '');
   }
-  if (row.profile && Object.keys(row.profile).length > 0) {
+  if (row.profile && row.profile.name) {
     localStorage.setItem('awai_my_profile', JSON.stringify(row.profile));
   }
   render();
@@ -1557,7 +1557,7 @@ function savePlaceItem(asMemory) {
     autoLabelItem(item, 'place');
     if (editingId) {
       const idx = data.place.findIndex(i=>i.id===editingId);
-      if (idx>=0) { data.place[idx] = item; }
+      if (idx>=0) { if (asMemory) item.isClosed = data.place[idx].isClosed; data.place[idx] = item; }
     } else {
       data.place.push(item);
     }
@@ -2128,7 +2128,7 @@ function renderPersonCard(p) {
   function collapsibleSection(icon, title, count, threshold, contentFn) {
     const id = secId();
     const collapsed = count >= threshold;
-    let h = `<div class="person-section"><div class="person-section-title" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;" onclick="event.stopPropagation();var b=document.getElementById('${id}');var t=this.querySelector('.sec-toggle');if(b.style.display==='none'){b.style.display='';t.textContent='▼';}else{b.style.display='none';t.textContent='▶';}">
+    let h = `<div class="person-section"><div class="person-section-title" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;" onclick="event.stopPropagation();const b=document.getElementById('${id}');const t=this.querySelector('.sec-toggle');if(b.style.display==='none'){b.style.display='';t.textContent='▼';});return;}else{b.style.display='none';t.textContent='▶';}">
       <span>${icon} ${title}${count?' ('+count+')':''}</span>
       <span class="sec-toggle" style="font-size:12px;color:var(--sub);">${collapsed?'▶':'▼'}</span>
     </div>`;
@@ -5653,7 +5653,7 @@ function deleteItem(tab, id) {
       }
     }).then(() => {
       data[tab] = data[tab].filter(i=>i.id!==id);
-      saveData(); openPersonId = null; openItemId = null; openGroupId = null; render();
+      saveData(); openPersonId = null; openItemId = null; render();
       showToast('削除しました');
     }).catch(() => {
       // 生体認証失敗→パスコードフォールバック
@@ -6012,7 +6012,7 @@ function openSettings() {
 
     <!-- バックアップ（折りたたみ） -->
     <div style="${_sc}">
-      <div style="${_sl};cursor:pointer;display:flex;align-items:center;justify-content:space-between;" onclick="var b=document.getElementById('backupContent');var a=this.querySelector('.backup-arrow');if(b.style.display==='none'){b.style.display='';a.textContent='▲';}else{b.style.display='none';a.textContent='▼';}">
+      <div style="${_sl};cursor:pointer;display:flex;align-items:center;justify-content:space-between;" onclick="const b=document.getElementById('backupContent');const a=this.querySelector('.backup-arrow');if(b.style.display==='none'){b.style.display='';a.textContent='▲';});return;}else{b.style.display='none';a.textContent='▼';}">
         ☁️ バックアップ <span class="backup-arrow" style="font-size:12px;color:var(--sub);">▼</span>
       </div>
       <div id="backupContent" style="display:none;">
